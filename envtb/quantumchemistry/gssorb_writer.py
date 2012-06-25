@@ -24,6 +24,16 @@ def __generate_info(infostring, nrorbs):
        str(nrorbs).rjust(8), 
        str(nrorbs).rjust(8))
     return info
+    
+def __generate_uhforb_info(infostring, nrorbs):
+    info = """*%s
+%s%s%s
+%s
+%s"""%(infostring, 
+       '1'.rjust(8), '1'.rjust(8), '4'.rjust(8), 
+       str(nrorbs).rjust(8), 
+       str(nrorbs).rjust(8))
+    return info    
 
 def __generate_orbital_block(orbnr, coeffs):
     orbital_block = """* ORBITAL%s%s
@@ -49,6 +59,28 @@ def __build_orbital_blocks(orbitals_coeffs):
         
     return orbital_blocks
 
+def __concatenate_uhforb_file(**kwargs):
+    """
+    __concatenate_uhforb_file(info=info_section, orbitals_1=orbitals_section, ...)
+    
+    If an argument is None (i.e. orbitals=None), it will not be printed.
+    """
+    section_heads = [('info' , '#INFO'),
+                     ('orbitals_1' , '#ORB'),
+                     ('orbitals_2' , '#UORB'),                     
+                     ('occupation_1' , '#OCC'),
+                     ('occupation_2' , '#UOCC'),                     
+                     ('one_electron_1' , '#ONE'),
+                     ('one_electron_2' , '#UONE'),                     
+                     ('index' , '#INDEX')]
+
+    uhforb_file = '#INPORB 1.1\n'
+    for key, val in section_heads:
+        if key in kwargs and kwargs[key] is not None:
+            uhforb_file += val + '\n' + kwargs[key] + '\n'
+        
+    return uhforb_file
+    
 def __concatenate_gssorb_file(**kwargs):
     """
     __concatenate_gssorb_file(info=info_section, orbitals=orbitals_section, ...)
@@ -66,7 +98,7 @@ def __concatenate_gssorb_file(**kwargs):
         if key in kwargs and kwargs[key] is not None:
             gssorb_file += val + '\n' + kwargs[key] + '\n'
         
-    return gssorb_file
+    return gssorb_file    
 
 def __concatenate_orbitals(orbital_blocks):
     return "\n".join(orbital_blocks)
@@ -85,3 +117,29 @@ def gssorb_writer(fname, infostring, orbitals_coefficients, occupations, one_ele
     gssorb_file.write(__concatenate_gssorb_file(info=info_section, orbitals=orbital_section,
         occupation=occupation_section,one_electron=one_electron_energy_section))
     gssorb_file.close()
+    
+    
+def uhforb_writer(fname, infostring, orbitals_coefficients_1, occupations_1, one_electron_energies_1,
+                                     orbitals_coefficients_2, occupations_2, one_electron_energies_2):
+                                     
+    nrorbs = len(orbitals_coefficients_1)
+ 
+    info_section = __generate_uhforb_info(infostring, nrorbs)
+    
+    orbital_blocks_1 = __build_orbital_blocks(orbitals_coefficients_1)    
+    orbital_section_1 = __concatenate_orbitals(orbital_blocks_1)  
+    occupation_section_1 = __generate_occupation_block(occupations_1)
+    one_electron_energy_section_1 = __generate_one_electron_energy_block(one_electron_energies_1)
+    
+    orbital_blocks_2 = __build_orbital_blocks(orbitals_coefficients_2)    
+    orbital_section_2 = __concatenate_orbitals(orbital_blocks_2)  
+    occupation_section_2 = __generate_occupation_block(occupations_2)
+    one_electron_energy_section_2 = __generate_one_electron_energy_block(one_electron_energies_2)    
+    
+    uhforb_file = open(fname,'w')    
+    uhforb_file.write(__concatenate_uhforb_file(info=info_section, 
+        orbitals_1=orbital_section_1, orbitals_2=orbital_section_2,
+        occupation_1=occupation_section_1, occupation_2=occupation_section_2,
+        one_electron_1=one_electron_energy_section_1,one_electron_2=one_electron_energy_section_2))
+    uhforb_file.close()  
+    

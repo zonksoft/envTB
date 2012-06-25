@@ -218,7 +218,36 @@ class MolecularOrbitalSet:
         
     def norm(self, orb):
         return math.sqrt(self.inner_product(orb, orb))
-          
+        
+    def save_to_molcas_uhforb_file(self, other_mo_set, fname, infostring, add_dummy_energies=False):
+        """
+        An UhfOrb file contains two molecular orbital sets, so another set has to be supplied
+        through other_mo_set. The current set will be the first set written to the file.
+        
+        fname: *.UhfOrb
+        add_dummy_energies: Creates dummy energies in steps of 0.1 eV instead of
+        the energies saved in the instance (which are probably zero if you are
+        using this feature)        
+        """
+        
+        orbitals_coefficients_1 = [orb.coefficients for orb in self.molecular_orbitals]
+        occupations_1 = [orb.occupation for orb in self.molecular_orbitals]
+        
+        orbitals_coefficients_2 = [orb.coefficients for orb in other_mo_set.molecular_orbitals]
+        occupations_2 = [orb.occupation for orb in other_mo_set.molecular_orbitals]
+                
+        if not add_dummy_energies:
+            one_electron_energies = [orb.energy for orb in self.molecular_orbitals]
+        else:
+            nr_orbitals = len(self.molecular_orbitals)
+            one_electron_energies = numpy.arange(-nr_orbitals/2., nr_orbitals/2.)*0.1  
+        
+        envtb.quantumchemistry.gssorb_writer.uhforb_writer(
+            fname, infostring,
+            orbitals_coefficients_1, occupations_1, one_electron_energies,
+            orbitals_coefficients_2, occupations_2, one_electron_energies)            
+                  
+    
     def save_to_molcas_gssorb_file(self, fname, infostring, add_dummy_energies=False):
         """
         fname: *.GssOrb
@@ -239,20 +268,40 @@ class MolecularOrbitalSet:
             fname, infostring, orbitals_coefficients, occupations, 
             one_electron_energies)
             
-    def disentangle(self, orbitals_to_disentangle):
+    def disentangle(self, orbitals_to_disentangle, create_two_sets=False):
         """
-        Returns a new instance with disentangled orbitals.
+        Returns one or two MolecularOrbitalSets with disentangled orbitals.
+        Only the properties of the disentangled orbitals are changed.
+        
+        create_two_sets: Two different modes for the new orbital set.
+            create_two_sets=False: Create one orbital set. The disentangled orbitals
+            will directly substitute the original orbitals.
+            create_two_sets=True: Create two orbital sets, corresponding to up and
+            down spin in an UHF calculation. The positive linear combinations go in the
+            first spin, the negative in the second spin. 
+            (Note: The upper half of the original orbitals remain, but they are unoccupied.)
         """
         
         disentangled_orbs, _ = disentanglement.disentangle_mo_set(orbitals_to_disentangle)
-        disentangled_orbs_flat = [orb for orbpair in disentangled_orbs for orb in orbpair] #implicitly sorts the disentangled orbitals. here: a0,b0,+, a0,b0,-, a1,b1,+, ...
-
-        new_mo_list = list(self.molecular_orbitals)
-        
-        for orig, dis in zip(orbitals_to_disentangle, disentangled_orbs_flat):
-            new_mo_list[new_mo_list.index(orig)] = dis
+                    
+        if create_two_sets is True:
+            new_mo_list_1 = list(self.molecular_orbitals) # Copy the original list
+            new_mo_list_2 = list(self.molecular_orbitals) 
             
-        return MolecularOrbitalSet(new_mo_list)
+            for orig, dis in zip(orbitals_to_disentangle[:len(disentangled_orbs)], disentangled_orbs): # Associate the first half of the original orbital with the elements of disentangled_orbs
+                new_mo_list_1[new_mo_list_1.index(orig)] = dis[0] #positive linear combination
+                new_mo_list_2[new_mo_list_2.index(orig)] = dis[1] #negative linear combination
+                
+            return MolecularOrbitalSet(new_mo_list_1), MolecularOrbitalSet(new_mo_list_2)        
+            
+        else:
+            disentangled_orbs_flat = [orb for orbpair in disentangled_orbs for orb in orbpair] # implicitly sorts the disentangled orbitals. here: a0b0+, a0b0-, a1b1+, ...
+            new_mo_list = list(self.molecular_orbitals) # Copy the original list
+            
+            for orig, dis in zip(orbitals_to_disentangle, disentangled_orbs_flat): # Associate each original orbital with a disentangled orbital and substitute
+                new_mo_list[new_mo_list.index(orig)] = dis
+                
+            return MolecularOrbitalSet(new_mo_list)
         
         
     def print_orbital_list(self):
