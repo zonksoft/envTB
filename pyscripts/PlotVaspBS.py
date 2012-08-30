@@ -3,7 +3,7 @@ import sys,csv
 #http://gnuplot-py.sourceforge.net/
 sys.path.append('/home/lv70071/reiter/pythontest/gnuplot-py-1.8/build/lib')
 import Gnuplot
-
+#deprecated!
 file = sys.argv[1]
 data = [line.split() for line in open(file,'r').read().splitlines()]
 
