@@ -136,6 +136,8 @@ class Hamiltonian:
         or equivalently:
         my_hamiltonian.point_path([[0,0],[1,1],[2,2]],2)
         """
+        """TODO: maybe put this function somewhere else?"""
+
         if type(nrpointspersegment) != int and len(corner_points) != len(nrpointspersegment)+1:
             raise ValueError('corner_points has to be one element larger than nrpointspersegment, unless nrpointspersegment is integer.')
         if type(nrpointspersegment)==int:
