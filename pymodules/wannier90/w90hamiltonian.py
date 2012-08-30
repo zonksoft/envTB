@@ -75,7 +75,7 @@ class Hamiltonian:
     def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all'):
         """
         Calculates the eigenvalues of the eigenvalue problem with
-        Bloch boundary conditions for a given k.
+        Bloch boundary conditions for a given vector k.
         
         usedhoppingcells: If you don't want to use all hopping parameters,
         you can set them here (get the list of available cells with unitcellnumbers() and
