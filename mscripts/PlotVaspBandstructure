@@ -1,0 +1,8 @@
+#!/usr/local/bin/MathematicaScript -script
+<<dftanalysis`;
+If[FileExistsQ["EIGENVAL"],
+	Export["bandstructure.png",Show[PlotVaspBandstructure["EIGENVAL"],ImageSize->1000]]
+	Run["display bandstructure.png"]
+,
+	Print["File EIGENVAL does not exist in current working directory"]
+];
