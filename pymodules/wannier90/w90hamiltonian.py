@@ -50,6 +50,10 @@ class Hamiltonian:
         #scipy.linalg.blas.fblas.zaxpy
         
     def __bloch_phases(self,k):
+        """
+        Calculates the bloch factor e^ikr for each unit cell in
+        self.__unitcellnumbers
+        """
         latticevecs_transposed=numpy.transpose(self.__poscardata.latticevecs())
         return numpy.array([cmath.exp(complex(0,1)*numpy.dot(k, \
         numpy.dot(latticevecs_transposed,cellnumber))) for cellnumber in self.__unitcellnumbers])
