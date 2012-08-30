@@ -7,6 +7,8 @@ This file contains functions for often used procedures.
 They can also be considered as use cases.
 """
 
+"""TODO: Add function to view and zoom"""
+
 def plot_vasp_bandstructure(eigenval_filename,plot_filename):
     """
     Plot the bandstructure contained in a VASP EIGENVAL file.
