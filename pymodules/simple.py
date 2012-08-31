@@ -1,10 +1,13 @@
 from vasp import eigenval
 from wannier90 import w90hamiltonian
-import numpy
 
 """
 This file contains functions for often used procedures.
 They can also be considered as use cases.
+
+It's also recommended to use them as starting point for your own
+functions: type ?? after the function name and press enter,
+then you can copy, directly modify and execute the code. 
 """
 
 """TODO: Add function to view and zoom"""
