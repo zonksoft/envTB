@@ -158,7 +158,6 @@ class Hamiltonian:
         """
         Generates a path between v1 and v2 (lists of any dimension) with nrpoints elements.
         The last point, v2, is not in the path.
-        
         """
         dimension=len(v1)
         return numpy.transpose([numpy.linspace(v1[j], \
@@ -182,6 +181,127 @@ class Hamiltonian:
         bplot=BandstructurePlot()
         bplot.plot(kpoints, data)
         bplot.save(filename)
+        
+    def unitcellcoordinates(self):
+        """
+        Coordinates of the unit cells contained in the input file. 
+        """
+        
+        """
+        How the formula works:
+        
+        The unitcellnumbers are the coordinates of the unit
+        cells in the basis spanned by the lattice vectors. A transformation
+        to cartesian coordinates is just a basis transformation. The columns of
+        the transformation matrix are the lattice vectors in cartesian
+        coordinates --> we just have to transpose the list of lattice vectors.
+        Instead of applying the transformation matrix to each vector, we apply
+        it to all of them at the same time by writing the vectors in the columns
+        of a matrix (=transposing the list of unit cell numbers).
+        Since the transformed vectors are in the columns of the result matrix,
+        we need to transpose that one again.
+        
+        The formula is now (' = transpose):
+        (latticevecs' unitcellnumbers')'
+        
+        But this is:
+        (A'B')'=((BA)')'=BA
+        
+        -->
+        unitcellnumbers latticevecs
+        
+        So that's the formula!
+        
+         
+        """
+        latticevecs = self.__poscardata.latticevecs()
+        unitcellnumbers=numpy.array(self.__unitcellnumbers)
+        
+        return numpy.dot(unitcellnumbers,latticevecs)
+    
+    def unitcells_within_zone(self,zone,basis='c'):
+        """
+        Returns a list of unit cells within a certain area.
+        
+        zone: can be a number or a tuple:
+            number: radius to include cells within, in the sense of an euclidean norm.
+            tuple: area to include cells within, in the sense of distance from the origin along a direction.
+            
+        basis: determines if zone is given in cartesian ('c') or direct ('d') coordinates.
+        IMPORTANT: If direct coordinates are used, use integers for zone, not float!
+        
+        Examples:
+        Cells within 30 Angstrom:
+        unitcells_within_zone(30)
+        Cells within a 6x8x1 Angstrom cuboid:
+        unitcells_within_zone((3.0,4.0,0.5))
+        Cells within a 4x4x4 block in direct coordinates:
+        unitcells_within_zone((2,2,2),'d')
+        """
+        
+                
+        if type(zone) is tuple:
+            if basis == 'd':
+                zone=abs(numpy.array(zone))
+            if basis == 'c':
+                reclattice_transposed_inverted=linalg.inv(self.__poscardata.reciprocal_latticevecs().transpose()) #matrix to transform from cartesian to direct coordinates
+                zone=abs(numpy.dot(reclattice_transposed_inverted,numpy.array(zone)))
+            unitcellnrs=[unitcellnr for unitcellnr in self.__unitcellnumbers if numpy.floor(numpy.amin(zone-abs(numpy.array(unitcellnr))))>=0]
+        else:
+            if basis == 'c':
+                unitcellnrs=[unitcellnr for unitcellcoords,unitcellnr 
+                             in zip(self.unitcellcoordinates(),self.__unitcellnumbers) 
+                             if numpy.linalg.norm(unitcellcoords)<=zone]
+            if basis == 'd':    
+                unitcellnrs=[unitcellnr for unitcellnr in self.__unitcellnumbers if numpy.linalg.norm(unitcellnr)<=zone]
+    
+        return unitcellnrs
+
+
+    def hermitian_hoppinglist(self,unitcellnumbers):
+        """
+        The function removes unit cells from a list of unit cells whose "parity
+        partners" are missing to ensure a Hermitian Bloch matrix.
+        
+        Return: kept, removed
+        
+        kept: Kept unit cell numbers
+        removed: removed unit cell numbers (just for control purposes)
+                
+        If hopping to a specific unit cell is not used, one has to make sure
+        that the parity inversed unit cell (=the cell with the "negative"
+        coordinates") is also dropped.
+        That's because the matrix elements of the bloch matrix look like this:
+        
+        ... + \gamma_i e^ikR + \gamma_i e^-ikR + ...
+        
+        The sum of the two terms is cos(ikR) and real.
+        
+        --> The function drops the terms which miss their partner and thus won't
+        become real.
+        
+        Note: It makes sense to remove not only the "parity partner", but all unit
+        cells which are identical due to symmetry.
+        """
+        
+        stack = list(unitcellnumbers)
+        kept = []
+        removed = []
+        while len(stack)>0:
+            element=stack.pop()
+            if element == [-i for i in element]: #true for origin
+                kept.append(element)
+            else:
+                try:
+                    index_partner=stack.index([-i for i in element])
+                    partner=stack.pop(index_partner)
+                    kept.append(element)
+                    kept.append(partner)
+                except ValueError: #raised if -element does not exist
+                    removed.append(element)
+        return kept,removed
+            
+        
                 
     def unitcellnumbers(self):
         """
