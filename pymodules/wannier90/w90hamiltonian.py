@@ -9,6 +9,12 @@ from matplotlib import pyplot
 
 class Hamiltonian:
     
+    
+    """
+    TODO: durchschleifen der argumente bei bloch_eigenvalues etc. ist bloed. vl. argumente bei allen anderen
+    mit *args und auf dokumentation von bloch_eigenvalues verweisen?
+    """
+    
     __unitcellmatrixblocks=[]
     __unitcellnumbers=[]
     #TODO: make a map/dictionary out of those two
@@ -72,7 +78,7 @@ class Hamiltonian:
             
         return indices   
     
-    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all'):
+    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',usedorbitals='all'):
         """
         Calculates the eigenvalues of the eigenvalue problem with
         Bloch boundary conditions for a given vector k.
@@ -82,6 +88,12 @@ class Hamiltonian:
         strip the list from unwanted cells).
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
+        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
+        sense if the selected orbitals don't interact with other orbitals.
+        """
+        
+        """
+        TODO: make it return evecs too (don't forget sorting)
         """
         
         if usedhoppingcells == 'all':
@@ -91,17 +103,27 @@ class Hamiltonian:
         
         if basis=='d':
             k=self.__poscardata.direct_to_cartesian_reciprocal(k)
+            
+        if usedorbitals=='all':
+            orbitalnrs=range(self.__nrbands)
+        else:
+            orbitalnrs=usedorbitals
 
         bloch_phases=self.__bloch_phases(k)
-        blochmatrix = numpy.zeros((self.__nrbands, self.__nrbands), dtype=complex)
+        blochmatrix = numpy.zeros((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
         
-        for i in usedunitcellnrs:
-            blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
+        if usedorbitals=='all':
+            for i in usedunitcellnrs:
+                blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
+        else:
+            for i in usedunitcellnrs:
+                #http://stackoverflow.com/questions/4257394/slicing-of-a-numpy-2d-array-or-how-do-i-extract-an-mxm-submatrix-from-an-nxn-ar/4258079#4258079
+                blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i][numpy.ix_(orbitalnrs,orbitalnrs)]
 
         evals,evecs=linalg.eig(blochmatrix)
-        return numpy.sort(evals.real)   
+        return numpy.sort(evals.real)
     
-    def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all'):
+    def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all',usedorbitals='all'):
         """
         Calculates the bandstructure for a given kpoint list.
         For direct plotting, use plot_bandstructure(kpoints,filename).
@@ -114,9 +136,11 @@ class Hamiltonian:
         strip the list from unwanted cells).        
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
+        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
+        sense if the selected orbitals don't interact with other orbitals.
         """
             
-        data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells) for kpoint in kpoints])
+        data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells,usedorbitals) for kpoint in kpoints])
         return data
     
     def point_path(self,corner_points,nrpointspersegment):
@@ -163,7 +187,7 @@ class Hamiltonian:
         return numpy.transpose([numpy.linspace(v1[j], \
                 v2[j],nrpoints,endpoint=False) for j in range(dimension)]).tolist()
         
-    def plot_bandstructure(self,kpoints,filename,basis='c',usedhoppingcells='all'):
+    def plot_bandstructure(self,kpoints,filename,basis='c',usedhoppingcells='all',usedorbitals='all'):
         """
         Calculate the bandstructure at the points kpoints (given in 
         cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)
@@ -175,9 +199,11 @@ class Hamiltonian:
         strip the list from unwanted cells).  
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
+        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
+        sense if the selected orbitals don't interact with other orbitals.        
         """
 
-        data=self.bandstructure_data(kpoints,basis,usedhoppingcells)
+        data=self.bandstructure_data(kpoints,basis,usedhoppingcells,usedorbitals)
         bplot=BandstructurePlot()
         bplot.plot(kpoints, data)
         bplot.save(filename)
