@@ -158,6 +158,7 @@ class Hamiltonian:
         """
         Generates a path between v1 and v2 (lists of any dimension) with nrpoints elements.
         The last point, v2, is not in the path.
+        
         """
         dimension=len(v1)
         return numpy.transpose([numpy.linspace(v1[j], \
