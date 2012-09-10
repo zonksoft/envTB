@@ -1,9 +1,0 @@
-#!/home/lv70071/reiter/mathematica8.0/SystemFiles/Kernel/Binaries/Linux-x86-64/MathematicaScript -script
-<<dftinput`;
-If[Length[$ScriptCommandLine]==2,
-gnrwidth=ToExpression[$ScriptCommandLine[[2]]];
-GenerateGNRPOSCAR[gnrwidth, 20., 20., "POSCAR"];
-AppendGNRInitialGuess[gnrwidth, "wannier90.win"]
-,
-Print["Usage: GNRPOSCARAndWannier90 gnrwidth"]
-];
