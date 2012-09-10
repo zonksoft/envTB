@@ -39,8 +39,7 @@ class PoscarData:
     
     def reciprocal_latticevecs(self):
         """
-        Returns the reciprocal lattice vectors. Note that VASP
-        defines them without the 2*pi factor.
+        Returns the reciprocal lattice vectors.
         """
         latticevecs=self.__latticevecs
         if self.__reciprocal_latticevecs==[]:
