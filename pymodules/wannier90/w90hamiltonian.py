@@ -2,10 +2,11 @@ import general
 import numpy
 import math
 import cmath
-import numpy
 from vasp import poscar
 from scipy import linalg
 from matplotlib import pyplot
+from matplotlib.path import Path
+import matplotlib.patches as patches
 
 class Hamiltonian:
     
@@ -208,9 +209,60 @@ class Hamiltonian:
         bplot.plot(kpoints, data)
         bplot.save(filename)
         
-    def unitcellcoordinates(self):
+    def drawunitcells(self,unitcellnumbers='all'):
         """
-        Coordinates of the unit cells contained in the input file. 
+        Create a plot of a list of unit cells.
+        
+        unitcellnumbers: Numbers of unit cells to plot.
+        Default value is 'all', then unitcellnumbers() is used.
+        """
+        
+        if unitcellnumbers == 'all':
+            unitcellnumbers=self.__unitcellnumbers
+        
+        cellstructure=numpy.array([[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,0]])
+        lv=self.__poscardata.latticevecs()
+        unitcellform=numpy.dot(cellstructure,lv)[:,:2]
+        cellcoords=self.unitcellcoordinates(unitcellnumbers)[:,:2]
+        maincell=unitcellnumbers.index([0,0,0])
+        verticeslist=numpy.array([[formpoint+cellcoordinate for formpoint in unitcellform] for cellcoordinate in cellcoords])
+        maincellvertices=verticeslist[maincell]
+        verticeslist=numpy.delete(verticeslist,maincell,axis=0)   
+        
+        #http://matplotlib.sourceforge.net/users/path_tutorial.html
+        
+        codes = [Path.MOVETO,
+         Path.LINETO,
+         Path.LINETO,
+         Path.LINETO,
+         Path.CLOSEPOLY,
+         ]
+
+        fig = pyplot.figure()
+        ax = fig.add_subplot(111)
+        
+        for verts in verticeslist:
+            path = Path(verts, codes)
+            patch = patches.PathPatch(path, facecolor='white', lw=2)
+            ax.add_patch(patch)
+        
+
+        path = Path(maincellvertices, codes)
+        patch = patches.PathPatch(path, facecolor='orange', lw=2)
+        ax.add_patch(patch)
+        
+        ax.set_xlim(-40,40)
+        ax.set_ylim(-40,40)
+        pyplot.show()  
+        
+           
+        
+    def unitcellcoordinates(self,unitcellnumbers='all'):
+        """
+        Cartesian coordinates of the given unit cells.
+        
+        unitcellnumbers: a list of the unit cell numbers. 
+        Default value is 'all', then unitcellnumbers() is used.
         """
         
         """
@@ -241,20 +293,27 @@ class Hamiltonian:
          
         """
         latticevecs = self.__poscardata.latticevecs()
-        unitcellnumbers=numpy.array(self.__unitcellnumbers)
+        
+        if unitcellnumbers == 'all':
+            unitcellnumbers=numpy.array(self.__unitcellnumbers)
         
         return numpy.dot(unitcellnumbers,latticevecs)
     
-    def unitcells_within_zone(self,zone,basis='c'):
+    def unitcells_within_zone(self,zone,basis='c',norm_order=2):
         """
-        Returns a list of unit cells within a certain area.
+        Returns a list of unit cells within a certain area. The function
+        is comparing the same point in each cell (e.g. always the bottom left end).
         
         zone: can be a number or a tuple:
-            number: radius to include cells within, in the sense of an euclidean norm.
+            number: radius to include cells within.
             tuple: area to include cells within, in the sense of distance from the origin along a direction.
             
         basis: determines if zone is given in cartesian ('c') or direct ('d') coordinates.
         IMPORTANT: If direct coordinates are used, use integers for zone, not float!
+        
+        norm_order: if zone is a number (=radius), norm_order is the norm to use (mathematical definition, see 
+        http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.norm.html). Default is 2 (=Euclidean norm)
+        Short version: 2 gives you a "circle", numpy.inf a "square".
         
         Examples:
         Cells within 30 Angstrom:
@@ -279,7 +338,7 @@ class Hamiltonian:
                              in zip(self.unitcellcoordinates(),self.__unitcellnumbers) 
                              if numpy.linalg.norm(unitcellcoords)<=zone]
             if basis == 'd':    
-                unitcellnrs=[unitcellnr for unitcellnr in self.__unitcellnumbers if numpy.linalg.norm(unitcellnr)<=zone]
+                unitcellnrs=[unitcellnr for unitcellnr in self.__unitcellnumbers if numpy.linalg.norm(unitcellnr,norm_order)<=zone]
     
         return unitcellnrs
 
@@ -326,15 +385,60 @@ class Hamiltonian:
                 except ValueError: #raised if -element does not exist
                     removed.append(element)
         return kept,removed
+       
             
-        
-                
     def unitcellnumbers(self):
         """
         Returns the numbers of the unit cells supplied in the wannier90_hr.dat
         file.
         """
         return list(self.__unitcellnumbers) #makes a copy instead of a reference
+    
+    def standard_paths(self,name,nrpointspersegment=1):
+        """
+        Gives the standard path for a Bravais lattice in
+        direct reciprocal coordinates.
+        
+        name: Name of the lattice
+        nrpointspersegment: optional; if > 1, a list of intermediate points connecting
+        the main points is also returned and can be used for a 
+        bandstructure path (nrpointspersegment points per segment).
+        Default value: 1
+        
+        Return:
+        points,names(,path)
+        
+        points: points in the path
+        names: names of the points
+        (path: path with intermediate points. Only returned if nrpointspersegment is > 1)
+        """
+        if name=='hexagonal':
+            path = [
+                    ('G',[0,0,0]),
+                    ('K',[1./3,-1./3,0]),
+                    ('M',[0.5,0,0]),
+                    ('G',[0,0,0])
+                    ]
+        elif name=='fcc':
+            path = [
+                    ('G',[0,0,0]),
+                    ('X',[1./2,1./2,0]),
+                    ('W',[3./4,1./2,1./4]),
+                    ('L',[1./2,1./2,1./2]),
+                    ('G',[0,0,0]),
+                    ('K',[3./4,3./8,3./8])                    
+                    ]
+        else:
+            raise Exception("Bravais lattice name not found!")
+            
+        points=[x[1] for x in path]
+        names=[x[0] for x in path]
+        
+        if nrpointspersegment > 1:
+            path=self.point_path(points, nrpointspersegment)
+            return points,names,path
+        else:
+            return points,names
     
 class BandstructurePlot:
     """
@@ -346,9 +450,10 @@ class BandstructurePlot:
     
     __stylelist=['b-','g-','r-','c-','m-','y-','k-']
     __plotcounter=0
+    __myplot=0
 
     def __init__(self):
-        pyplot.clf()
+        self.__myplot=pyplot.figure()
         
     def setstyles(self,stylelist):
         """
@@ -377,6 +482,31 @@ class BandstructurePlot:
             distances.append(distance)
         return distances
     
+    def set_aspect_ratio(self,aspect):
+        """
+        Set the aspect ratio. For possible values, see
+        http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect
+        """
+        
+        pyplot.figure(self.__myplot.number)
+        ax = pyplot.gca()
+        ax.set_aspect(aspect)
+    
+    def set_plot_range(self,**kwargs):
+        """
+        Set the plot range using the kwargs
+        xmin, xmax, ymin, ymax.
+        """
+
+        #http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.axis
+        
+        pyplot.figure(self.__myplot.number)
+        pyplot.axis(**kwargs)
+        
+        #ax = pyplot.gca()
+        #ax.set_autoscale_on(False)
+        
+    
     def plot(self,kpoints,data,style='auto'):
         """
         Add a bandstructure plot to the figure.
@@ -387,6 +517,14 @@ class BandstructurePlot:
         styles of all plots using setstyles().
         Default is 'auto', which means that the style list will be used.
         """
+        
+        """
+        At the beginning, the figure is set to __myplot which was set in the constructor
+        to avoid interference between plot functions.
+        http://stackoverflow.com/questions/7986567/matplotlib-how-to-set-the-current-figure/7987462#7987462
+        """
+        pyplot.figure(self.__myplot.number) 
+
         pathlength=self.__kpoints_to_pathlength(kpoints)
         if style == 'auto':
             stylestring=self.__stylelist[self.__plotcounter % len(self.__stylelist)]
@@ -395,21 +533,25 @@ class BandstructurePlot:
             
         self.__plotcounter+=1
         for band in data.transpose():
-            pyplot.plot(pathlength,band,stylestring)
+            pyplot.plot(pathlength,band,stylestring, linewidth=0.3)
+            
     
     def save(self,filename):
         """
         Save the figure to a file. The format is determined
         by the filename.
         """
+        pyplot.figure(self.__myplot.number) 
         pyplot.savefig(filename,dpi=(150))
         
     def reset(self):
         """
         Clear the current figure.
         """
+        pyplot.figure(self.__myplot.number) 
         pyplot.clf()
         
     def show(self):
+        pyplot.figure(self.__myplot.number) 
         pyplot.show()
         
