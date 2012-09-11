@@ -23,6 +23,10 @@ Requirements
 ------------
 
 * Python interpreter: [Windows](http://www.python.org/getit/windows/); probably preinstalled on Linux
-* Numpy, Scipy with LAPACK and BLAS: Easy, but lower performance: 
+* Numpy, Scipy with LAPACK and BLAS: Good performance: 
+  [ATLAS](http://www.scipy.org/Installing_SciPy/Linux#head-bfec1665faa2c3686b5b56162bb2ddc36c47a9ba) 
+  or [Intel MKL](http://software.intel.com/en-us/articles/numpy-scipy-with-mkl) 
+  (get free, non-commercial version [here](http://software.intel.com/en-us/non-commercial-software-development)).
+  Easy, but lower performance:`sudo apt-get install python-numpy python-scipy`.
 * IPython (optional, but recommended): Download [setup](http://ipython.org/download.html) or install it
   using your package manager (e.g. `sudo apt-get install ipython` in Ubuntu)
