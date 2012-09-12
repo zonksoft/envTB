@@ -1,4 +1,4 @@
-class ProcarMap:
+class __ProcarMap:
     """
     ProcarMap has functions returning the position of data in a VASP PROCAR file and saves the
     number of ions, bands and kpoints.
