@@ -69,7 +69,7 @@ class ProcarData:
     def __LoadFromFile(self,filename):
         procardataraw=self.__read_file_as_table(filename)
       
-        self.__procarMap=ProcarMap(procardataraw)
+        self.__procarMap=__ProcarMap(procardataraw)
       
         self.__chargedata=self.__get_procar_charge_data(procardataraw)
         self.__energydata=self.__get_procar_energy_data(procardataraw)    
