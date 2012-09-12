@@ -35,6 +35,9 @@ for use cases and examples. The easiest way to get to know the package is
 to copy code from there, run it line by line and use pydoc or IPython to have 
 a look at the classes and the documentation.
 
+There is also example data in [exampledata](https://github.com/zonksoft/envTB/tree/master/exampledata) 
+for you to start out right away.
+
 
 Requirements
 ------------
