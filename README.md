@@ -21,7 +21,7 @@ but the easiest one is to write this at the beginning of your script:
     import sys
     sys.path.append('/path/to/downloaded/envTB/pymodules')
   
-The permanent way would be to [add the path](http://blog.streamitive.com/2011/12/01/export-pythonpathpythonpath/) 
+The permanent way would be to [add the path](http://stackoverflow.com/a/3402176) 
 to the `PYTHONPATH` variable.
 
 Use
