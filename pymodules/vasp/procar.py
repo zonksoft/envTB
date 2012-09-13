@@ -1,4 +1,4 @@
-class __ProcarMap:
+class ProcarMap:
     """
     ProcarMap has functions returning the position of data in a VASP PROCAR file and saves the
     number of ions, bands and kpoints.
@@ -69,7 +69,7 @@ class ProcarData:
     def __LoadFromFile(self,filename):
         procardataraw=self.__read_file_as_table(filename)
       
-        self.__procarMap=__ProcarMap(procardataraw)
+        self.__procarMap=ProcarMap(procardataraw)
       
         self.__chargedata=self.__get_procar_charge_data(procardataraw)
         self.__energydata=self.__get_procar_energy_data(procardataraw)    
