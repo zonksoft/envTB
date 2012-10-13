@@ -1,22 +1,17 @@
 import general
 import math
 import numpy as np
-from functools import wraps
 
 class PoscarData:
     """
     The class supplies an interface to the data contained
     in a VASP POSCAR file, which is:
-    - lattice vectors
+    - lattice vectors: Contained in the object lattice_vectors (see 
+      class LatticeVectors), use e.g. my_poscar_data.lattice_vectors.latticevecs() 
     - atom positions (output in cartesian and direct coordinates)
-    
-    Additionally, the reciprocal lattice vectors can be
-    calculated.
     """
     
-    __latticevecs=[]
-    __reciprocal_latticevecs=[]
-    
+    lattice_vectors=0
     
     def __init__(self,filename):
         """
@@ -29,8 +24,30 @@ class PoscarData:
         latticeconstant=float(dataraw[1][0])
         data=np.array(dataraw[2:5]).astype(np.float)
         
-        self.__latticevecs=latticeconstant*data
+        self.lattice_vectors=LatticeVectors(data,latticeconstant)
+    
+    """
+    TODO: finish class
+    """
+    
+class LatticeVectors:
+    """
+    The class contains a set of crystal lattice vectors, can calculate the
+    reciprocal lattice vectors and can convert direct reciprocal coordinates to
+    cartesian reciprocal coordinates.
+    """
+    
+    __latticevecs=[]
+    __reciprocal_latticevecs=[]    
+    
+    def __init__(self,latticevecs,latticeconstant=1):
+        """
+        Initializes the object with latticevecs (list of lattice vectors).
+        latticeconstant is a scaling factor (optional, default 1).
+        """
         
+        self.__latticevecs = np.array(latticevecs)*latticeconstant
+    
     def latticevecs(self):
         """
         Returns the lattice vectors.
@@ -50,8 +67,7 @@ class PoscarData:
             reciprocal_latticevecs*=2*math.pi/np.linalg.det(self.__latticevecs)
             self.__reciprocal_latticevecs=reciprocal_latticevecs
             
-        return self.__reciprocal_latticevecs
-    
+        return self.__reciprocal_latticevecs   
     
     def direct_to_cartesian_reciprocal(self,k):
         """
@@ -62,9 +78,5 @@ class PoscarData:
         if isinstance(k[0],list):
             return [self.direct_to_cartesian_reciprocal(thisk) for thisk in k]
         reclattice_transposed=self.reciprocal_latticevecs().transpose()
-        return np.dot(reclattice_transposed,k)
-            
+        return np.dot(reclattice_transposed,k)     
     
-    """
-    TODO: finish class
-    """
