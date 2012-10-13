@@ -107,8 +107,7 @@ def TopPzBandNrAtGamma(procar_filename,gnrwidth_rings,pzoffset=0):
     """
     
     procarData=procar.ProcarData(procar_filename)
-    
-    #nrbands,nrkpoints,nrions=procarData.info()
+
     chargedata=procarData.chargedata()
     energydata=procarData.energydata()
     
@@ -126,3 +125,32 @@ def TopPzBandNrAtGamma(procar_filename,gnrwidth_rings,pzoffset=0):
     energyatgammaofhighestgoodpzband=energydata[0][highestgoodpzband]
     
     return highestgoodpzband,energyatgammaofhighestgoodpzband
+
+def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscarfile,wannier90woutfile,width,output):
+    """
+    Plot the \pi bandstructure of a zigzag graphene nanoribbon based on a wannier90 calculation of
+    bulk graphene. The \pz orbitals have to be the first two orbitals in the wannier90 file.
+    In this example function, width (number of rings) must be even. A .dat file with the bandstructure
+    data is also saved as output.dat (each line representing one k-point).
+    
+    wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk
+    calculation
+    poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+    width: width of the ribbon (number of rings). Must be an even number.
+    output: path to the output image file.
+    """
+    
+    if width%2 != 0:
+        raise ValueError('width must be an even number')
+    
+    unitcells = width/2+1
+    
+    ham=w90hamiltonian.Hamiltonian.from_file(wannier90hr_graphene,poscarfile,wannier90woutfile)
+    ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]],usedorbitals=(0,1))
+    ham3=ham2.create_supercell_hamiltonian([[0,i,0] for i in range(unitcells)],[[1,0,0],[0,unitcells,0],[0,0,1]])
+    ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-1))
+    path = ham4.point_path([[0,0,0],[0.5,0,0]],100)
+    ham4.plot_bandstructure(path,output,'d')
+    data=ham4.bandstructure_data(path, 'd')
+    numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
+    
