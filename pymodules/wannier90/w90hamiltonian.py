@@ -18,8 +18,9 @@ class Hamiltonian:
     TODO: unitcellcoordinates and numbers is used ambiguously
     TODO: performance: use in-place operations for numpy -=, +=, *= and consider numpy.fromfunction
     TODO: to ensure a variable is a numpy array: a = array(a, copy=False)
-    TODO: read in fermi energy and make it possible to set it to 0
     TODO: REFACTOR REFACTOR REFACTOR
+    TODO: sparse matrices: http://docs.scipy.org/doc/scipy/reference/sparse.html, 
+          http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs
 
     """
     
@@ -33,9 +34,10 @@ class Hamiltonian:
     
     def __init__(self):
         """
-        There are two ways to initialize the Wannier90 Hamiltonian:
+        There are several ways to initialize the Wannier90 Hamiltonian:
         1) Hamiltonian.from_file(wannier90filename,poscarfilename,wannier90woutfilename)
-        2) Hamiltonian.from_raw_data(unitcellmatrixblocks,unitcellnumbers,latticevecs)
+        2) Hamiltonian.from_raw_data(unitcellmatrixblocks,unitcellnumbers,latticevecs,orbitalspreads,orbitalpositions)
+        3) Hamiltonian.from_nth_nn_list(nnfile,customhopping):
         
         See the documentation of those methods.
         """   
@@ -72,8 +74,7 @@ class Hamiltonian:
         Return the wannier90 orbital positions.
         """
         
-        return list(self.__orbitalpositions)
-    
+        return list(self.__orbitalpositions) 
         
     @classmethod
     def from_file(cls,wannier90filename,poscarfilename,wannier90woutfilename):
@@ -114,7 +115,94 @@ class Hamiltonian:
         
         return self
         
+    @classmethod        
+    def from_nth_nn_list(cls,nnfile,customhopping=None):
+        """
+        A constructor to create a nth-nearest-neighbour Hamiltonian.
+        
+        nnfile: File containing the system information (see example data)
+        customhopping: Dictionary, containing hopping parameters overriding those in nnfile.
+                       Example: {0:ONSITE,1:1STNN,2:2NDNN}
+        """
+        self = cls()
+        
+        latticevecs,nndata,orbitalspreads,orbitalpositions,defaulthopping=self.__read_nth_nn_file(nnfile)    
+        
+        if customhopping==None:
+            hopping=numpy.zeros(max(defaulthopping.keys())+1)
+        else:
+            hopping=numpy.zeros(max(max(defaulthopping.keys()),max(customhopping.keys()))+1)
+        
+        for i,v in defaulthopping.items():
+            hopping[i]=v
+        
+        if customhopping!=None:
+            for key,val in customhopping.items():
+                hopping[key]=val
+            
+        nrbands=len(orbitalspreads)
+        
+        unitcellmatrixblocks,unitcellnumbers=self.__process_nth_nn_data(nndata,hopping,nrbands)
+        
+        self.__unitcellnumbers = unitcellnumbers
+        self.__unitcellmatrixblocks = unitcellmatrixblocks
+        self.__latticevecs = poscar.LatticeVectors(latticevecs)
+        self.__nrbands = nrbands
+        self.__orbitalspreads=orbitalspreads
+        self.__orbitalpositions=orbitalpositions
+        
+        return self
+        
+    def __read_nth_nn_file(self,nnfile):
+        latticevecsstr,orbdatastr,defaulthoppingstr,nndatastr=general.split_by_empty_lines(general.read_file_as_table(nnfile),True)
+        
+        latticevecs=[[float(x) for x in line] for line in latticevecsstr]
+        nndata=[[int(x) for x in line] for line in nndatastr]
+        orbitalspreads=[float(line[0]) for line in orbdatastr]
+        orbitalpositions=[[float(x) for x in line[1:]] for line in orbdatastr]
+        
+        defaulthoppingindices=[int(x[0]) for x in defaulthoppingstr]
+        defaulthoppingvals=[float(x[1]) for x in defaulthoppingstr]
+        defaulthopping=dict(zip(defaulthoppingindices,defaulthoppingvals))
+        
+        return latticevecs,nndata,orbitalspreads,orbitalpositions,defaulthopping
+        
+    def __process_nth_nn_data(self,nndata,hopping,nrbands):
+        prevcell = []
+        unitcells = []
+        for line in nndata:
+            currentcell = line[0:3]
+            if currentcell != prevcell:
+                unitcells.append([])
+            unitcells[-1].append(line)
+            prevcell = currentcell
+        unitcellnumbers = [[x for x in unitcell[0][0:3]] for unitcell in unitcells]
+
+        unitcellmatrixblocks = []
+        
+        for unitcell in unitcells:
+            block=numpy.zeros((nrbands,nrbands))
+            for element in unitcell:
+                block[element[3]][element[4]]=hopping[element[5]]
+            unitcellmatrixblocks.append(block)
+                
+        return unitcellmatrixblocks,unitcellnumbers
+        
     def __process_wannier90_hr_data(self, wanndata):
+        """
+        Reads hopping matrix elements from wanndata into object. wanndata is a list
+        of lines, each line being a list in the following format:
+        veca vecb vecc thisorb otherorb re im
+        
+        veca,vecb,vecc: Unit cell coordinates of other cell
+        thisorb: Nr of orbital in main cell
+        otherorb: Nr of orbital in other cell
+        re, im: Hopping matrix element
+        
+        Hopping matrix elements have to be sorted by unit cell coordinates (veca,vecb,vecc).
+        Then, they have to be sorted by thisorb and otherorb, with thisorb running faster
+        than otherorb.
+        """
         prevcell = []
         unitcells = []
         for line in wanndata:
@@ -252,8 +340,7 @@ class Hamiltonian:
                             
                 
         
-        output.close()
-    
+        output.close()    
     
     def maincell_eigenvalues(self,usedorbitals='all'):
         """
@@ -275,7 +362,7 @@ class Hamiltonian:
         evals,evecs=linalg.eig(blochmatrix)
         return numpy.sort(evals.real)            
     
-    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',usedorbitals='all'):
+    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',usedorbitals='all',return_evecs=False):
         """
         Calculates the eigenvalues of the eigenvalue problem with
         Bloch boundary conditions for a given vector k.
@@ -287,6 +374,7 @@ class Hamiltonian:
         reciprocal coordinates or direct reciprocal coordinates.
         usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
         sense if the selected orbitals don't interact with other orbitals.
+        return_evecs: If True, evecs are also returned as the second return value.
         """
         
         """
@@ -320,7 +408,54 @@ class Hamiltonian:
                 blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i][numpy.ix_(orbitalnrs,orbitalnrs)]
 
         evals,evecs=linalg.eig(blochmatrix)
-        return numpy.sort(evals.real)
+        
+        
+        
+        if return_evecs==True:
+            evals_ordering=self.__sorting_order(evals)
+            return numpy.array(self.__apply_order(evals,evals_ordering)), numpy.array(self.__apply_order(evecs,evals_ordering))
+        else:
+            return numpy.sort(evals.real)
+            
+    def create_orbital_vector_list(self,vector,include_third_dimension=False,include_spread=False):
+        """
+        Create a list of orbital positions with given eigenvector amplitudes. Only the real part from
+        the eigenvector is kept.
+        
+        vector: Vector to connect to the orbital positions.
+        include_third_dimension: Include the z position of the points. Default is False.
+        include_spread: Include the spread of the orbital. Default is False.
+        
+        Return: A matrix containing the following columns:
+                x   y   (z)   (spread)    value
+        """
+        
+        if include_third_dimension==True:
+            pos=numpy.array(self.__orbitalpositions)
+        else:
+            pos=numpy.array(self.__orbitalpositions)[:,0:2]
+            
+        if include_spread==True:
+            pos=numpy.append(pos,numpy.real(numpy.transpose([self.__orbitalspreads])),1)
+        
+        pos=numpy.append(pos,numpy.real(numpy.transpose([vector])),1)
+        
+        return pos
+        
+    def plot_vector(self,vector,scale=1,figsize=(40,1)):
+        """
+        Plot a vector with geometry by putting circles on the positions of the orbitals.
+        The size of the circles corresponds to the absolute square, the color to the sign.
+        
+        vector: vector to plot
+        scale: scale factor for the circles.
+        """
+        
+        pyplot.figure(figsize=figsize)
+        pyplot.axes().set_aspect('equal','datalim')
+        colors=['r' if x>0 else 'b' for x in vector]
+        pos=numpy.array(self.__orbitalpositions)
+        pyplot.scatter(pos[:,0],pos[:,1],scale*numpy.abs(vector)**2,c=colors,edgecolors='none')
     
     def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all',usedorbitals='all',parallelmethod=None,parallelthreads=4):
         """
@@ -726,9 +861,8 @@ class Hamiltonian:
             if e not in checked:
                 checked.append(e)
         return checked        
-
     
-    def create_supercell_hamiltonian(self,cellcoordinates,latticevecs,usedhoppingcells='all',usedorbitals='all'):
+    def create_supercell_hamiltonian(self,cellcoordinates,latticevecs,usedhoppingcells='all',usedorbitals='all',energyshift=None,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None):
         """
         Creates the matrix elements for a supercell containing several unit cells, e.g. a volume
         with one unit cell missing in the middle or one slice of a nanoribbon.
@@ -739,15 +873,49 @@ class Hamiltonian:
         E.g. a supercell of four graphene unit cells could have latticevecs=[[2,0,0],[0,2,0],[0,0,1]]. 
         If you want to create a ribbon or a molecule, use a high value in one of the coordinates
         (e.g. a long y lattice vector).
-        
-        Return:
-        unitcellmatrixblocks: Hopping matrix elements, arranged by supercell.
-        unitcellnumbers: Supercell coordinates of the blocks.
-        newlatticevecs: New lattice vectors in real coordinates.
         usedhoppingcells: If you don't want to use all hopping parameters, you can set the cells to "hop"
         to here (list of cell coordinates).
         usedorbitals: a list of orbitals to use. Default is 'all'. Note: this only makes
-        sense if the selected orbitals don't interact with other orbitals.       
+        sense if the selected orbitals don't interact with other orbitals. 
+        energyshift: Shift energy scale by energyshift, e.g. to shift the Fermi energy to 0.
+        magnetic_B: Magnetic field in perpendicular direction (in T)
+        gauge_B: 'landau_x': Landau gauge for systems with x periodicity (A=(-By,0,0))
+                 'landau_y:': Landau gauge for systems with y periodicity (A=(0,Bx,0))
+                 'symmetric': Symmetric gauge for systems with x and y periodicity (A=1/2(-By,Bx,0))
+        mixin_ham: A "mix-in" Hamiltonian from which some matrix elements are used. Default is None.
+                   The mixin is done before the other modifications (magnetic field, energyshift)
+        mixin_hoppings: A list of matrix elements from the main Hamiltonian that should be substituted with matrix elements from mixin_ham.
+                        The conjugate hopping is generated automatically (i.e. (0,1) will be
+                        automatically expanded to (0,1),(1,0) ). 
+                        Example: Substitute all matrix elements from orbitals 0,1 to orbitals 0,1,2,3:
+                        mixin_hoppings=[(0,0),(0,1),(0,2),(0,3),(1,0),(1,1),(1,2),(1,3)]
+        mixin_cells: List of unit cells. Substitution can be restricted to specific unit cells.
+                     E.g. the main cell: mixin_cells=[[0,0,0]]
+                     E.g. the main cell and the ones left and right: mixin_cells=[[-1,0,0],[0,0,0],[1,0,0]]
+                     Default is None, which means that all cells that exist in both Hamiltonians will be substituted.
+                     Mind that the cell coordinates have to be lists, not tuples!
+        mixin_assoc: Association list for orbitals in the current Hamiltonian and the mixin Hamiltonian. Type is dictionary.
+                     If the mixin Hamiltonian describes a different system, the orbital numbers may not be the same.
+                     Only the relevant orbitals (those mentioned in mixin_hoppings) have to be here.
+                     Default is None, which means that the orbital numbers are assumed to be identical.
+                     Example:    Main Hamiltonian     Mixin Hamiltonian
+                                 0                    0
+                                 1                    1
+                                 2                    2
+                                 3                    3
+                                 4                    4
+                                 100                  15
+                                 101                  16
+                                 102                  17
+                                 103                  18
+                                 104                  19
+                                 
+                                 mixin_assoc={0:0,1:1,2:2,3:3,4:4,100:15,101:16,102:17,103:18,104:19}
+        
+        
+        Return:
+        New Hamiltonian with the new properties.
+        
         """
         
         #TODO: Naming (numbers,positions,coordinates) is ambiguous
@@ -826,9 +994,54 @@ class Hamiltonian:
                                                             hopto_nr_index*orbitals_per_unitcell:(hopto_nr_index+1)*orbitals_per_unitcell]=oldblock_selectedorbitals
                 
         
-        
         oldlatticevecs=self.__latticevecs.latticevecs()
         newlatticevecs=numpy.dot(numpy.array(latticevecs),oldlatticevecs) # (A.B)'=B'.A' - new latticevectors in real coordinates
+        
+        #Mix in matrix elements from other hamiltonian
+        if mixin_ham!=None:
+            othermatrixblocks=mixin_ham._Hamiltonian__unitcellmatrixblocks
+            otherunitcellnumbers=mixin_ham.unitcellnumbers()
+            
+            myhoppingelements=mixin_hoppings+[(j,i) for i,j in mixin_hoppings]
+            if mixin_assoc==None:
+                otherhoppingelements=myhoppingelements
+            else:
+                otherhoppingelements=[(mixin_assoc[i],mixin_assoc[j]) for i,j in myhoppingelements]
+                
+            for mycellidx,mycellnr in enumerate(unitcellnumbers):
+                if mycellnr in otherunitcellnumbers and (mixin_cells==None or mycellnr in mixin_cells):
+                    othercellidx=otherunitcellnumbers.index(mycellnr)
+                    for (i,j),(k,l) in zip(myhoppingelements,otherhoppingelements):
+                        unitcellmatrixblocks[mycellidx][i,j]=othermatrixblocks[othercellidx][k,l]
+                        
+
+            
+            
+    
+        #Shift diagonal elements of main cell hopping block
+        if energyshift!=None:
+            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=numpy.diag((orbitals_per_unitcell*nr_unitcells_in_supercell)*[energyshift])       
+        
+    
+        #Apply magnetic field
+        #distances_in_unit_cell=numpy.array([[x-y for x in numpy.array(orbitalpositions)] for y in numpy.array(orbitalpositions)])
+        if magnetic_B!=None:
+            Tesla_conversion_factor=1.602176487/1.0545717*1e-5
+            #print Tesla_conversion_factor
+            for i,number in enumerate(unitcellnumbers):
+                unitcellcoordinates=numpy.dot(number,newlatticevecs)
+                othercell_orbitalpositions=[unitcellcoordinates+orb for orb in orbitalpositions]
+                #distances=distances_in_unit_cell+unitcellcoordinates #distances[i][j]=Distance from orb i in main cell to orb j in other cell
+                #print othercell_orbitalpositions
+                if gauge_B=='landau_x':
+                    phasematrix=numpy.exp(1j*magnetic_B*Tesla_conversion_factor*numpy.array([[-0.5*(other[0]-main[0])*(other[1]+main[1]) for other in othercell_orbitalpositions] for main in numpy.array(orbitalpositions)]))
+                if gauge_B=='landau_y':
+                    phasematrix=numpy.exp(1j*magnetic_B*Tesla_conversion_factor*numpy.array([[0.5*(other[1]-main[1])*(other[0]+main[0]) for other in othercell_orbitalpositions] for main in numpy.array(orbitalpositions)]))
+                if gauge_B=='symmetric':
+                    phasematrix=numpy.exp(1j*magnetic_B*Tesla_conversion_factor*numpy.array([[0.5*((other[1]-main[1])*(other[0]+main[0])-(other[0]-main[0])*(other[1]+main[1])) for other in othercell_orbitalpositions] for main in numpy.array(orbitalpositions)]))
+                
+                unitcellmatrixblocks[i]*=phasematrix    
+                
         return self.from_raw_data(unitcellmatrixblocks, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions)
     
     def __metric(self,basis):
@@ -887,13 +1100,13 @@ class Hamiltonian:
         else:
             return int(-numpy.ceil(-x)) 
     
-    def create_modified_hamiltonian(self,usedhoppingcells='all',usedorbitals='all'):
+    def create_modified_hamiltonian(self,usedhoppingcells='all',usedorbitals='all',energyshift=0,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None):
         """
         Creates a Hamiltonian with dropped orbitals or hopping cells. This is just a wrapper for 
         create_supercell_hamiltonian().
         """
         
-        return self.create_supercell_hamiltonian([[0,0,0]], [[1,0,0],[0,1,0],[0,0,1]], usedhoppingcells, usedorbitals)
+        return self.create_supercell_hamiltonian([[0,0,0]], [[1,0,0],[0,1,0],[0,0,1]], usedhoppingcells, usedorbitals,energyshift,magnetic_B,gauge_B,mixin_ham,mixin_hoppings,mixin_cells,mixin_assoc)
     
     def integergrid3d(self,i,j,k):
         """

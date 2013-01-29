@@ -12,8 +12,6 @@ functions: type ?? after the function name and press enter,
 then you can copy, directly modify and execute the code. 
 """
 
-"""TODO: Add function to view and zoom"""
-
 def plot_vasp_bandstructure(eigenval_filename,plot_filename,output='save'):
     """
     Plot the bandstructure contained in a VASP EIGENVAL file.
@@ -126,11 +124,62 @@ def TopPzBandNrAtGamma(procar_filename,gnrwidth_rings,pzoffset=0):
     
     return highestgoodpzband,energyatgammaofhighestgoodpzband
 
-def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscarfile,wannier90woutfile,width,output):
+def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscarfile,wannier90woutfile,width,output,usedhoppingcells_rings='all'):
     """
     Plot the \pi bandstructure of a zigzag graphene nanoribbon based on a wannier90 calculation of
     bulk graphene. The \pz orbitals have to be the first two orbitals in the wannier90 file.
-    In this example function, width (number of rings) must be even. A .dat file with the bandstructure
+    A .dat file with the bandstructure data is also saved as output.dat (each line representing one k-point).
+    
+    wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk
+    calculation
+    poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+    width: width of the ribbon (number of rings).
+    output: path to the output image file.
+    usedhoppingcells_rings: If you don't want to use all hopping parameters,
+    you can set the number of 'rings' surrounding the main cell here. If it is a list
+    (e.g. range(5)), several plots are created.
+    The default value is 'all'.
+    
+    Return:
+    Hamiltonian: the generated GNR Hamiltonian.
+    data: bandstructure data.
+    path: path through reciprocal space.
+    """
+    
+    if width%2 == 0:
+        unitcells = width/2+1
+        get_rid_of=1
+    else:
+        unitcells = width/2+2
+        get_rid_of=3
+    
+    #When usedhoppingcells_rings is not a list: create a list with 1 element 
+    if not isinstance(usedhoppingcells_rings,list):
+        usedhoppingcells_rings=[usedhoppingcells_rings]
+    
+    ham=w90hamiltonian.Hamiltonian.from_file(wannier90hr_graphene,poscarfile,wannier90woutfile)
+    
+    for ring in usedhoppingcells_rings:    
+        if ring=='all':
+            cells='all'
+        else:
+            cells=ham.unitcells_within_zone(ring, 'd', numpy.inf)        
+        
+        ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]],usedorbitals=(0,1),usedhoppingcells=cells)
+        ham3=ham2.create_supercell_hamiltonian([[0,i,0] for i in range(unitcells)],[[1,0,0],[0,unitcells,0],[0,0,1]])
+        ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-get_rid_of))
+        path = ham4.point_path([[0,0,0],[0.5,0,0]],100)
+        ham4.plot_bandstructure(path,str(ring)+"_"+output,'d')
+        data=ham4.bandstructure_data(path, 'd')
+        numpy.savetxt(str(ring)+"_"+output+'.dat', numpy.real(data), fmt="%12.6G")
+        
+        return ham4,data,path
+    
+def plot_armchair_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscarfile,wannier90woutfile,width,output,usedhoppingcells_rings='all'):
+    """
+    Plot the \pi bandstructure of an armchair graphene nanoribbon based on a wannier90 calculation of
+    bulk graphene. The \pz orbitals have to be the first two orbitals in the wannier90 file.
+    In this example function, width is the number of rings in transversal direction. A .dat file with the bandstructure
     data is also saved as output.dat (each line representing one k-point).
     
     wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk
@@ -138,19 +187,77 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscar
     poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
     width: width of the ribbon (number of rings). Must be an even number.
     output: path to the output image file.
+    usedhoppingcells_rings: If you don't want to use all hopping parameters,
+    you can set the number of 'rings' surrounding the main cell here. If it is a list
+    (e.g. range(5)), several plots are created.
+    The default value is 'all'.
     """
-    
-    if width%2 != 0:
-        raise ValueError('width must be an even number')
-    
-    unitcells = width/2+1
-    
+    unitcells = width
+
+    #When usedhoppingcells_rings is not a list: create a list with 1 element 
+    if not isinstance(usedhoppingcells_rings,list):
+        usedhoppingcells_rings=[usedhoppingcells_rings]
+
     ham=w90hamiltonian.Hamiltonian.from_file(wannier90hr_graphene,poscarfile,wannier90woutfile)
-    ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]],usedorbitals=(0,1))
+
+    for ring in usedhoppingcells_rings:
+        if ring=='all':
+            cells='all'
+        else:
+            cells=ham.unitcells_within_zone(ring, 'd', numpy.inf)
+
+        ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]],usedorbitals=(0,1),usedhoppingcells=cells)
+        ham3=ham2.create_supercell_hamiltonian([[i,0,0] for i in range(unitcells)],[[unitcells,0,0],[0,1,0],[0,0,1]])
+        ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(0))
+        path = ham4.point_path([[0,0,0],[0,0.5,0]],100)
+        ham4.plot_bandstructure(path,str(ring)+"_"+output,'d')
+        data=ham4.bandstructure_data(path, 'd')
+        numpy.savetxt(str(ring)+"_"+output+'.dat', numpy.real(data), fmt="%12.6G")
+
+def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,magnetic_B=0):
+    """
+    Plot the \pi bandstructure of a zigzag graphene nanoribbon based on a n-th nearest neighbour parameterization of
+    bulk graphene. 
+    A .dat file with the bandstructure data is also saved as output.dat (each line representing one k-point).
+    
+    nnfile: path to the nearest-neighbour input file (see example files)
+    width: width of the ribbon (number of rings).
+    output: path to the output image file.
+    """
+    if width%2 == 0:
+        unitcells = width/2+1
+        get_rid_of=1
+    else:
+        unitcells = width/2+2
+        get_rid_of=3
+
+    ham=w90hamiltonian.Hamiltonian.from_nth_nn_list(nnfile)
+
+    ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]])
     ham3=ham2.create_supercell_hamiltonian([[0,i,0] for i in range(unitcells)],[[1,0,0],[0,unitcells,0],[0,0,1]])
-    ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-1))
-    path = ham4.point_path([[0,0,0],[0.5,0,0]],100)
+    ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-get_rid_of),magnetic_B=magnetic_B)
+    path = ham4.point_path([[-0.5,0,0],[0.5,0,0]],30)
     ham4.plot_bandstructure(path,output,'d')
     data=ham4.bandstructure_data(path, 'd')
     numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
+
+def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output):
+    """
+    Plot the \pi bandstructure of an armchair graphene nanoribbon based on a n-th nearest neighbour parameterization of
+    bulk graphene. 
+    In this example function, width is the number of rings in transversal direction. A .dat file with the bandstructure
+    data is also saved as output.dat (each line representing one k-point).
     
+    nnfile: path to the nearest-neighbour input file (see example files)
+    width: width of the ribbon (number of rings). Must be an even number.
+    output: path to the output image file.
+    """
+    unitcells = width
+    ham=w90hamiltonian.Hamiltonian.from_nth_nn_list(nnfile)
+    ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]])
+    ham3=ham2.create_supercell_hamiltonian([[i,0,0] for i in range(unitcells)],[[unitcells,0,0],[0,1,0],[0,0,1]])
+    ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(0))
+    path = ham4.point_path([[0,-0.5,0],[0,0.5,0]],100)
+    ham4.plot_bandstructure(path,output,'d')
+    data=ham4.bandstructure_data(path, 'd')
+    numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
