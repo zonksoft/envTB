@@ -261,3 +261,68 @@ def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output):
     ham4.plot_bandstructure(path,output,'d')
     data=ham4.bandstructure_data(path, 'd')
     numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
+
+def SimpleElectrostaticProblem():
+    breite=1
+    hoehe=30
+    gridsize=1e-9
+    lapl=electrostatics.Laplacian2D2ndOrderWithMaterials(gridsize,gridsize)
+    rect=electrostatics.Rectangle(hoehe,breite,1.,lapl)
+    rect[hoehe-1,0].neumannbc=(1e18,'xb')
+    rect[10,0].potential=8
+    rect[0,0].neumannbc=(0,'xf')
+    cont=electrostatics.PeriodicContainer(rect,'y')
+    solver,inhomogeneity=cont.lu_solver()
+    sol=solver(inhomogeneity)
+    plot(sol)
+    print sol
+
+def PotentialOfGluedRectangles2D():
+    lapl=electrostatics.Laplacian2D2ndOrder(1,1)
+    breite=400
+    hoehe=200
+    graphene_breite=350
+    abstand=20
+    rechteck=electrostatics.Rectangle(hoehe,breite,1.,lapl)
+    rechteck2=electrostatics.Rectangle(300,300,1,lapl)
+
+
+    for x in range((breite-graphene_breite)/2,(breite+graphene_breite)/2):
+        #rechteck[hoehe/2+5,x].fermi_energy=5    
+        rechteck[hoehe/2+5,x].potential=5
+        #rechteck[hoehe/2-5,x].fermi_energy=-5    
+        rechteck[hoehe/2-5,x].potential=-5   
+    for x in range(breite):
+        for y in range(hoehe/2-5,hoehe/2+5):
+            rechteck[y,x].epsilon=1.
+        
+    for x in range(100,200):
+        rechteck2[x,200].potential=5
+    
+    for x in range(150,250):
+        rechteck2[x,250].potential=5
+
+    container=electrostatics.Container((rechteck,rechteck2))
+    container.connect(rechteck,rechteck2,align='left',position='top',offset=(0,150))
+
+    solver,inhomogeneity=container.lu_solver()
+    sol=solver(inhomogeneity)
+    imshow(container.vector_to_picture(sol)[0])
+
+def PotentialOfSimpleConductor2D():
+    lapl=electrostatics.Laplacian2D2ndOrderWithMaterials(1e-9,1e-9)
+    breite=400
+    hoehe=600
+    rechteck=electrostatics.Rectangle(hoehe,breite,1.,lapl)
+
+    for x in range(breite):
+        rechteck[hoehe-1,x].potential=5
+
+    for x in range(breite):
+        for y in range(hoehe/2,hoehe):
+            rechteck[y,x].epsilon=1.
+    
+    container=electrostatics.Container((rechteck,))
+    solver,inhomogeneity=container.lu_solver()
+    sol=solver(inhomogeneity)
+    imshow(container.vector_to_picture(sol)[0])
