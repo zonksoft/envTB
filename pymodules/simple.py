@@ -2,7 +2,8 @@ from vasp import eigenval
 from vasp import procar
 from wannier90 import w90hamiltonian
 import numpy
-
+from quantumcapacitance import electrostatics,quantumcapacitance
+from matplotlib import pylab
 """
 This file contains functions for often used procedures.
 They can also be considered as use cases.
@@ -287,10 +288,8 @@ def PotentialOfGluedRectangles2D():
     rechteck2=electrostatics.Rectangle(300,300,1,lapl)
 
 
-    for x in range((breite-graphene_breite)/2,(breite+graphene_breite)/2):
-        #rechteck[hoehe/2+5,x].fermi_energy=5    
+    for x in range((breite-graphene_breite)/2,(breite+graphene_breite)/2): 
         rechteck[hoehe/2+5,x].potential=5
-        #rechteck[hoehe/2-5,x].fermi_energy=-5    
         rechteck[hoehe/2-5,x].potential=-5   
     for x in range(breite):
         for y in range(hoehe/2-5,hoehe/2+5):
@@ -326,3 +325,68 @@ def PotentialOfSimpleConductor2D():
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
     imshow(container.vector_to_picture(sol)[0])
+
+def GrapheneQuantumCapacitance():
+    gridsize=1e-9
+    hoehe=600
+    breite=1
+    backgatevoltage=0
+    graphenepos=299
+    temperature=300
+    sio2=3.9
+    
+    vstart=-60
+    vend=60
+    dv=0.5
+
+    lapl=electrostatics.Laplacian2D2ndOrderWithMaterials(gridsize,gridsize)
+    periodicrect=electrostatics.Rectangle(hoehe,breite,1.,lapl)
+    
+    for y in range(breite):
+        periodicrect[0,y].neumannbc=(0,'xf')
+            
+    backgateelements=[periodicrect[hoehe-1,y] for y in range(breite)]
+    grapheneelements=[periodicrect[graphenepos,y] for y in range(breite)]
+    
+    for element in backgateelements:
+        element.potential=backgatevoltage
+        
+    Ef_dependence_function=quantumcapacitance.BulkGrapheneWithTemperature(temperature,gridsize).Ef_interp
+    
+    for element in grapheneelements:
+        element.potential=0
+        element.fermi_energy=0
+        element.fermi_energy_charge_dependence=Ef_dependence_function
+
+    for x in range(graphenepos,hoehe):
+        for y in range(breite):
+            periodicrect[x,y].epsilon=sio2
+        
+    percont=electrostatics.PeriodicContainer(periodicrect,'y')
+    solver,inhomogeneity=percont.lu_solver()
+    
+    qcsolver=quantumcapacitance.QuantumCapacitanceSolver(percont,solver,grapheneelements,lapl)
+    qcsolver.refresh_basisvecs()
+    
+    voltages=numpy.arange(vstart,vend,dv)
+    
+    charges=[]
+
+    for v in voltages:
+        for elem in backgateelements:
+            elem.potential=v
+        qcsolver.refresh_environment_contrib()
+        qcsolution=qcsolver.solve()
+        inhom=percont.createinhomogeneity()
+        sol=solver(inhom)
+        charges.append(percont.charge(sol,lapl,grapheneelements))
+    
+    totalcharge=numpy.array([sum(x) for x in charges])
+    capacitance=(totalcharge[2:]-totalcharge[:-2])/len(grapheneelements)*gridsize/(2*dv)
+
+    fig=pylab.figure()
+    ax = fig.add_subplot(111)
+    ax.set_title('Quantum capacitance of Graphene on SiO2')
+    ax.set_xlabel('Backgate voltage [V]')
+    ax.set_ylabel('GNR capacitance [$10^{-6} F/m^2$]')
+    pylab.plot(voltages[1:-1],1e6*capacitance)

@@ -14,6 +14,7 @@
 #TODO: variablen, die "charge_operator" heissen, sollten das epsilon_0 schon drin haben
 #TODO: Container und PeriodicContainer sollten gemergt und vererbt werden
 #TODO: zuerst     qcsolver.refresh_environment_contrib(), dann qcsolver.refresh_basisvecs(), sonst falsch - warum?? war nicht reproduzierbar. fkt besser dokumentieren
+#TODO: improve documentation of Laplacian2ndOrderWithMaterials
 
 from .common import Constants
 import scipy.sparse
@@ -26,6 +27,12 @@ import pylab
 
 
 class Element:
+    """
+    Element describes a single grid point/discretization element in a geometry. 
+    It saves the rectangle it belongs to (rect), its position (i,j) within its rectangle.
+    It supplies a function matrixelements() which, given an operator, returns the matrix  
+    elements of the element to its neighbours and the inhomogeneity of the element.
+    """
     i=0
     j=0
     rect=0
@@ -73,6 +80,11 @@ class Element:
         self.neumannbc=neumannbc
         
     def matrixelements(self,finitedifference_operator):
+        """
+        Returns the matrix elements of the current element to its neighbours.
+
+        finitedifference_operator: The discretized operator of the differential equation.
+        """
         if self.potential != None:
             matrixelements=[(self,1)]
             #inhomogeneity=self.potential
@@ -99,6 +111,9 @@ class Element:
         return self.__matrixelements,self.__inhomogeneity        
     
     def inhomogeneity(self): #Implicitly assumes that all elements outside the calculation area have the potential 0, because it just doesn't handle the outside area
+        """
+        Returns the inhomogeneity of the element.
+        """
         if self.potential==None:
             inhomogeneity=self.charge/Constants.epsilon0
             if self.neumannbc==None:
@@ -136,38 +151,65 @@ class Element:
         eps=[x[0].epsilon if x[0] is not None else 1 for x in elements] #is not implemented!!!!!
         return [x for x in elements if x[0] != None]
             
-        
-                
-    
     def pure_operator(self,finitedifference_operator):
-        
         def my_neighbours(di,dj):
             return self.rect.neighbour(self.i,self.j,di,dj)
             
         return finitedifference_operator.matrixelements(my_neighbours)
                 
-    
     def index(self):
+        """
+        Return the index of the element in its rectangle.
+        """
         return self.rect.pos_to_index(self.i,self.j)
         
     
 class FiniteDifferenceOperator:
+    """
+    Abstract basis class for finite difference operators.
+    A class derived from it has to supply variables for dx and dy
+    and a function which returns the matrix elements between the
+    current basis element and its neighbours (see e.g.
+    Laplacian2D2ndOrderWithMaterials)
+    """
     dx=0
     dy=0
     matrixelements=0
     
 class Laplacian2D2ndOrderWithMaterials(FiniteDifferenceOperator):
+    """
+    2nd order discreticed Laplace operator in two dimensions for a
+    electrostatic problem with dielectric materials.
+    """
+
     def __init__(self,dx,dy):
+        """
+        Default constructor, dx and dy are the length and width of
+        the element.
+        """
         self.dx=dx
         self.dy=dy
                     
     def matrixelements(self,my_neighbours):
         """
+        Returns the matrix elements between the main element (i,j)
+        and its neighbours, which are:
+
+        (i,j) -4
+        (i+1,j) 1
+        (i-1,j) 1
+        (i,j+1) 1
+
+        ...divided by dx*dy and with a factor describing the dielectric property.
+
+        my_neighbours: function which returns the element object of a neighbour of the
+                       current element, e.g. my_neighbours(0,0) gibts the current element,
+                       my_neighbours(1,0) the one under it etc.
+
              eps1
         eps2  .  eps3
              eps4
 
-        If the grid point is in the top left corner of its grid cell, 
         """
     
         neighbours=[my_neighbours(0,0),my_neighbours(1,0),my_neighbours(-1,0),my_neighbours(0,1),my_neighbours(0,-1)]
@@ -186,11 +228,33 @@ class Laplacian2D2ndOrderWithMaterials(FiniteDifferenceOperator):
         
         
 class Laplacian2D2ndOrder(FiniteDifferenceOperator):
+    """
+    2nd order discreticed Laplace operator in two dimensions.
+    """
     def __init__(self,dx,dy):
+        """
+        Default constructor, dx and dy are the length and width of
+        the element.
+        """
         self.dx=dx
         self.dy=dy
                     
     def matrixelements(self,my_neighbours):    
+        """
+        Returns the matrix elements between the main element (i,j)
+        and its neighbours, which are:
+
+        (i,j) -4
+        (i+1,j) 1
+        (i-1,j) 1
+        (i,j+1) 1
+
+        ...divided by dx*dy.
+
+        my_neighbours: function which returns the element object of a neighbour of the
+                       current element, e.g. my_neighbours(0,0) gibts the current element,
+                       my_neighbours(1,0) the one under it etc.
+        """
         neighbours=[my_neighbours(0,0),my_neighbours(1,0),my_neighbours(-1,0),my_neighbours(0,1),my_neighbours(0,-1)]
         denominator=self.dx*self.dy
         return [x for x in [(neighbours[0],-4./denominator),
@@ -202,6 +266,11 @@ class Laplacian2D2ndOrder(FiniteDifferenceOperator):
         ]
     
 class Rectangle:
+    """
+    Rectangle describes a rectangular geometry/grid, containing of mxn elements.
+    It goes through all its element objects and creates the matrices and inhomogeneities,
+    according to the geometry and the boundary conditions, described in the elements.
+    """
     elementlist=0
     finitedifference_operator=0
     m=0
@@ -211,78 +280,23 @@ class Rectangle:
     
     def __init__(self,m,n,epsilon,finitedifference_operator,fermi_energy_charge_dependence=None):
         """
-        rectnr: Unique number of the rectangle.
         m: Number of rows
         n: Number of columns
-        epsilon: Relative dielectricity constant
+        epsilon: Relative dielectric constant
+        finitedifference_operator: The operator of the differential equation.
         fermi_energy_charge_dependence: How the fermi energy of the material depends on the charge. Default is None.
                                         Mind that this setting assumes that the element is in a homogeneous environment.
         """
         self.m=m
         self.n=n
         self.elementlist=[Element(self,i,j,epsilon=epsilon,fermi_energy_charge_dependence=fermi_energy_charge_dependence) for i in range(m) for j in range(n)]
-        self.finitedifference_operator=finitedifference_operator
-        #self.connected_rectangles={}
-        #self.connected_rectangles[self]=[0,0]
-        
+        self.finitedifference_operator=finitedifference_operator   
     
-    """def connect(self,other_rect,align='top',position='right',offset=(0,0),viceversa=False):
-        
-        align: How the other rectangle is aligned relative to the current one.
-               Possible values are 'top','bottom','left' and 'right'.
-        position: Position of the other rectangle relative to the current one.
-               Possible values are 'top','bottom','left' and 'right'.
-        offset: offset vector in lattice units, starting from the position given by align and position
-        viceversa: equally connect other rectangle automatically. Default is false.
 
-        Examples: align='top',position='right': the tops of the rectangles will be aligned, and the other
-                  rectangle is right of the current one.
-                  align='right',position='bottom': the right sides of the rectangles will be aligned,
-                  and the other rectangle is below the current one.
-
-        align='top' or 'bottom' have to be combined with position='right' or 'left' and vice versa!
-        
-        totaloffset=[0,0]
-        if align=='top':
-            totaloffset[0]=0
-        if align=='bottom':
-            totaloffset[0]=self.m-other_rect.m
-        if align=='left':
-            totaloffset[1]=0
-        if align=='right':
-            totaloffset[1]=self.n-other_rect.n
-        if position=='top':
-            totaloffset[0]=-other_rect.m
-        if position=='bottom':
-            totaloffset[0]=self.m
-        if position=='left':
-            totaloffset[1]=-other_rect.n
-        if position=='right':
-            totaloffset[1]=self.n
-            
-        totaloffset[0]+=offset[0]
-        totaloffset[1]+=offset[1]
-            
-        self.connected_rectangles[other_rect]=totaloffset
-        
-        if viceversa:
-            if position=='top':
-                other_position='bottom'
-            if position=='bottom':
-                other_position='top'
-            if position=='left':
-                other_position='right'
-            if position=='right':
-                other_position='left'                
-            
-            other_offset=-offset[0],-offset[1]
-            other_rect.connect(self,align=align,position=other_position,offset=other_offset,viceversa=False)        
-    """
     def neighbour(self,i,j,di,dj):
         """
         Given coordinates i,j, find out who the neighbour in di,dj direction is.
-        """
-        
+        """        
         if i+di>=0 and i+di<self.m and j+dj>=0 and j+dj<self.n:
             return self[i+di,j+dj]
         else:
@@ -293,6 +307,10 @@ class Rectangle:
             return None
         
     def pos_to_index(self,i,j):
+        """
+        Calculate the index of an element at a given position (i,j).
+        The index is a number running from top to bottom, from left to right.
+        """
         if i<self.m and j<self.n:
             return self.n*i+j
         else:
@@ -308,6 +326,12 @@ class Rectangle:
         return self.elementlist[self.pos_to_index(x[0],x[1])]
 
     def creatematrices(self):
+        """
+        Create matrices. The rectangle may be connected with other
+        rectangles (the Container class takes care of that).
+        The function creates the matrices for the interaction with itself
+        and with every other rectangle it is connected to.
+        """
         matrices={}
         inhomogeneity=numpy.zeros(len(self.elementlist))
         for other_rect in self.container.rectangle_connections[self].keys():
@@ -326,6 +350,9 @@ class Rectangle:
         return matrices,inhomogeneity
     
     def createinhomogeneity(self):
+        """
+        Create the inhomogeneity.
+        """
         inhomogeneity=numpy.zeros(len(self.elementlist))
         for element in self.elementlist:
             inhom=element.inhomogeneity()
@@ -333,13 +360,15 @@ class Rectangle:
         return inhomogeneity
     
 class PeriodicContainer:
+    """
+    Contains a single rectangle which is periodically repeated in one direction.
+    (by placing copies of itself next to it).
+    """
     rectangle_list=None
     rectangle_connections=None
     
     def __init__(self,rectangle,mode='x'):
         """
-        Contains a single rectangle which is periodically repeated
-        (by placing copies of itself next to it).
         rectangle: The rectangle to repeat.
         mode: 'x': The rectangle is repeated in x direction only (default).
               'y': The rectangle is repeated in y direction only.
@@ -378,6 +407,10 @@ class PeriodicContainer:
         return nrrange        
         
     def creatematrix(self):
+        """
+        Create matrix for the whole container. The solution of the differential
+        equation 
+        """
         matrixarray={}
         inhomarray={}
         for rec in self.rectangle_list:
@@ -387,6 +420,11 @@ class PeriodicContainer:
         return supermatrix,inhomogeneity
     
     def createinhomogeneity(self):
+        """
+        Create inhomogeneity for the whole container.
+        You can change the boundary condition values (e.g. different voltage) and create
+        the new inhomogeneity.
+        """
         return numpy.concatenate([rec.createinhomogeneity() for rec in self.rectangle_list])  
     
     def vector_to_picture(self,vec):
@@ -431,8 +469,10 @@ class PeriodicContainer:
         return datamatrix,extent
     
     def simple_plot(self,vec):
-        
-        fig=pylab.figure()
+        """
+        Create a simple plot of the solution.
+        """
+        fig=figure()
         ax = fig.gca()
         
         datamatrix,extent=self.vector_to_picture(vec)
@@ -440,7 +480,9 @@ class PeriodicContainer:
         fig.colorbar(pl, shrink=0.9, aspect=3)
         
     def solve_and_plot(self):
-        
+        """
+        Solve the system and create a simple plot.        
+        """
         solve,inhom=self.lu_solver()
         
         x=solve(inhom)
@@ -451,7 +493,7 @@ class PeriodicContainer:
         vec: Solution vector to apply the operator onto.
         finitedifference_operator: The operator.
         elements: Specific elements to apply the operator onto. If None, it is applied
-                  to all elements
+                  to all elements.
 
         If the operator includes points which are not within the calculated area
         (=rectangle + those connected to it), they are implicitly assumed to be zero.
@@ -467,7 +509,6 @@ class PeriodicContainer:
                 elements+=rect.elementlist
                 
         rectangle_elementnumbers_range=self.rectangle_elementnumbers_range()
-        
                 
         def apply(pure_operator):
             r=0
@@ -479,6 +520,10 @@ class PeriodicContainer:
         return result
     
     def charge(self,vec,finitedifference_operator,elements=None):
+        """
+        Calculate the charge with a given operator.
+        This is a wrapper for apply_operator() which additionally multiplies with \epsilon_0.
+        """
         return self.apply_operator(vec,finitedifference_operator,elements)*Constants.epsilon0
         
         
@@ -504,11 +549,19 @@ class PeriodicContainer:
 ###########################################################################
 
 class Container:
+    """
+    Container contains one or more rectangles and is responsible for gathering
+    the submatrices and sub-inhomogeneities created by the Rectangle objects,
+    putting them into one matrix/vector and solving the system.
+    """
     rectangle_list=0
     rectangle_connections=0
     
     def connect(self,rect,other_rect,align='top',position='right',offset=(0,0),viceversa=True):
         """
+        The connect function sets the relationship of one rectangle in the container to an other
+        rectangle.
+
         align: How the other rectangle is aligned relative to the first rectangle.
                Possible values are 'top','bottom','left' and 'right'.
         position: Position of the other rectangle relative to the first rectangle.
@@ -560,6 +613,11 @@ class Container:
             self.connect(other_rect,rect,align=align,position=other_position,offset=other_offset,viceversa=False)        
 
     def __init__(self,rectangle_list):
+        """ 
+        rectangle_list: List of rectangles participating in the calculation.
+
+        Invoke connect() afterwards to set the connection between the rectangles.
+        """
         self.rectangle_list=list(rectangle_list)
         
         self.rectangle_connections=collections.defaultdict(collections.defaultdict)
@@ -568,6 +626,9 @@ class Container:
             rect.container=self
     
     def add_rectangle(self,rect):
+        """
+        Add an additional rectangle.
+        """
         self.rectangle_list.append(rect)
         self.rectangle_connections[rect][rect]=[[0,0]]
         rect.container=self
@@ -581,6 +642,9 @@ class Container:
         return nrrange        
         
     def creatematrix(self):
+        """
+        Create matrix for the whole container.
+        """
         matrixarray={}
         inhomarray={}
         for rec in self.rectangle_list:
@@ -590,6 +654,11 @@ class Container:
         return supermatrix,inhomogeneity
     
     def createinhomogeneity(self):
+        """
+        Create inhomogeneity for the whole container.
+        You can change the boundary condition values (e.g. different voltage) and create
+        the new inhomogeneity.
+        """
         return numpy.concatenate([rec.createinhomogeneity() for rec in self.rectangle_list])  
     
     def vector_to_picture(self,vec):
@@ -634,7 +703,9 @@ class Container:
         return datamatrix,extent
     
     def simple_plot(self,vec):
-        
+        """
+        Create a simple plot of the solution.
+        """
         fig=figure()
         ax = fig.gca()
         
@@ -643,7 +714,9 @@ class Container:
         fig.colorbar(pl, shrink=0.9, aspect=3)
         
     def solve_and_plot(self):
-        
+        """
+        Solve the system and create a simple plot.
+        """        
         solve,inhom=self.lu_solver()
         
         x=solve(inhom)
@@ -654,7 +727,7 @@ class Container:
         vec: Solution vector to apply the operator onto.
         finitedifference_operator: The operator.
         elements: Specific elements to apply the operator onto. If None, it is applied
-                  to all elements
+                  to all elements.
 
         If the operator includes points which are not within the calculated area
         (=rectangle + those connected to it), they are implicitly assumed to be zero.
@@ -681,6 +754,10 @@ class Container:
         return result
     
     def charge(self,vec,finitedifference_operator,elements=None):
+        """
+        Calculate the charge with a given operator.
+        This is a wrapper for apply_operator() which additionally multiplies with \epsilon_0.
+        """
         return self.apply_operator(vec,finitedifference_operator,elements)*Constants.epsilon0
         
         

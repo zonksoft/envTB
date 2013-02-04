@@ -131,5 +131,5 @@ def LoopQuantumCapacitanceWithSidegatesFixedSystem(sidegatevoltages,grapheneside
     return voltages,parameters,capacitancequantumlist
 
 def CalcSidegateSaveToFile(sidegatevoltage,graphenesidegate_behavior='metal'):
-    voltages,parameters,capacitancequantumlist=QuantumCapacitanceWithSidegates((sidegatevoltage,),graphenesidegate_behavior)
+    voltages,parameters,capacitancequantumlist=LoopQuantumCapacitanceWithSidegatesFixedSystem((sidegatevoltage,),graphenesidegate_behavior)
     numpy.savetxt("qc"+str(sidegatevoltage)+".txt",capacitancequantumlist[0])
