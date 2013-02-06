@@ -264,6 +264,16 @@ def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output):
     numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
 
 def SimpleElectrostaticProblem():
+    """
+    Calculates the electrostatic potential of a 1D stripe of 1nm width and 30 nm height
+    with a gridsize of 1 nm. At 11 nm, the potential is fixed to 8V.
+
+    Boundary conditions:
+
+    * left, right: Periodic boundary conditions (using PeriodicContainer).
+    * top: Neumann boundary condition, slope=1e18
+    * bottom: Dirichlet boundary condition, potential=0 (default boundary condition)
+    """
     breite=1
     hoehe=30
     gridsize=1e-9
@@ -275,10 +285,18 @@ def SimpleElectrostaticProblem():
     cont=electrostatics.PeriodicContainer(rect,'y')
     solver,inhomogeneity=cont.lu_solver()
     sol=solver(inhomogeneity)
-    plot(sol)
+    pylab.plot(sol)
     print sol
 
 def PotentialOfGluedRectangles2D():
+    """
+    Two rectangles with capacitor plates, glued together with Container.
+    There are four capacitor plates. The boundary conditions
+    are the default BC.    
+
+    The relative position of the two rectangles to each other is given by the parameters
+    position and offset of the connect() function (see documentation).
+    """
     lapl=electrostatics.Laplacian2D2ndOrder(1,1)
     breite=400
     hoehe=200
@@ -306,9 +324,17 @@ def PotentialOfGluedRectangles2D():
 
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
-    imshow(container.vector_to_picture(sol)[0])
+    pylab.imshow(container.vector_to_picture(sol)[0])
 
 def PotentialOfSimpleConductor2D():
+    """
+    Rectangle with 5V conducting plate at the bottom.
+
+    Boundary conditions:
+    
+    * Left, right, top: default boundary condition 0V
+    * bottom: Dirichlet BC, 5V
+    """
     lapl=electrostatics.Laplacian2D2ndOrderWithMaterials(1e-9,1e-9)
     breite=400
     hoehe=600
@@ -324,9 +350,20 @@ def PotentialOfSimpleConductor2D():
     container=electrostatics.Container((rechteck,))
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
-    imshow(container.vector_to_picture(sol)[0])
+    pylab.imshow(container.vector_to_picture(sol)[0])
 
 def GrapheneQuantumCapacitance():
+    """
+    Calculate the quantum capacitance of Graphene on SiO2, including temperature.
+    
+    Boundary conditions:
+
+    * left, right: periodic BC
+    * top: Neumann BC, slope=0
+    * bottom: backgate capacitor plate
+
+    TODO: expand documentation :)
+    """
     gridsize=1e-9
     hoehe=600
     breite=1
