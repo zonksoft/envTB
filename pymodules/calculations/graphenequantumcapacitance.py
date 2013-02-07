@@ -108,6 +108,38 @@ def QuantumCapacityOfGraphene2DModelWithSidegates(hoehe,breite,graphenepos,graph
     return voltages[1:-1],capacitance_list
 
 def LoopQuantumCapacitanceWithSidegatesFixedSystem(sidegatevoltages,graphenesidegate_behavior='metal'):
+    """
+    The function calculates the quantum capacitance of a GNR, embedded in the
+    following system:
+    
+    * height: 600nm
+    * width: 400nm
+    * gridsize: 1nm
+    * GNR + sidegate vertical position: 300nm
+    * GNR horizontal position: centered
+    * GNR width: 80nm
+    * distance sidegate-GNR: 30nm
+    * backgate position: bottom
+    * material between backgate + GNR/sidegates: SiO2, \epsilon=3.9
+    * left/right boundary condition: periodic
+    * top BC: neumann, slope=0
+    
+    The backgate voltage is varied from -60V to 60V in 0.5V.
+    
+    sidegatevoltages: A list of side gate voltages which will be calculated
+                      symmetrically and asymetrically.
+    graphenesidegate_behaviour: can have the values 'metal' and 'graphene',
+                      the sidegates will behave accordingly.
+                      
+    Return:
+    
+    voltages: the voltages where 
+            the charge was calculated.              
+    parameters: list of graphene 
+                widths and sidegate voltages
+    capacitancequantumlist: list of 
+                            capacitances. 
+    """
     capacitancequantumlist=[]
     voltages=None
     parameters=[]

@@ -33,17 +33,25 @@ class Element:
     It supplies a function matrixelements() which, given an operator, returns the matrix  
     elements of the element to its neighbours and the inhomogeneity of the element.
     """
+    #: Row index of Element
     i=0
+    #: Column index of Element
     j=0
     rect=0
     __matrixelements=0
     __inhomogeneity=0
     __inhomogeneityelements=0
+    #: Electrostatic potential of Element 
     potential=0
+    #: Charge of element
     charge=0
+    #: Dependence of Fermi energy on charge
     fermi_energy_charge_dependence=0
+    #: Electrochemical potential of Element
     fermi_energy=0
+    #: Dielectric constant of Element
     epsilon=0
+    #: Neumann boundary condition of Element
     neumannbc=None
     
     def __init__(self,rect,i,j,potential=None,charge=0,epsilon=1,fermi_energy_charge_dependence=None,fermi_energy=None,neumannbc=None):
