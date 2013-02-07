@@ -262,6 +262,36 @@ def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output):
     ham4.plot_bandstructure(path,output,'d')
     data=ham4.bandstructure_data(path, 'd')
     numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
+    
+def PlotGraphenenthNNBandstructure(nnfile,outfile):
+    """
+    Plot bandstructure of Graphene along the default hexagonal path.
+
+    nnfile: path to the nearest neighbour parameter file, e.g.
+            /path/to/envtb/exampledata/02_graphene_3rdnn/graphene3rdnnlist.dat
+    outfile: plot image output path, e.g. /tmp/bandstructure.png
+    """
+    
+    ham=w90hamiltonian.Hamiltonian.from_nth_nn_list(nnfile)
+    path=ham.standard_paths('hexagonal',100)[2]
+    ham.plot_bandstructure(path,outfile,'d')    
+
+def PlotGrapheneWannierBandstructure(wannier90hr_graphene,poscarfile,wannier90woutfile,outfile):
+    """
+    Plot bandstructure of Graphene along the default hexagonal path from
+    Wannier90 data. 
+    You can use the files in /path/to/envtb/exampledata/01_graphene_vasp_wannier90
+
+    wannier90hr_graphene: path to the wannier90_hr.dat file containing the 
+                          graphene bulk calculation
+    poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+    wannier90woutfile: path to the wannier90.wout file
+    output: path to the output image file.
+    """
+    
+    ham=w90hamiltonian.Hamiltonian.from_file(wannier90hr_graphene,poscarfile,wannier90woutfile)
+    path=ham.standard_paths('hexagonal',100)[2]
+    ham.plot_bandstructure(path,outfile,'d')
 
 def SimpleElectrostaticProblem():
     """
@@ -286,6 +316,7 @@ def SimpleElectrostaticProblem():
     solver,inhomogeneity=cont.lu_solver()
     sol=solver(inhomogeneity)
     pylab.plot(sol)
+    pylab.show()
     print sol
 
 def PotentialOfGluedRectangles2D():
@@ -325,6 +356,7 @@ def PotentialOfGluedRectangles2D():
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
     pylab.imshow(container.vector_to_picture(sol)[0])
+    pylab.show()
 
 def PotentialOfSimpleConductor2D():
     """
@@ -351,6 +383,7 @@ def PotentialOfSimpleConductor2D():
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
     pylab.imshow(container.vector_to_picture(sol)[0])
+    pylab.show()
 
 def GrapheneQuantumCapacitance():
     """
@@ -362,8 +395,9 @@ def GrapheneQuantumCapacitance():
     * top: Neumann BC, slope=0
     * bottom: backgate capacitor plate
 
-    TODO: expand documentation :)
+    Please read the code comments for further documentation.
     """
+    #Set system parameters
     gridsize=1e-9
     hoehe=600
     breite=1
@@ -375,55 +409,79 @@ def GrapheneQuantumCapacitance():
     vstart=-60
     vend=60
     dv=0.5
-
+  
+    #Finite difference operator
     lapl=electrostatics.Laplacian2D2ndOrderWithMaterials(gridsize,gridsize)
+    #Create Rectangle
     periodicrect=electrostatics.Rectangle(hoehe,breite,1.,lapl)
     
+    #Set boundary condition at the top
     for y in range(breite):
         periodicrect[0,y].neumannbc=(0,'xf')
-            
+    
+    #Create list of backgate and GNR elements        
     backgateelements=[periodicrect[hoehe-1,y] for y in range(breite)]
     grapheneelements=[periodicrect[graphenepos,y] for y in range(breite)]
     
+    #Set initial backgate element boundary condition (not necessary)
     for element in backgateelements:
         element.potential=backgatevoltage
         
+    #Create D(E,T) function    
     Ef_dependence_function=quantumcapacitance.BulkGrapheneWithTemperature(temperature,gridsize).Ef_interp
     
+    #Set electrochemical potential and D(E,T) for the GNR elements
     for element in grapheneelements:
         element.potential=0
         element.fermi_energy=0
         element.fermi_energy_charge_dependence=Ef_dependence_function
 
+    #Set dielectric material
     for x in range(graphenepos,hoehe):
         for y in range(breite):
             periodicrect[x,y].epsilon=sio2
-        
+    
+    #Create periodic container    
     percont=electrostatics.PeriodicContainer(periodicrect,'y')
+    
+    #Invert discretization matrix
     solver,inhomogeneity=percont.lu_solver()
     
+    #Create QuantumCapacitanceSolver object
     qcsolver=quantumcapacitance.QuantumCapacitanceSolver(percont,solver,grapheneelements,lapl)
+    
+    #Refresh basisvectors for calculation. Necessary once at the beginning.
     qcsolver.refresh_basisvecs()
     
+    #Create volgate list
     voltages=numpy.arange(vstart,vend,dv)
     
     charges=[]
-
+    
+    #Loop over voltages
     for v in voltages:
+        #Set backgate elements to voltage
         for elem in backgateelements:
             elem.potential=v
+        #Check change of environment
         qcsolver.refresh_environment_contrib()
+        #Solve quantum capacitance problem & set potential property of elements
         qcsolution=qcsolver.solve()
+        #Create new inhomogeneity because potential has changed
         inhom=percont.createinhomogeneity()
+        #Solve system with new inhomogeneity
         sol=solver(inhom)
+        #Save the charge configuration in the GNR
         charges.append(percont.charge(sol,lapl,grapheneelements))
-    
+    #Sum over charge and take derivative = capacitance
     totalcharge=numpy.array([sum(x) for x in charges])
     capacitance=(totalcharge[2:]-totalcharge[:-2])/len(grapheneelements)*gridsize/(2*dv)
 
+    #Plot result
     fig=pylab.figure()
     ax = fig.add_subplot(111)
     ax.set_title('Quantum capacitance of Graphene on SiO2')
     ax.set_xlabel('Backgate voltage [V]')
     ax.set_ylabel('GNR capacitance [$10^{-6} F/m^2$]')
     pylab.plot(voltages[1:-1],1e6*capacitance)
+    pylab.show()
