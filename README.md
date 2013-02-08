@@ -50,3 +50,4 @@ Requirements
   Easy, but lower performance:`sudo apt-get install python-numpy python-scipy`.
 * IPython (optional, but recommended): Download [setup](http://ipython.org/download.html) or install it
   using your package manager (e.g. `sudo apt-get install ipython` in Ubuntu)
+* matplotlib and sympy: `sudo apt-get install python-sympy python-matplotlib`.
