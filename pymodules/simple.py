@@ -355,7 +355,7 @@ def PotentialOfGluedRectangles2D():
 
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
-    pylab.imshow(container.vector_to_picture(sol)[0])
+    pylab.imshow(container.vector_to_datamatrix(sol)[0])
     pylab.show()
 
 def PotentialOfSimpleConductor2D():
@@ -382,7 +382,7 @@ def PotentialOfSimpleConductor2D():
     container=electrostatics.Container((rechteck,))
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
-    pylab.imshow(container.vector_to_picture(sol)[0])
+    pylab.imshow(container.vector_to_datamatrix(sol)[0])
     pylab.show()
 
 def GrapheneQuantumCapacitance():

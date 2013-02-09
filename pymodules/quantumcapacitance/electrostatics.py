@@ -15,7 +15,8 @@
 #TODO: Container und PeriodicContainer sollten gemergt und vererbt werden
 #TODO: zuerst     qcsolver.refresh_environment_contrib(), dann qcsolver.refresh_basisvecs(), sonst falsch - warum?? war nicht reproduzierbar. fkt besser dokumentieren
 #TODO: improve documentation of Laplacian2ndOrderWithMaterials
-
+#TODO: expand return value of vector_to_datamatrix with start vector and
+#      latticesize for interpolation  
 from .common import Constants
 import scipy.sparse
 import scipy.sparse.linalg
@@ -435,7 +436,7 @@ class PeriodicContainer:
         """
         return numpy.concatenate([rec.createinhomogeneity() for rec in self.rectangle_list])  
     
-    def vector_to_picture(self,vec):
+    def vector_to_datamatrix(self,vec):
         """
         Creates a data matrix out of a solution vector of this system that can be plotted
         using imshow().
@@ -447,7 +448,7 @@ class PeriodicContainer:
         extent: Plot range parameter for imshow().
 
         Example:
-        datamatrix,extent = my_container.vector_to_picture(vec)
+        datamatrix,extent = my_container.vector_to_datamatrix(vec)
         imshow(data,extent=extent)
         """
         
@@ -483,7 +484,7 @@ class PeriodicContainer:
         fig=figure()
         ax = fig.gca()
         
-        datamatrix,extent=self.vector_to_picture(vec)
+        datamatrix,extent=self.vector_to_datamatrix(vec)
         pl=ax.imshow(datamatrix,extent=extent)
         fig.colorbar(pl, shrink=0.9, aspect=3)
         
@@ -534,6 +535,18 @@ class PeriodicContainer:
         """
         return self.apply_operator(vec,finitedifference_operator,elements)*Constants.epsilon0
         
+    def get_values_at_elements(self,vec,elements):
+        """
+        Get values of given elements in solution vector.
+        
+        vec: solution vector
+        elements: list of elements to get the solution at
+        """
+        
+        rectangle_elementnumbers_range=self.rectangle_elementnumbers_range()
+        
+        return [vec[elem.index()+rectangle_elementnumbers_range[elem.rect][0]] 
+         for elem in elements]
         
     def lu_solver(self):
         """
@@ -669,10 +682,10 @@ class Container:
         """
         return numpy.concatenate([rec.createinhomogeneity() for rec in self.rectangle_list])  
     
-    def vector_to_picture(self,vec):
+    def vector_to_datamatrix(self,vec):
         """
         Creates a data matrix out of a solution vector of this system that can be plotted
-        using imshow().
+        using imshow() or used for export.
 
         vec: Vector that is a solution for this system.
 
@@ -681,7 +694,7 @@ class Container:
         extent: Plot range parameter for imshow().
 
         Example:
-        datamatrix,extent = my_container.vector_to_picture(vec)
+        datamatrix,extent = my_container.vector_to_datamatrix(vec)
         imshow(data,extent=extent)
         """
         
@@ -714,10 +727,10 @@ class Container:
         """
         Create a simple plot of the solution.
         """
-        fig=figure()
+        fig=pylab.figure()
         ax = fig.gca()
         
-        datamatrix,extent=self.vector_to_picture(vec)
+        datamatrix,extent=self.vector_to_datamatrix(vec)
         pl=ax.imshow(datamatrix,extent=extent)
         fig.colorbar(pl, shrink=0.9, aspect=3)
         

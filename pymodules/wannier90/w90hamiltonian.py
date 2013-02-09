@@ -21,7 +21,8 @@ class Hamiltonian:
     TODO: REFACTOR REFACTOR REFACTOR
     TODO: sparse matrices: http://docs.scipy.org/doc/scipy/reference/sparse.html, 
           http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs
-
+    TODO: plots konsistenter zur aussenwelt machen, dh steuerung von aussen erlauben (mehrere
+          plots uebereinander, nebeneinander etc.
     """
     
     __unitcellmatrixblocks=[]
@@ -442,13 +443,14 @@ class Hamiltonian:
         
         return pos
         
-    def plot_vector(self,vector,scale=1,figsize=(40,1)):
+    def plot_vector(self,vector,scale=1,figsize=None):
         """
         Plot a vector with geometry by putting circles on the positions of the orbitals.
         The size of the circles corresponds to the absolute square, the color to the sign.
         
         vector: vector to plot
         scale: scale factor for the circles.
+        figsize: w,h tuple in inches
         """
         
         pyplot.figure(figsize=figsize)
@@ -456,6 +458,13 @@ class Hamiltonian:
         colors=['r' if x>0 else 'b' for x in vector]
         pos=numpy.array(self.__orbitalpositions)
         pyplot.scatter(pos[:,0],pos[:,1],scale*numpy.abs(vector)**2,c=colors,edgecolors='none')
+        
+    def plot_orbital_positions(self):
+        """
+        Plot the positions of the orbitals in the unit cell.
+        """
+        
+        self.plot_vector(10*numpy.ones(len(self.__orbitalpositions)))
     
     def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all',usedorbitals='all',parallelmethod=None,parallelthreads=4):
         """
