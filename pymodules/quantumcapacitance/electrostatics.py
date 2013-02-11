@@ -503,14 +503,14 @@ class PeriodicContainer:
         vec: Solution vector to apply the operator onto.
         finitedifference_operator: The operator.
         elements: Specific elements to apply the operator onto. If None, it is applied
-                  to all elements.
+        to all elements.
 
         If the operator includes points which are not within the calculated area
         (=rectangle + those connected to it), they are implicitly assumed to be zero.
 
         Return:
         result: Result of the operator on the vector. If elements=None (=all elements),
-                this can be plotted with simple_plot().
+        this can be plotted with simple_plot().
         """
         
         if elements==None:
@@ -523,7 +523,7 @@ class PeriodicContainer:
         def apply(pure_operator):
             r=0
             for elem,val in pure_operator:
-               r+=val*vec[elem.index()+rectangle_elementnumbers_range[elem.rect][0]]
+                r+=val*vec[elem.index()+rectangle_elementnumbers_range[elem.rect][0]]
             return r
         
         result = numpy.array([apply(elem.pure_operator(finitedifference_operator)) for elem in elements])
@@ -585,9 +585,9 @@ class Container:
         rectangle.
 
         align: How the other rectangle is aligned relative to the first rectangle.
-               Possible values are 'top','bottom','left' and 'right'.
+        Possible values are 'top','bottom','left' and 'right'.
         position: Position of the other rectangle relative to the first rectangle.
-               Possible values are 'top','bottom','left' and 'right'.
+        Possible values are 'top','bottom','left' and 'right'.
         offset: offset vector in lattice units, starting from the position given by align and position
         viceversa: equally connect other rectangle automatically. Default is True.
 
@@ -749,14 +749,14 @@ class Container:
         vec: Solution vector to apply the operator onto.
         finitedifference_operator: The operator.
         elements: Specific elements to apply the operator onto. If None, it is applied
-                  to all elements.
+        to all elements.
 
         If the operator includes points which are not within the calculated area
         (=rectangle + those connected to it), they are implicitly assumed to be zero.
 
         Return:
         result: Result of the operator on the vector. If elements=None (=all elements),
-                this can be plotted with simple_plot().
+        this can be plotted with simple_plot().
         """
         
         if elements==None:

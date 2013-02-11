@@ -268,7 +268,7 @@ def PlotGraphenenthNNBandstructure(nnfile,outfile):
     Plot bandstructure of Graphene along the default hexagonal path.
 
     nnfile: path to the nearest neighbour parameter file, e.g.
-            /path/to/envtb/exampledata/02_graphene_3rdnn/graphene3rdnnlist.dat
+    /path/to/envtb/exampledata/02_graphene_3rdnn/graphene3rdnnlist.dat
     outfile: plot image output path, e.g. /tmp/bandstructure.png
     """
     
@@ -283,7 +283,7 @@ def PlotGrapheneWannierBandstructure(wannier90hr_graphene,poscarfile,wannier90wo
     You can use the files in /path/to/envtb/exampledata/01_graphene_vasp_wannier90
 
     wannier90hr_graphene: path to the wannier90_hr.dat file containing the 
-                          graphene bulk calculation
+    graphene bulk calculation
     poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
     wannier90woutfile: path to the wannier90.wout file
     output: path to the output image file.
