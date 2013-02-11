@@ -1,0 +1,310 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Code examples &mdash; EnvTB 1 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="EnvTB 1 documentation" href="index.html" />
+    <link rel="next" title="Tight Binding" href="wannier90.html" />
+    <link rel="prev" title="Quantum capacitance" href="quantumcapacitance.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="wannier90.html" title="Tight Binding"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="quantumcapacitance.html" title="Quantum capacitance"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="code-examples">
+<h1>Code examples<a class="headerlink" href="#code-examples" title="Permalink to this headline">¶</a></h1>
+<p>The easiest way to start out is to look at examples.
+You can find them in the <tt class="docutils literal"><span class="pre">simple</span></tt> module. Run them by including it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">simple</span>
+<span class="n">simple</span><span class="o">.</span><span class="n">NameOfExample</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="electrostatics">
+<h2>Electrostatics<a class="headerlink" href="#electrostatics" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="simple.SimpleElectrostaticProblem">
+<tt class="descclassname">simple.</tt><tt class="descname">SimpleElectrostaticProblem</tt><big>(</big><big>)</big><a class="reference internal" href="modules/simple.html#SimpleElectrostaticProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.SimpleElectrostaticProblem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the electrostatic potential of a 1D stripe of 1nm width and 30 nm height
+with a gridsize of 1 nm. At 11 nm, the potential is fixed to 8V.</p>
+<p>Boundary conditions:</p>
+<ul class="simple">
+<li>left, right: Periodic boundary conditions (using PeriodicContainer).</li>
+<li>top: Neumann boundary condition, slope=1e18</li>
+<li>bottom: Dirichlet boundary condition, potential=0 (default boundary condition)</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="simple.PotentialOfSimpleConductor2D">
+<tt class="descclassname">simple.</tt><tt class="descname">PotentialOfSimpleConductor2D</tt><big>(</big><big>)</big><a class="reference internal" href="modules/simple.html#PotentialOfSimpleConductor2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.PotentialOfSimpleConductor2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rectangle with 5V conducting plate at the bottom.</p>
+<p>Boundary conditions:</p>
+<ul class="simple">
+<li>Left, right, top: default boundary condition 0V</li>
+<li>bottom: Dirichlet BC, 5V</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="simple.PotentialOfGluedRectangles2D">
+<tt class="descclassname">simple.</tt><tt class="descname">PotentialOfGluedRectangles2D</tt><big>(</big><big>)</big><a class="reference internal" href="modules/simple.html#PotentialOfGluedRectangles2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.PotentialOfGluedRectangles2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Two rectangles with capacitor plates, glued together with Container.
+There are four capacitor plates. The boundary conditions
+are the default BC.</p>
+<p>The relative position of the two rectangles to each other is given by the parameters
+position and offset of the connect() function (see documentation).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="quantum-capacitance">
+<h2>Quantum capacitance<a class="headerlink" href="#quantum-capacitance" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="simple.GrapheneQuantumCapacitance">
+<tt class="descclassname">simple.</tt><tt class="descname">GrapheneQuantumCapacitance</tt><big>(</big><big>)</big><a class="reference internal" href="modules/simple.html#GrapheneQuantumCapacitance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.GrapheneQuantumCapacitance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the quantum capacitance of Graphene on SiO2, including temperature.</p>
+<p>Boundary conditions:</p>
+<ul class="simple">
+<li>left, right: periodic BC</li>
+<li>top: Neumann BC, slope=0</li>
+<li>bottom: backgate capacitor plate</li>
+</ul>
+<p>Please read the code comments for further documentation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="calculations.graphenequantumcapacitance.LoopQuantumCapacitanceWithSidegatesFixedSystem">
+<tt class="descclassname">calculations.graphenequantumcapacitance.</tt><tt class="descname">LoopQuantumCapacitanceWithSidegatesFixedSystem</tt><big>(</big><em>sidegatevoltages</em>, <em>graphenesidegate_behavior='metal'</em><big>)</big><a class="reference internal" href="modules/calculations/graphenequantumcapacitance.html#LoopQuantumCapacitanceWithSidegatesFixedSystem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#calculations.graphenequantumcapacitance.LoopQuantumCapacitanceWithSidegatesFixedSystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function calculates the quantum capacitance of a GNR, embedded in the
+following system:</p>
+<ul class="simple">
+<li>height: 600nm</li>
+<li>width: 400nm</li>
+<li>gridsize: 1nm</li>
+<li>GNR + sidegate vertical position: 300nm</li>
+<li>GNR horizontal position: centered</li>
+<li>GNR width: 80nm</li>
+<li>distance sidegate-GNR: 30nm</li>
+<li>backgate position: bottom</li>
+<li>material between backgate + GNR/sidegates: SiO2, epsilon=3.9</li>
+<li>left/right boundary condition: periodic</li>
+<li>top BC: neumann, slope=0</li>
+</ul>
+<p>The backgate voltage is varied from -60V to 60V in 0.5V.</p>
+<dl class="docutils">
+<dt>sidegatevoltages: A list of side gate voltages which will be calculated</dt>
+<dd>symmetrically and asymetrically.</dd>
+<dt>graphenesidegate_behaviour: can have the values &#8216;metal&#8217; and &#8216;graphene&#8217;,</dt>
+<dd>the sidegates will behave accordingly.</dd>
+</dl>
+<p>Return:</p>
+<dl class="docutils">
+<dt>voltages: the voltages where </dt>
+<dd>the charge was calculated.</dd>
+<dt>parameters: list of graphene </dt>
+<dd>widths and sidegate voltages</dd>
+<dt>capacitancequantumlist: list of </dt>
+<dd>capacitances.</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="tight-binding">
+<h2>Tight-Binding<a class="headerlink" href="#tight-binding" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="simple.PlotGraphenenthNNBandstructure">
+<tt class="descclassname">simple.</tt><tt class="descname">PlotGraphenenthNNBandstructure</tt><big>(</big><em>nnfile</em>, <em>outfile</em><big>)</big><a class="reference internal" href="modules/simple.html#PlotGraphenenthNNBandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.PlotGraphenenthNNBandstructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot bandstructure of Graphene along the default hexagonal path.</p>
+<p>nnfile: path to the nearest neighbour parameter file, e.g.
+/path/to/envtb/exampledata/02_graphene_3rdnn/graphene3rdnnlist.dat
+outfile: plot image output path, e.g. /tmp/bandstructure.png</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simple.PlotGrapheneWannierBandstructure">
+<tt class="descclassname">simple.</tt><tt class="descname">PlotGrapheneWannierBandstructure</tt><big>(</big><em>wannier90hr_graphene</em>, <em>poscarfile</em>, <em>wannier90woutfile</em>, <em>outfile</em><big>)</big><a class="reference internal" href="modules/simple.html#PlotGrapheneWannierBandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.PlotGrapheneWannierBandstructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot bandstructure of Graphene along the default hexagonal path from
+Wannier90 data. 
+You can use the files in /path/to/envtb/exampledata/01_graphene_vasp_wannier90</p>
+<p>wannier90hr_graphene: path to the wannier90_hr.dat file containing the 
+graphene bulk calculation
+poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+wannier90woutfile: path to the wannier90.wout file
+output: path to the output image file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure">
+<tt class="descclassname">simple.</tt><tt class="descname">plot_zigzag_graphene_nanoribbon_pz_bandstructure</tt><big>(</big><em>wannier90hr_graphene</em>, <em>poscarfile</em>, <em>wannier90woutfile</em>, <em>width</em>, <em>output</em>, <em>usedhoppingcells_rings='all'</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_zigzag_graphene_nanoribbon_pz_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the pi bandstructure of a zigzag graphene nanoribbon based on a wannier90 calculation of
+bulk graphene. The pz orbitals have to be the first two orbitals in the wannier90 file.
+A .dat file with the bandstructure data is also saved as output.dat (each line representing one k-point).</p>
+<p>wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk
+calculation
+poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+width: width of the ribbon (number of rings).
+output: path to the output image file.
+usedhoppingcells_rings: If you don&#8217;t want to use all hopping parameters,
+you can set the number of &#8216;rings&#8217; surrounding the main cell here. If it is a list
+(e.g. range(5)), several plots are created.
+The default value is &#8216;all&#8217;.</p>
+<p>Return:
+Hamiltonian: the generated GNR Hamiltonian.
+data: bandstructure data.
+path: path through reciprocal space.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simple.plot_armchair_graphene_nanoribbon_pz_bandstructure">
+<tt class="descclassname">simple.</tt><tt class="descname">plot_armchair_graphene_nanoribbon_pz_bandstructure</tt><big>(</big><em>wannier90hr_graphene</em>, <em>poscarfile</em>, <em>wannier90woutfile</em>, <em>width</em>, <em>output</em>, <em>usedhoppingcells_rings='all'</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_armchair_graphene_nanoribbon_pz_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_armchair_graphene_nanoribbon_pz_bandstructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the pi bandstructure of an armchair graphene nanoribbon based on a wannier90 calculation of
+bulk graphene. The pz orbitals have to be the first two orbitals in the wannier90 file.
+In this example function, width is the number of rings in transversal direction. A .dat file with the bandstructure
+data is also saved as output.dat (each line representing one k-point).</p>
+<p>wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk
+calculation
+poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+width: width of the ribbon (number of rings). Must be an even number.
+output: path to the output image file.
+usedhoppingcells_rings: If you don&#8217;t want to use all hopping parameters,
+you can set the number of &#8216;rings&#8217; surrounding the main cell here. If it is a list
+(e.g. range(5)), several plots are created.
+The default value is &#8216;all&#8217;.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn">
+<tt class="descclassname">simple.</tt><tt class="descname">plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn</tt><big>(</big><em>nnfile</em>, <em>width</em>, <em>output</em>, <em>magnetic_B=0</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the pi bandstructure of a zigzag graphene nanoribbon based on a n-th nearest neighbour parameterization of
+bulk graphene. 
+A .dat file with the bandstructure data is also saved as output.dat (each line representing one k-point).</p>
+<p>nnfile: path to the nearest-neighbour input file (see example files)
+width: width of the ribbon (number of rings).
+output: path to the output image file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn">
+<tt class="descclassname">simple.</tt><tt class="descname">plot_armchair_graphene_nanoribbon_pz_bandstructure_nn</tt><big>(</big><em>nnfile</em>, <em>width</em>, <em>output</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_armchair_graphene_nanoribbon_pz_bandstructure_nn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the pi bandstructure of an armchair graphene nanoribbon based on a n-th nearest neighbour parameterization of
+bulk graphene. 
+In this example function, width is the number of rings in transversal direction. A .dat file with the bandstructure
+data is also saved as output.dat (each line representing one k-point).</p>
+<p>nnfile: path to the nearest-neighbour input file (see example files)
+width: width of the ribbon (number of rings). Must be an even number.
+output: path to the output image file.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Code examples</a><ul>
+<li><a class="reference internal" href="#electrostatics">Electrostatics</a></li>
+<li><a class="reference internal" href="#quantum-capacitance">Quantum capacitance</a></li>
+<li><a class="reference internal" href="#tight-binding">Tight-Binding</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="quantumcapacitance.html"
+                        title="previous chapter">Quantum capacitance</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="wannier90.html"
+                        title="next chapter">Tight Binding</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/simple.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="wannier90.html" title="Tight Binding"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="quantumcapacitance.html" title="Quantum capacitance"
+             >previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Rafael Reiter.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

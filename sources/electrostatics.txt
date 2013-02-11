@@ -1,0 +1,250 @@
+Electrostatics
+==============
+
+get_values_at_elements einbauen!!
+
+The electrostatics module can be used to solve the discretized material-dependent 
+Poisson equation for electrostatic problems in two dimensions.
+
+Introduction
+------------
+
+The classes form the following hierarchy:
+
+**element**
+  One grid point of the discretization. It can have many properties (potential, 
+  charge, boundary condition, Fermi energy...). If you supply an element with 
+  the discretization scheme (e.g. discretized version of the 2D Laplace 
+  operator), it will tell you which other elements are the corresponding 
+  neighbours. See the documentation :py:class:`.Element`.
+**rectangle**
+  a rectangular grid with m rows and n columns of elements, consisting of mxn 
+  elements. It collects all matrix elements and boundary conditions from its 
+  elements and creates the matrix and inhomogeneity. See the documentation 
+  :py:class:`.Rectangle`.
+**container**
+  a container can contain one or several rectangles which are glued together 
+  somehow. It's the only class that sees the "big picture". It can glue together
+  two rectangles, or it can glue the left side of a rectangle together with the
+  right side of the same rectangle, which creates periodic boundary conditions. 
+  It collects the matrices and inhomogeneities from the contained rectangles and
+  puts together an even bigger matrix. The container class also contains solving
+  and plotting routines. See the documentation :py:class:`.Container` and 
+  :py:class:`.PeriodicContainer`.
+
+The normal procedure looks like this:
+
+1. Create an operator/discretization scheme using 
+   :py:class:`~.Laplacian2D2ndOrderWithMaterials` with a gridsize of 1 nm: 
+   ``laplace=Laplacian2D2ndOrderWithMaterials(1e-9,1e-9)``
+2. Create a :py:class:`~.Rectangle` with dielectric constant 1: 
+   ``my_rectangle=rectangle(100,200,1.,laplace)``
+3. Set the boundary conditions by setting properties of :py:class:`~.Element`: 
+   ``my_rectangle[20,10].potential=10``
+4. Create a :py:class:`~.Container` which contains the rectangles: 
+   ``my_container=container((rectangle,))``
+5. Create the matrix and inhomogeneity and invert the matrix using 
+   :py:func:`Container.lu_solver <quantumcapacitance.electrostatics.Container.lu_solver>`: 
+   ``solver,inhomogeneity=my_container.lu_solver()``
+6. Solve system: ``solution=solver(inhomogeneity)``
+7. Plot solution using 
+   :py:func:`Container.vector_to_datamatrix <quantumcapacitance.electrostatics.Container.vector_to_datamatrix>`: 
+   ``imshow(my_container.vector_to_datamatrix(solution)[0])``
+
+If you want to go through different boundary conditions, you can create a new 
+inhomogeneity and use the same solver, because the matrix and the inverted matrix 
+stay the same:
+
+8. Set the boundary conditions by setting properties of 
+   :py:class:`~.Element`: ``my_rectangle[20,10].potential=5``
+9. Create new inhomogeneity using 
+   :py:func:`Container.createinhomogeneity <quantumcapacitance.electrostatics.Container.createinhomogeneity>`: 
+   inhomogeneity = ``inhom=my_container.createinhomogeneity()``
+10. Solve system: ``solution=solver(inhomogeneity)``
+11. Plot solution using 
+    :py:func:`Container.vector_to_datamatrix <quantumcapacitance.electrostatics.Container.vector_to_datamatrix>`: 
+    ``imshow(my_container.vector_to_datamatrix(solution)[0])``
+
+Repeat 8.-11. for all configurations. Of course, you can only reuse the solver 
+if the matrix actually stays the same (e.g. different voltages on capacitor 
+plates) , i.e. if you set the potential of an element which didn't have a fixed 
+potential before, you also have to recalculate the matrix and the inverse 
+(using lu_solver()).
+
+Note: the area surrounding the rectangle always has the potential 0. If you want 
+to set different potential boundary conditions, set the elements in your code.
+Also note: the first coordinate (x) goes down, the second coordinate (y) goes 
+right - the coordinate system is turned 90 degrees clockwise against the 
+"standard" coordinate system.
+
+The whole example, with meaningful boundary conditions::
+
+  from quantumcapacitance.electrostatics import *
+  
+  height=100
+  width=200
+  laplace=Laplacian2D2ndOrderWithMaterials(1e-9,1e-9)
+  dielectricity=1.
+  my_rectangle=Rectangle(height,width,dielectricity,laplace)
+  for x in range(height):
+    my_rectangle[x,0].potential=1
+    my_rectangle[x,width-1].potential=2
+  for y in range(width):
+    my_rectangle[0,y].potential=3
+    my_rectangle[height-1,y].potential=4      
+  my_container=Container((my_rectangle,))
+  solver,inhomogeneity=my_container.lu_solver()
+  solution=solver(inhomogeneity)
+  imshow(my_container.vector_to_datamatrix(solution)[0])
+  colorbar()
+  
+The output:
+
+.. image:: image/electrostatic_example.png
+
+That's how it's done! 
+
+How to set boundary conditions and other element properties
+-----------------------------------------------------------
+
+After creating a :py:class:`.Rectangle`, you can access its elements using the
+``[]`` operator. Use ``i`` and ``j`` as row and column index::
+
+  my_container[12,14].potential=10
+  
+You can set the following properties (also documented in the constructor of
+:py:class:`.Rectangle`:
+
+* **potential:** If potential is None, the element is a normal gridpoint.
+  Otherwise, the element has a fixed potential (i.e. a metal/a capacitor).
+* **charge:** charge of the element. Default is 0. If potential!=None, the charge value 
+  will be ignored (metal is not charged).
+* **epsilon:** Relative dielectrical constant.
+* **neumannbc:** The slope along x or y direction can be fixed, e.g. for a neumann boundary condition.
+  E.g. neumannbc=(14,'y') or neumannbc=(0,'x'). neumannbc and potential cannot be used
+  at the same time. Charge has to be 0 (=default value).
+  Values != 0 do not seem to work right (see comments).
+             
+Properties connected with quantum capacitance:
+
+* **fermi_energy:** If the Fermi energy depends on the number of charge carriers, the fermi energy (=applied voltage e.g. by a battery)
+  can be different from the electrostatic potential. fermi_energy_charge_dependence has to be defined in this case.
+  Then you can calculate the quantum capacitance of the system.
+  If fermi_energy_charge_dependence=None, then fermi_energy=potential.
+         
+* **fermi_energy_charge_dependence:** How the fermi energy of the material depends on the charge. Default is None.
+  Mind that this setting assumes that the element is in a homogeneous environment.
+
+Features of the container classes
+---------------------------------
+
+The container classes are responsible for
+
+* connecting :py:class:`Rectangles <.Rectangle>`
+* solving the system
+
+At the moment, there are two classes:
+
+* :py:class:`.Container`: glues several rectangles together. Use also if you
+  only have one rectangle. 
+* :py:class:`.PeriodicContainer`: glues together one side of the rectangle
+  with the opposite side of the same rectangle, thus creating periodic boundary
+  conditions.
+  
+Features of the container classes (besides gluing):
+
+* :py:meth:`.PeriodicContainer.lu_solver`: the most important function of
+  the container classes. It performs an LU decomposition and returns a solver
+  function that can be applied to several inhomogeneities (=different boundary
+  conditions).
+* :py:meth:`.PeriodicContainer.simple_plot`: Create a simple plot of an
+   existing solution for this system.
+* :py:meth:`.PeriodicContainer.solve_and_plot`: Solve the system with the 
+  current boundary conditions and plot.
+* :py:meth:`.PeriodicContainer.vector_to_datamatrix`: Create a "picture matrix"
+  of a given solution of the system (=a 2D representation of the solution
+  vector). You can use this to export the solution (e.g. for interpolation) 
+  or plot it using ``imshow()``.
+* :py:meth:`.PeriodicContainer.apply_operator`: Apply an operator to a solution
+  of the system and return the result.
+* :py:meth:`.PeriodicContainer.charge`: Calculate the charge density for a 
+  given solution.
+
+Create lists of elements for your convenience
+---------------------------------------------
+
+The boundary conditions of your system will be given by an arrangement of
+objects within the calculation area. Using lists, you can very conveniently
+define those objects and then set the boundary conditions (also repeatedly)::
+
+  #Set parameters
+  height=100
+  width=50
+  dx=1e-9
+  
+  epsilon_SiO2=3.9
+  sidegate_voltage=5
+  backgate_voltages=numpy.arange(-5,5,0.5)
+  
+  #Create operator, rectangle and container
+  lapl=Laplacian2D2ndOrderWithMaterials(dx,dx)
+  my_rectangle=Rectangle(height,width,1.,lapl)
+  my_container=Container((my_rectangle,))
+  
+  #Define the sections using lists. Later on, we never have to use
+  #the explicit coordinates of the elements again.
+  backgate=[my_rectangle[height-1,y] for y in range(width)]            #<<<
+  sidegate=[my_rectangle[height/2,y] for y in range(width/2-5)]        #<<<
+  topgate=[my_rectangle[height/2,y] for y in range(width/2,width)]     #<<<
+  dielectric_medium=[my_rectangle[x,y] for x in range(height/2,height) #<<<
+                                       for y in range(width)]          #<<<
+  
+  #Set the boundary conditions
+  
+  for element in sidegate:                                             #<<<
+      element.potential=sidegate_voltage                               #<<<
+      
+  for element in dielectric_medium:                                    #<<<
+      element.epsilon=epsilon_SiO2                                     #<<<
+      
+  #Although you will change that value later, you have to set it before
+  #you calculate the LU decomposition so that the element knows that it
+  #has a Dirichlet boundary condition.
+  for element in backgate:
+      element.potential=0
+      
+  #Solve system.
+  solve,inhom=my_container.lu_solver()
+      
+  result_charges=[]
+      
+  #Loop over backgate voltage
+  for backgate_voltage in backgate_voltages:
+      for element in backgate:                                         #<<<
+          element.potential=backgate_voltage                           #<<<
+          
+      #Solve system for this boundary condition.
+      inhom=my_container.create_inhomogeneity()
+      solution=solve(inhom)
+       
+      #Now, do something with the solution. We will save the charge
+      #of the back- and topgate to a list.
+      topgate_charge=my_container.charge(solution,lapl,sidegate)       #<<<
+      backgate_charge=my_container.charge(solution,lapl,backgate)      #<<<
+      
+      result_charges.append((topgate_charge,backgate_charge))
+      
+  #...plot or export data...      
+      
+      
+  
+More examples
+-------------
+
+There are how-to examples in the :doc:`Simple <simple>` module - see :doc:`simple`.
+
+Code reference
+--------------
+
+.. automodule:: quantumcapacitance.electrostatics
+   :members:
