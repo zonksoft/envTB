@@ -23,6 +23,10 @@ class Hamiltonian:
           http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs
     TODO: plots konsistenter zur aussenwelt machen, dh steuerung von aussen erlauben (mehrere
           plots uebereinander, nebeneinander etc.
+    TODO: alles sparse + abgeleitete hamiltonians auf die alten verweisen,
+          nicht explizit schreiben
+    TODO: moeglichkeit zu einem output-logfile mit versionsnummer, zB
+          mit globaler variable LOG
     """
     
     __unitcellmatrixblocks=[]

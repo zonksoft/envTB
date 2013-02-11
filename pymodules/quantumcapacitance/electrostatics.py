@@ -17,10 +17,11 @@
 #TODO: improve documentation of Laplacian2ndOrderWithMaterials
 #TODO: expand return value of vector_to_datamatrix with start vector and
 #      latticesize for interpolation  
+#TODO; make the solution a class which has all the plot and export
+#      functions!!!!!11
+
 from .common import Constants
-import scipy.sparse
 import scipy.sparse.linalg
-import math
 import collections
 import numpy
 #import matplotlib
@@ -481,7 +482,7 @@ class PeriodicContainer:
         """
         Create a simple plot of the solution.
         """
-        fig=figure()
+        fig=pylab.figure()
         ax = fig.gca()
         
         datamatrix,extent=self.vector_to_datamatrix(vec)
@@ -768,7 +769,7 @@ class Container:
         def apply(pure_operator):
             r=0
             for elem,val in pure_operator:
-               r+=val*vec[elem.index()+rectangle_elementnumbers_range[elem.rect][0]]
+                r+=val*vec[elem.index()+rectangle_elementnumbers_range[elem.rect][0]]
             return r
         
         result = numpy.array([apply(elem.pure_operator(finitedifference_operator)) for elem in elements])

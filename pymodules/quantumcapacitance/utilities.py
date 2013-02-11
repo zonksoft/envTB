@@ -20,6 +20,8 @@ class LinearInterpolationNOGrid:
     
     Note: the gridpoints on the upper boundary in each direction 
     are not accessible by the interpolation function.
+    
+    Also note: Pay attention to the ordering of the ``func`` array.
     """
     
     #for higher performance, implement bilinear and linear 
