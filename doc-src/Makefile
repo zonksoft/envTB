@@ -17,7 +17,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
 gitup:
-	cd $(BUILDDIR)
+	cd $(BUILDDIR)/html
 	git add -A
 	git commit
 	git push https://github.com/zonksoft/envTB.git gh-pages
