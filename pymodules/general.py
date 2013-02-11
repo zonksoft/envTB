@@ -17,6 +17,7 @@ def split_by_empty_lines(data,ignorecomments=False):
     """
     
     blocks=[]
+    
     blank_line_found=True
     for line in data:
         if line!=[] and blank_line_found==True:
