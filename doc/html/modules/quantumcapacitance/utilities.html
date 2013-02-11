@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>quantumcapacitance.utilities &mdash; EnvTB 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="top" title="EnvTB 1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">EnvTB 1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for quantumcapacitance.utilities</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">scipy.linalg</span>
+
+<div class="viewcode-block" id="LinearInterpolationNOGrid"><a class="viewcode-back" href="../../utilities.html#quantumcapacitance.utilities.LinearInterpolationNOGrid">[docs]</a><span class="k">class</span> <span class="nc">LinearInterpolationNOGrid</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The class takes a function on a uniform, rectangular grid (with orthogonal or </span>
+<span class="sd">    non-orthogonal lattice vectors) and calculates the function at any point</span>
+<span class="sd">    using linear interpolation. It can be a 1D, 2D or 3D grid.</span>
+<span class="sd">    </span>
+<span class="sd">    See http://en.wikipedia.org/wiki/Trilinear_interpolation for the math.</span>
+<span class="sd">    </span>
+<span class="sd">    Usage::</span>
+<span class="sd">    </span>
+<span class="sd">      func=[[0,1],[2,3]]</span>
+<span class="sd">      start=[0,0]</span>
+<span class="sd">      latticevecs=[[1e-3,0],[0,1e-3]]</span>
+<span class="sd">      interp=LinearInterpolationNOGrid(func,latticevecs)</span>
+<span class="sd">      </span>
+<span class="sd">      f=interp(0.3,0.6)</span>
+<span class="sd">    </span>
+<span class="sd">    Note: the gridpoints on the upper boundary in each direction </span>
+<span class="sd">    are not accessible by the interpolation function.</span>
+<span class="sd">    </span>
+<span class="sd">    Also note: Pay attention to the ordering of the ``func`` array.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c">#for higher performance, implement bilinear and linear </span>
+    <span class="c">#interpolation, and extra functions for orthogonal grid</span>
+    
+    <span class="n">__dim</span><span class="o">=</span><span class="bp">None</span>
+    <span class="n">__func</span><span class="o">=</span><span class="bp">None</span>
+    <span class="n">__start</span><span class="o">=</span><span class="bp">None</span>
+    <span class="n">__latticevecs</span><span class="o">=</span><span class="bp">None</span>
+    <span class="n">__transformation_matrix</span><span class="o">=</span><span class="bp">None</span>
+    <span class="n">__default</span><span class="o">=</span><span class="bp">None</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">func</span><span class="p">,</span><span class="n">grid</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">start</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        func: multi-dimensional array containing the function</span>
+<span class="sd">              values (list or numpy.array) in a right-handed coordinate system</span>
+<span class="sd">              (e.g. x to the left, y up), with the indices in the same order </span>
+<span class="sd">              as the grid sizes/lattice vectors (i.e. if the lattice vectors</span>
+<span class="sd">              point in x,y and z direction, func will be called like </span>
+<span class="sd">              func[x,y,z])</span>
+<span class="sd">        start: the start point of the coordinate system given by latticevecs</span>
+<span class="sd">               (list or numpy.array). Default is None, which means that</span>
+<span class="sd">               the grid is starting at the coordinate origin.</span>
+<span class="sd">        grid: either 1) Lattice vectors (list or numpy.array)</span>
+<span class="sd">                     or 2) a number, which is the gridsize.</span>
+<span class="sd">                     Default is 1.</span>
+<span class="sd">        default: The function value of points outside the area.</span>
+<span class="sd">                 Default is None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c">#Convert lists to numpy.array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__default</span><span class="o">=</span><span class="n">default</span>
+        
+        <span class="k">if</span> <span class="n">start</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__start</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dim</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__start</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>  
+            
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">grid</span><span class="p">,(</span><span class="nb">int</span><span class="p">,</span><span class="nb">long</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span> <span class="c">#http://stackoverflow.com/a/3501408/1447622</span>
+            <span class="n">basisvecs</span><span class="o">=</span><span class="n">grid</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dim</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">basisvecs</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">__transformation_matrix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__calc_transformation_matrix</span><span class="p">(</span><span class="n">basisvecs</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">point</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The interpolation function can be called like::</span>
+<span class="sd">        </span>
+<span class="sd">            my_interp(1,2,3)</span>
+<span class="sd">            </span>
+<span class="sd">        as well as::</span>
+<span class="sd">        </span>
+<span class="sd">            my_interp([1,2,3])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">point</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">point</span><span class="o">=</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">grid_element</span><span class="p">,</span><span class="n">relative_coordinates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__find_position_in_no_grid</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        
+        <span class="n">f000</span><span class="o">=</span><span class="n">f001</span><span class="o">=</span><span class="n">f010</span><span class="o">=</span><span class="n">f011</span><span class="o">=</span><span class="n">f100</span><span class="o">=</span><span class="n">f101</span><span class="o">=</span><span class="n">f110</span><span class="o">=</span><span class="n">f111</span><span class="o">=</span><span class="mi">0</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">y</span><span class="o">=</span><span class="n">z</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dim</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">f000</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+                <span class="n">f100</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>   
+                <span class="n">x</span><span class="p">,</span><span class="o">=</span><span class="n">relative_coordinates</span>         
+            <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dim</span><span class="o">==</span><span class="mi">2</span><span class="p">):</span>
+                <span class="n">f000</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span>
+                <span class="n">f010</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="n">f100</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span>
+                <span class="n">f110</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])]</span> 
+                <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">relative_coordinates</span>            
+            <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dim</span><span class="o">==</span><span class="mi">3</span><span class="p">):</span>
+                <span class="n">f000</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span>
+                <span class="n">f001</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="n">f010</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span>
+                <span class="n">f011</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="n">f100</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span>
+                <span class="n">f101</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="n">f110</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span>
+                <span class="n">f111</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__func</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_element</span><span class="o">+</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="o">=</span><span class="n">relative_coordinates</span>
+                
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__trilinear_interpolation</span><span class="p">(</span><span class="n">f000</span><span class="p">,</span> <span class="n">f001</span><span class="p">,</span> <span class="n">f010</span><span class="p">,</span> <span class="n">f011</span><span class="p">,</span> 
+                                                  <span class="n">f100</span><span class="p">,</span> <span class="n">f101</span><span class="p">,</span> <span class="n">f110</span><span class="p">,</span> <span class="n">f111</span><span class="p">,</span> 
+                                                  <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> 
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__default</span>
+        
+    <span class="k">def</span> <span class="nf">__find_position_in_no_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">point</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Finds the grid element the point is in and its position in this</span>
+<span class="sd">        element in terms of the NO basis.</span>
+<span class="sd">        </span>
+<span class="sd">        point: The point (numpy.array)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">point_in_no_basis</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__transformation_matrix</span><span class="p">,</span>
+                                    <span class="p">(</span><span class="n">point</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">__start</span><span class="p">))</span>
+        
+        <span class="n">grid_element</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">point_in_no_basis</span><span class="p">)</span>
+        <span class="n">relative_coordinates</span><span class="o">=</span><span class="n">point_in_no_basis</span><span class="o">-</span><span class="n">grid_element</span>
+        
+        <span class="k">return</span> <span class="n">grid_element</span><span class="p">,</span><span class="n">relative_coordinates</span>
+            
+        
+    <span class="k">def</span> <span class="nf">__calc_transformation_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">basisvecs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate transformation matrix to find corresponding vector in the </span>
+<span class="sd">        NO basis for a vector in cartesian coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">return</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">basisvecs</span><span class="p">))</span>
+        
+    <span class="k">def</span> <span class="nf">__trilinear_interpolation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">f000</span><span class="p">,</span> <span class="n">f001</span><span class="p">,</span> <span class="n">f010</span><span class="p">,</span> <span class="n">f011</span><span class="p">,</span> <span class="n">f100</span><span class="p">,</span> <span class="n">f101</span><span class="p">,</span> 
+                                   <span class="n">f110</span><span class="p">,</span> <span class="n">f111</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">f111</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">z</span> <span class="o">+</span>
+                <span class="n">f110</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">z</span><span class="p">)</span> <span class="o">+</span>
+                <span class="n">f101</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="n">z</span> <span class="o">+</span>
+                <span class="n">f100</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">z</span><span class="p">)</span> <span class="o">+</span>
+                <span class="n">f011</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">z</span> <span class="o">+</span>
+                <span class="n">f010</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">z</span><span class="p">)</span> <span class="o">+</span>
+                <span class="n">f001</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="n">z</span> <span class="o">+</span>
+                <span class="n">f000</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">z</span><span class="p">))</span>
+        
+<div class="viewcode-block" id="LinearInterpolationNOGrid.map_function_to_points"><a class="viewcode-back" href="../../utilities.html#quantumcapacitance.utilities.LinearInterpolationNOGrid.map_function_to_points">[docs]</a>    <span class="k">def</span> <span class="nf">map_function_to_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">points</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return list of function values at given points.</span>
+<span class="sd">        </span>
+<span class="sd">        points: list of points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__call__</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">EnvTB 1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Rafael Reiter.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
