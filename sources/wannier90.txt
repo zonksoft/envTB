@@ -1,0 +1,239 @@
+Tight Binding
+=============
+
+WHERE CAN ONE CALCULATE AN EIGENVECTOR FOR USE IN THE PLOT AND EXPORT
+FUNCTIONS?
+
+Features
+--------
+
+The wannier90 module has the following features:
+
+1. Read output files from the 
+   `VASP <http://www.vasp.at/>`_ and `wannier90 <http://wannier.org>`_ program
+2. Read Slater-Koster nearest-neighbour parameter lists ("standard"
+   tight-binding, like 1st-nearest-neighbour approximation)
+3. Change or drop input parameters
+4. Create unit cells or supercells from input parameters
+5. Create finite structures (ribbons, dots) from input parameters
+6. Merge parameters from several input files (e.g. bulk & defect parameters)
+7. Calculate eigenvalue problems and bandstructures
+8. Apply magnetic field
+9. Plot eigenvectors (pseudo-real space representation - proper real space
+   representation using Wannier orbitals to come).
+10. Export or use any data easily
+   
+
+Load Hamiltonian parameters
+---------------------------
+
+The :py:class:`.Hamiltonian` class is the central class of the module. At the
+moment, it contains too many features and should be split.
+
+Anyway, after loading the parameters from a file, you have a Hamiltonian
+object which provides you with a lot of functions you can apply on the data.
+
+Load the module::
+
+  from wannier90.w90hamiltonian import Hamiltonian
+
+You can load data from a Slater-Koster nearest-neighbour parameter file::
+
+  ham=Hamiltonian.from_nth_nn_list("/path/to/nearestneighbourfile.dat")
+  
+Or from a wannier90 & VASP output::
+
+  ham=Hamiltonian.from_file(wannier90hr_graphene,poscarfile,wannier90woutfile)
+                                           
+You can find example data to play with in ``exampledata`` in the 
+envTB directory.
+
+Plot a bandstructure
+--------------------
+
+Before you can calculate a bandstructure, you need a path in the Brillouin 
+zone. The function :py:meth:`~.Hamiltonian.standard_paths` gives you the standard 
+paths for some common crystal structures::
+
+  path=ham.standard_paths('hexagonal',100)[2]
+  
+Alternatively, you can use :py:meth:`~.Hamiltonian.point_path` to create a path 
+between vertices you provide::
+
+  path = ham.point_path([[0,0,0],[0.5,0,0]],100)
+  
+Then, you can plot the bandstructure to a file::
+
+  ham.plot_bandstructure(path,'/tmp/myplot.png','d')
+  
+Or store the data in a variable and save it to a file::
+
+  data=ham.bandstructure_data(path, 'd')
+  numpy.savetxt('/tmp/bs.dat', numpy.real(data), fmt="%12.6G")
+  
+You can calculate the Bloch eigenvalues of a specific point using 
+:py:meth:`~.Hamiltonian.bloch_eigenvalues`.
+
+Modify the Hamiltonian
+----------------------
+
+After all, tight-binding is about using the parameters of the infinite crystal
+lattice for something different. The functions :py:meth:`~.Hamiltonian.create_supercell_hamiltonian` 
+and :py:meth:`~.Hamiltonian.create_modified_hamiltonian` (only a wrapper for the first function, 
+actually) give you that feature. 
+
+.. rubric:: Drop orbitals:
+
+If you can drop orbitals with a good conscience (e.g. the \sigma system
+of graphene), use::
+
+  new_ham=ham.create_modified_hamiltonian(usedorbitals=(0,1))
+  
+A new Hamiltonian called ``new_ham`` is created, where only the first two orbitals
+are used. ``new_ham`` has all the functionalities of the original Hamiltonian ham
+(plot bandstructure, calculate eigenvectors, modify once more).
+
+.. rubric:: Drop hopping parameters:
+
+If you create parameters with wannier90, you probably don't want to use all
+hopping parameters. If you only want to keep hopping parameters to a chosen
+set of neighbour unit cells, use the parameter ``usedhoppingcells``::
+
+
+  cells_to_keep=ham.unitcells_within_zone(2,'d',numpy.inf)
+  new_ham=ham.create_modified_hamiltonian(usedhoppingcells=cells_to_keep)
+  
+In this example, cells_to_keep contains all cells up to the second row
+of adjacent cells.
+
+.. rubric:: Create a supercell
+
+A supercell is a cell that contains of several copies of the original cell. It
+is defined by
+
+* the coordinates of the unit cell copies
+* the new lattice vectors.
+
+Both are given in the basis of the current lattice vectors.
+
+For example, the following command creates a rectangular unit cell consisting
+of two hexagonal unit cells::
+
+  new_ham=ham.create_supercell_hamiltonian(cellcoordinates=[[0,0,0],[1,0,0]],latticevecs=[[1,-1,0],[1,1,0],[0,0,1]])
+
+Plot cell diagram
+
+This command creates a hexagonal unit cell consisting of four smaller hexagonal
+cells. The lattice vectors are, obviously, twice as long as the current ones::
+
+  new_ham=ham.create_supercell_hamiltonian(cellcoordinates=[[0,0,0],[1,0,0],[0,1,0],[1,1,0]],latticevecs=[[2,0,0],[0,2,0],[0,0,1]])
+        
+Add cell diagram and bandstructure plot
+
+.. rubric:: Create a ribbon
+
+In the following example of a zigzag Graphene nanoribbon, one has to accomplish the
+following steps:
+
+1. Create a rectangular unit cell out of the hexagonal unit cell (see above)::
+
+     ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]])
+
+2. Create a ribbon unit cell which has the width of the ribbon::
+
+     ham3=ham2.create_supercell_hamiltonian([[0,i,0] for i in range(unitcells)],[[1,0,0],[0,unitcells,0],[0,0,1]])
+
+3. Remove all hoppings to neighbouring cells in y direction and drop the first 
+   and last orbital of the cell to make it a zigzag ribbon:: 
+     ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-1))
+  
+Plot BS, unit cell geometry and neighbour cell geometry
+
+.. rubric:: Shift energy
+
+Since it's convenient to have the Fermi energy at 0 eV, but DFT software doesn't
+automatically do that, you can shift the energy range::
+
+  new_ham=ham.create_modified_hamiltonian(energyshift=3.34)
+
+.. rubric:: Add magnetic field
+
+::
+
+  new_ham=ham.create_modified_hamiltonian(magnetic_B=1,gauge_B='landau_x')
+  
+Depending on the symmetry of the system, you have to choose the gauge (see
+the function documentation).
+
+Export modified Hamiltonian
+---------------------------
+
+blar
+
+Plot Wannier orbitals
+---------------------
+
+Es gibt doch irgendwo schon die lineare Interpolation und das Einlesen,
+oder?
+
+Plot electron density
+---------------------
+
+Add me, I'm pretty much the coolest feature, right?
+
+Mixins
+------
+
+blarblar tbc blar
+
+More examples
+-------------
+
+See Example section.
+
+More features
+-------------
+
+You can find more documentation about the methods when you click on their names.
+
+* :py:meth:`~.Hamiltonian.latticevectors`: lattice vectors of the system.
+* :py:meth:`~.Hamiltonian.reciprocal_latticevectors`: reciprocal lattice vectors
+  of the system.
+* :py:meth:`~.Hamiltonian.orbitalspreads`: orbital spreads (=sizes) of the
+  basis orbitals.
+* :py:meth:`~.Hamiltonian.orbitalpositions`: orbital positions of the basis
+  orbitals.
+* :py:meth:`~.Hamiltonian.maincell_eigenvalues`: calculate eigenvalues of the
+  main unit cell as if it were not in a periodic crystal. Use this to
+  calculate the spectrum of finite structures.
+* :py:meth:`~.Hamiltonian.bloch_eigenvalues`: calculate the eigenvalues for
+  a single vector ``k``.
+* :py:meth:`~.Hamiltonian.create_orbital_vector_list`: Concatenate the amplitudes
+  of a solution vector with information about their basis elements (coordinates,
+  spread). Use this if you want to export more information about the eigenvectors
+  than just the vector itself.
+* :py:meth:`~.Hamiltonian.plot_vector`: plot an eigenvector by putting circles
+  with a size proportional to the eigenvector amplitudes on the orbital positions.
+  The function doesn't use the real space probability density of the orbitals.
+* :py:meth:`~.Hamiltonian.unitcells_within_zone`: Returns a list of unit cells 
+  within a certain area. Use it e.g. if you want to drop hopping parameters.
+* :py:meth:`~.Hamiltonian.drop_dimension_from_cell_list`: Takes a list of unit 
+  cell coordinates and drops the x,y or/and z dimensionf rom the list - this way 
+  you can create a 2D material from a 3D material or a 1D material from a 2D 
+  material.
+* :py:meth:`~.Hamiltonian.standard_paths`: Create standard paths within the
+  Brillouin zones of the possible crystal lattices.
+* :py:meth:`~.Hamiltonian.unitcellcoordinates`:  Cartesian coordinates of the 
+  given unit cells.
+* :py:meth:`~.Hamiltonian.drawunitcells`: Plot the main cell and the cells
+  where there exist hopping matrix elements to.
+* :py:meth:`~.Hamiltonian.point_path`: Create a path between given points. Use
+  it to create a k-point path for the bandstructure.
+* :py:meth:`~.Hamiltonian.apply_electrostatic_potential`: Apply an
+  electrostatic potential.
+
+Code reference
+------------------
+
+.. automodule:: wannier90.w90hamiltonian
+   :members:

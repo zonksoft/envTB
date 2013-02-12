@@ -1,0 +1,783 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Electrostatics &mdash; EnvTB 1 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="EnvTB 1 documentation" href="index.html" />
+    <link rel="next" title="Quantum capacitance" href="quantumcapacitance.html" />
+    <link rel="prev" title="Welcome to EnvTB’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="quantumcapacitance.html" title="Quantum capacitance"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to EnvTB’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="electrostatics">
+<h1>Electrostatics<a class="headerlink" href="#electrostatics" title="Permalink to this headline">¶</a></h1>
+<p>get_values_at_elements einbauen!!</p>
+<p>The electrostatics module can be used to solve the discretized material-dependent
+Poisson equation for electrostatic problems in two dimensions.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The classes form the following hierarchy:</p>
+<dl class="docutils">
+<dt><strong>element</strong></dt>
+<dd>One grid point of the discretization. It can have many properties (potential,
+charge, boundary condition, Fermi energy...). If you supply an element with
+the discretization scheme (e.g. discretized version of the 2D Laplace
+operator), it will tell you which other elements are the corresponding
+neighbours. See the documentation <a class="reference internal" href="#quantumcapacitance.electrostatics.Element" title="quantumcapacitance.electrostatics.Element"><tt class="xref py py-class docutils literal"><span class="pre">Element</span></tt></a>.</dd>
+<dt><strong>rectangle</strong></dt>
+<dd>a rectangular grid with m rows and n columns of elements, consisting of mxn
+elements. It collects all matrix elements and boundary conditions from its
+elements and creates the matrix and inhomogeneity. See the documentation
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Rectangle" title="quantumcapacitance.electrostatics.Rectangle"><tt class="xref py py-class docutils literal"><span class="pre">Rectangle</span></tt></a>.</dd>
+<dt><strong>container</strong></dt>
+<dd>a container can contain one or several rectangles which are glued together
+somehow. It&#8217;s the only class that sees the &#8220;big picture&#8221;. It can glue together
+two rectangles, or it can glue the left side of a rectangle together with the
+right side of the same rectangle, which creates periodic boundary conditions.
+It collects the matrices and inhomogeneities from the contained rectangles and
+puts together an even bigger matrix. The container class also contains solving
+and plotting routines. See the documentation <a class="reference internal" href="#quantumcapacitance.electrostatics.Container" title="quantumcapacitance.electrostatics.Container"><tt class="xref py py-class docutils literal"><span class="pre">Container</span></tt></a> and
+<a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer" title="quantumcapacitance.electrostatics.PeriodicContainer"><tt class="xref py py-class docutils literal"><span class="pre">PeriodicContainer</span></tt></a>.</dd>
+</dl>
+<p>The normal procedure looks like this:</p>
+<ol class="arabic simple">
+<li>Create an operator/discretization scheme using
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Laplacian2D2ndOrderWithMaterials" title="quantumcapacitance.electrostatics.Laplacian2D2ndOrderWithMaterials"><tt class="xref py py-class docutils literal"><span class="pre">Laplacian2D2ndOrderWithMaterials</span></tt></a> with a gridsize of 1 nm:
+<tt class="docutils literal"><span class="pre">laplace=Laplacian2D2ndOrderWithMaterials(1e-9,1e-9)</span></tt></li>
+<li>Create a <a class="reference internal" href="#quantumcapacitance.electrostatics.Rectangle" title="quantumcapacitance.electrostatics.Rectangle"><tt class="xref py py-class docutils literal"><span class="pre">Rectangle</span></tt></a> with dielectric constant 1:
+<tt class="docutils literal"><span class="pre">my_rectangle=rectangle(100,200,1.,laplace)</span></tt></li>
+<li>Set the boundary conditions by setting properties of <a class="reference internal" href="#quantumcapacitance.electrostatics.Element" title="quantumcapacitance.electrostatics.Element"><tt class="xref py py-class docutils literal"><span class="pre">Element</span></tt></a>:
+<tt class="docutils literal"><span class="pre">my_rectangle[20,10].potential=10</span></tt></li>
+<li>Create a <a class="reference internal" href="#quantumcapacitance.electrostatics.Container" title="quantumcapacitance.electrostatics.Container"><tt class="xref py py-class docutils literal"><span class="pre">Container</span></tt></a> which contains the rectangles:
+<tt class="docutils literal"><span class="pre">my_container=container((rectangle,))</span></tt></li>
+<li>Create the matrix and inhomogeneity and invert the matrix using
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Container.lu_solver" title="quantumcapacitance.electrostatics.Container.lu_solver"><tt class="xref py py-func docutils literal"><span class="pre">Container.lu_solver</span></tt></a>:
+<tt class="docutils literal"><span class="pre">solver,inhomogeneity=my_container.lu_solver()</span></tt></li>
+<li>Solve system: <tt class="docutils literal"><span class="pre">solution=solver(inhomogeneity)</span></tt></li>
+<li>Plot solution using
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Container.vector_to_datamatrix" title="quantumcapacitance.electrostatics.Container.vector_to_datamatrix"><tt class="xref py py-func docutils literal"><span class="pre">Container.vector_to_datamatrix</span></tt></a>:
+<tt class="docutils literal"><span class="pre">imshow(my_container.vector_to_datamatrix(solution)[0])</span></tt></li>
+</ol>
+<p>If you want to go through different boundary conditions, you can create a new
+inhomogeneity and use the same solver, because the matrix and the inverted matrix
+stay the same:</p>
+<ol class="arabic simple" start="8">
+<li>Set the boundary conditions by setting properties of
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Element" title="quantumcapacitance.electrostatics.Element"><tt class="xref py py-class docutils literal"><span class="pre">Element</span></tt></a>: <tt class="docutils literal"><span class="pre">my_rectangle[20,10].potential=5</span></tt></li>
+<li>Create new inhomogeneity using
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Container.createinhomogeneity" title="quantumcapacitance.electrostatics.Container.createinhomogeneity"><tt class="xref py py-func docutils literal"><span class="pre">Container.createinhomogeneity</span></tt></a>:
+inhomogeneity = <tt class="docutils literal"><span class="pre">inhom=my_container.createinhomogeneity()</span></tt></li>
+<li>Solve system: <tt class="docutils literal"><span class="pre">solution=solver(inhomogeneity)</span></tt></li>
+<li>Plot solution using
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Container.vector_to_datamatrix" title="quantumcapacitance.electrostatics.Container.vector_to_datamatrix"><tt class="xref py py-func docutils literal"><span class="pre">Container.vector_to_datamatrix</span></tt></a>:
+<tt class="docutils literal"><span class="pre">imshow(my_container.vector_to_datamatrix(solution)[0])</span></tt></li>
+</ol>
+<p>Repeat 8.-11. for all configurations. Of course, you can only reuse the solver
+if the matrix actually stays the same (e.g. different voltages on capacitor
+plates) , i.e. if you set the potential of an element which didn&#8217;t have a fixed
+potential before, you also have to recalculate the matrix and the inverse
+(using lu_solver()).</p>
+<p>Note: the area surrounding the rectangle always has the potential 0. If you want
+to set different potential boundary conditions, set the elements in your code.
+Also note: the first coordinate (x) goes down, the second coordinate (y) goes
+right - the coordinate system is turned 90 degrees clockwise against the
+&#8220;standard&#8221; coordinate system.</p>
+<p>The whole example, with meaningful boundary conditions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">quantumcapacitance.electrostatics</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">height</span><span class="o">=</span><span class="mi">100</span>
+<span class="n">width</span><span class="o">=</span><span class="mi">200</span>
+<span class="n">laplace</span><span class="o">=</span><span class="n">Laplacian2D2ndOrderWithMaterials</span><span class="p">(</span><span class="mf">1e-9</span><span class="p">,</span><span class="mf">1e-9</span><span class="p">)</span>
+<span class="n">dielectricity</span><span class="o">=</span><span class="mf">1.</span>
+<span class="n">my_rectangle</span><span class="o">=</span><span class="n">Rectangle</span><span class="p">(</span><span class="n">height</span><span class="p">,</span><span class="n">width</span><span class="p">,</span><span class="n">dielectricity</span><span class="p">,</span><span class="n">laplace</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">height</span><span class="p">):</span>
+  <span class="n">my_rectangle</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">1</span>
+  <span class="n">my_rectangle</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">width</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">2</span>
+<span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="p">):</span>
+  <span class="n">my_rectangle</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">y</span><span class="p">]</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">3</span>
+  <span class="n">my_rectangle</span><span class="p">[</span><span class="n">height</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">y</span><span class="p">]</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">4</span>
+<span class="n">my_container</span><span class="o">=</span><span class="n">Container</span><span class="p">((</span><span class="n">my_rectangle</span><span class="p">,))</span>
+<span class="n">solver</span><span class="p">,</span><span class="n">inhomogeneity</span><span class="o">=</span><span class="n">my_container</span><span class="o">.</span><span class="n">lu_solver</span><span class="p">()</span>
+<span class="n">solution</span><span class="o">=</span><span class="n">solver</span><span class="p">(</span><span class="n">inhomogeneity</span><span class="p">)</span>
+<span class="n">imshow</span><span class="p">(</span><span class="n">my_container</span><span class="o">.</span><span class="n">vector_to_datamatrix</span><span class="p">(</span><span class="n">solution</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">colorbar</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The output:</p>
+<img alt="images/electrostatic_example.png" src="images/electrostatic_example.png" />
+<p>That&#8217;s how it&#8217;s done!</p>
+</div>
+<div class="section" id="how-to-set-boundary-conditions-and-other-element-properties">
+<h2>How to set boundary conditions and other element properties<a class="headerlink" href="#how-to-set-boundary-conditions-and-other-element-properties" title="Permalink to this headline">¶</a></h2>
+<p>After creating a <a class="reference internal" href="#quantumcapacitance.electrostatics.Rectangle" title="quantumcapacitance.electrostatics.Rectangle"><tt class="xref py py-class docutils literal"><span class="pre">Rectangle</span></tt></a>, you can access its elements using the
+<tt class="docutils literal"><span class="pre">[]</span></tt> operator. Use <tt class="docutils literal"><span class="pre">i</span></tt> and <tt class="docutils literal"><span class="pre">j</span></tt> as row and column index:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">my_container</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">14</span><span class="p">]</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">10</span>
+</pre></div>
+</div>
+<p>You can set the following properties (also documented in the constructor of
+<a class="reference internal" href="#quantumcapacitance.electrostatics.Rectangle" title="quantumcapacitance.electrostatics.Rectangle"><tt class="xref py py-class docutils literal"><span class="pre">Rectangle</span></tt></a>:</p>
+<ul class="simple">
+<li><strong>potential:</strong> If potential is None, the element is a normal gridpoint.
+Otherwise, the element has a fixed potential (i.e. a metal/a capacitor).</li>
+<li><strong>charge:</strong> charge of the element. Default is 0. If potential!=None, the charge value
+will be ignored (metal is not charged).</li>
+<li><strong>epsilon:</strong> Relative dielectrical constant.</li>
+<li><strong>neumannbc:</strong> The slope along x or y direction can be fixed, e.g. for a neumann boundary condition.
+E.g. neumannbc=(14,&#8217;y&#8217;) or neumannbc=(0,&#8217;x&#8217;). neumannbc and potential cannot be used
+at the same time. Charge has to be 0 (=default value).
+Values != 0 do not seem to work right (see comments).</li>
+</ul>
+<p>Properties connected with quantum capacitance:</p>
+<ul class="simple">
+<li><strong>fermi_energy:</strong> If the Fermi energy depends on the number of charge carriers, the fermi energy (=applied voltage e.g. by a battery)
+can be different from the electrostatic potential. fermi_energy_charge_dependence has to be defined in this case.
+Then you can calculate the quantum capacitance of the system.
+If fermi_energy_charge_dependence=None, then fermi_energy=potential.</li>
+<li><strong>fermi_energy_charge_dependence:</strong> How the fermi energy of the material depends on the charge. Default is None.
+Mind that this setting assumes that the element is in a homogeneous environment.</li>
+</ul>
+</div>
+<div class="section" id="features-of-the-container-classes">
+<h2>Features of the container classes<a class="headerlink" href="#features-of-the-container-classes" title="Permalink to this headline">¶</a></h2>
+<p>The container classes are responsible for</p>
+<ul class="simple">
+<li>connecting <a class="reference internal" href="#quantumcapacitance.electrostatics.Rectangle" title="quantumcapacitance.electrostatics.Rectangle"><tt class="xref py py-class docutils literal"><span class="pre">Rectangles</span></tt></a></li>
+<li>solving the system</li>
+</ul>
+<p>At the moment, there are two classes:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#quantumcapacitance.electrostatics.Container" title="quantumcapacitance.electrostatics.Container"><tt class="xref py py-class docutils literal"><span class="pre">Container</span></tt></a>: glues several rectangles together. Use also if you
+only have one rectangle.</li>
+<li><a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer" title="quantumcapacitance.electrostatics.PeriodicContainer"><tt class="xref py py-class docutils literal"><span class="pre">PeriodicContainer</span></tt></a>: glues together one side of the rectangle
+with the opposite side of the same rectangle, thus creating periodic boundary
+conditions.</li>
+</ul>
+<p>Features of the container classes (besides gluing):</p>
+<ul>
+<li><p class="first"><a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer.lu_solver" title="quantumcapacitance.electrostatics.PeriodicContainer.lu_solver"><tt class="xref py py-meth docutils literal"><span class="pre">PeriodicContainer.lu_solver()</span></tt></a>: the most important function of
+the container classes. It performs an LU decomposition and returns a solver
+function that can be applied to several inhomogeneities (=different boundary
+conditions).</p>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer.simple_plot" title="quantumcapacitance.electrostatics.PeriodicContainer.simple_plot"><tt class="xref py py-meth docutils literal"><span class="pre">PeriodicContainer.simple_plot()</span></tt></a>: Create a simple plot of an</dt>
+<dd><p class="first last">existing solution for this system.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer.solve_and_plot" title="quantumcapacitance.electrostatics.PeriodicContainer.solve_and_plot"><tt class="xref py py-meth docutils literal"><span class="pre">PeriodicContainer.solve_and_plot()</span></tt></a>: Solve the system with the
+current boundary conditions and plot.</p>
+</li>
+<li><p class="first"><a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer.vector_to_datamatrix" title="quantumcapacitance.electrostatics.PeriodicContainer.vector_to_datamatrix"><tt class="xref py py-meth docutils literal"><span class="pre">PeriodicContainer.vector_to_datamatrix()</span></tt></a>: Create a &#8220;picture matrix&#8221;
+of a given solution of the system (=a 2D representation of the solution
+vector). You can use this to export the solution (e.g. for interpolation)
+or plot it using <tt class="docutils literal"><span class="pre">imshow()</span></tt>.</p>
+</li>
+<li><p class="first"><a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer.apply_operator" title="quantumcapacitance.electrostatics.PeriodicContainer.apply_operator"><tt class="xref py py-meth docutils literal"><span class="pre">PeriodicContainer.apply_operator()</span></tt></a>: Apply an operator to a solution
+of the system and return the result.</p>
+</li>
+<li><p class="first"><a class="reference internal" href="#quantumcapacitance.electrostatics.PeriodicContainer.charge" title="quantumcapacitance.electrostatics.PeriodicContainer.charge"><tt class="xref py py-meth docutils literal"><span class="pre">PeriodicContainer.charge()</span></tt></a>: Calculate the charge density for a
+given solution.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="create-lists-of-elements-for-your-convenience">
+<h2>Create lists of elements for your convenience<a class="headerlink" href="#create-lists-of-elements-for-your-convenience" title="Permalink to this headline">¶</a></h2>
+<p>The boundary conditions of your system will be given by an arrangement of
+objects within the calculation area. Using lists, you can very conveniently
+define those objects and then set the boundary conditions (also repeatedly):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#Set parameters</span>
+<span class="n">height</span><span class="o">=</span><span class="mi">100</span>
+<span class="n">width</span><span class="o">=</span><span class="mi">50</span>
+<span class="n">dx</span><span class="o">=</span><span class="mf">1e-9</span>
+
+<span class="n">epsilon_SiO2</span><span class="o">=</span><span class="mf">3.9</span>
+<span class="n">sidegate_voltage</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">backgate_voltages</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c">#Create operator, rectangle and container</span>
+<span class="n">lapl</span><span class="o">=</span><span class="n">Laplacian2D2ndOrderWithMaterials</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span><span class="n">dx</span><span class="p">)</span>
+<span class="n">my_rectangle</span><span class="o">=</span><span class="n">Rectangle</span><span class="p">(</span><span class="n">height</span><span class="p">,</span><span class="n">width</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="n">lapl</span><span class="p">)</span>
+<span class="n">my_container</span><span class="o">=</span><span class="n">Container</span><span class="p">((</span><span class="n">my_rectangle</span><span class="p">,))</span>
+
+<span class="c">#Define the sections using lists. Later on, we never have to use</span>
+<span class="c">#the explicit coordinates of the elements again.</span>
+<span class="n">backgate</span><span class="o">=</span><span class="p">[</span><span class="n">my_rectangle</span><span class="p">[</span><span class="n">height</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="p">)]</span>            <span class="c">#&lt;&lt;&lt;</span>
+<span class="n">sidegate</span><span class="o">=</span><span class="p">[</span><span class="n">my_rectangle</span><span class="p">[</span><span class="n">height</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">5</span><span class="p">)]</span>        <span class="c">#&lt;&lt;&lt;</span>
+<span class="n">topgate</span><span class="o">=</span><span class="p">[</span><span class="n">my_rectangle</span><span class="p">[</span><span class="n">height</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">width</span><span class="p">)]</span>     <span class="c">#&lt;&lt;&lt;</span>
+<span class="n">dielectric_medium</span><span class="o">=</span><span class="p">[</span><span class="n">my_rectangle</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">height</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">height</span><span class="p">)</span> <span class="c">#&lt;&lt;&lt;</span>
+                                     <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">width</span><span class="p">)]</span>          <span class="c">#&lt;&lt;&lt;</span>
+
+<span class="c">#Set the boundary conditions</span>
+
+<span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">sidegate</span><span class="p">:</span>                                             <span class="c">#&lt;&lt;&lt;</span>
+    <span class="n">element</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="n">sidegate_voltage</span>                               <span class="c">#&lt;&lt;&lt;</span>
+
+<span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">dielectric_medium</span><span class="p">:</span>                                    <span class="c">#&lt;&lt;&lt;</span>
+    <span class="n">element</span><span class="o">.</span><span class="n">epsilon</span><span class="o">=</span><span class="n">epsilon_SiO2</span>                                     <span class="c">#&lt;&lt;&lt;</span>
+
+<span class="c">#Although you will change that value later, you have to set it before</span>
+<span class="c">#you calculate the LU decomposition so that the element knows that it</span>
+<span class="c">#has a Dirichlet boundary condition.</span>
+<span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">backgate</span><span class="p">:</span>
+    <span class="n">element</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">0</span>
+
+<span class="c">#Solve system.</span>
+<span class="n">solve</span><span class="p">,</span><span class="n">inhom</span><span class="o">=</span><span class="n">my_container</span><span class="o">.</span><span class="n">lu_solver</span><span class="p">()</span>
+
+<span class="n">result_charges</span><span class="o">=</span><span class="p">[]</span>
+
+<span class="c">#Loop over backgate voltage</span>
+<span class="k">for</span> <span class="n">backgate_voltage</span> <span class="ow">in</span> <span class="n">backgate_voltages</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">backgate</span><span class="p">:</span>                                         <span class="c">#&lt;&lt;&lt;</span>
+        <span class="n">element</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="n">backgate_voltage</span>                           <span class="c">#&lt;&lt;&lt;</span>
+
+    <span class="c">#Solve system for this boundary condition.</span>
+    <span class="n">inhom</span><span class="o">=</span><span class="n">my_container</span><span class="o">.</span><span class="n">create_inhomogeneity</span><span class="p">()</span>
+    <span class="n">solution</span><span class="o">=</span><span class="n">solve</span><span class="p">(</span><span class="n">inhom</span><span class="p">)</span>
+
+    <span class="c">#Now, do something with the solution. We will save the charge</span>
+    <span class="c">#of the back- and topgate to a list.</span>
+    <span class="n">topgate_charge</span><span class="o">=</span><span class="n">my_container</span><span class="o">.</span><span class="n">charge</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span><span class="n">lapl</span><span class="p">,</span><span class="n">sidegate</span><span class="p">)</span>       <span class="c">#&lt;&lt;&lt;</span>
+    <span class="n">backgate_charge</span><span class="o">=</span><span class="n">my_container</span><span class="o">.</span><span class="n">charge</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span><span class="n">lapl</span><span class="p">,</span><span class="n">backgate</span><span class="p">)</span>      <span class="c">#&lt;&lt;&lt;</span>
+
+    <span class="n">result_charges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">topgate_charge</span><span class="p">,</span><span class="n">backgate_charge</span><span class="p">))</span>
+
+<span class="c">#...plot or export data...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="more-examples">
+<h2>More examples<a class="headerlink" href="#more-examples" title="Permalink to this headline">¶</a></h2>
+<p>There are how-to examples in the <a class="reference internal" href="simple.html"><em>Simple</em></a> module - see <a class="reference internal" href="simple.html"><em>Code examples</em></a>.</p>
+</div>
+<div class="section" id="module-quantumcapacitance.electrostatics">
+<span id="code-reference"></span><h2>Code reference<a class="headerlink" href="#module-quantumcapacitance.electrostatics" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="quantumcapacitance.electrostatics.Container">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">Container</tt><big>(</big><em>rectangle_list</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container contains one or more rectangles and is responsible for gathering
+the submatrices and sub-inhomogeneities created by the Rectangle objects,
+putting them into one matrix/vector and solving the system.</p>
+<p>rectangle_list: List of rectangles participating in the calculation.</p>
+<p>Invoke connect() afterwards to set the connection between the rectangles.</p>
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.add_rectangle">
+<tt class="descname">add_rectangle</tt><big>(</big><em>rect</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.add_rectangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.add_rectangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an additional rectangle.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.apply_operator">
+<tt class="descname">apply_operator</tt><big>(</big><em>vec</em>, <em>finitedifference_operator</em>, <em>elements=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.apply_operator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.apply_operator" title="Permalink to this definition">¶</a></dt>
+<dd><p>vec: Solution vector to apply the operator onto.
+finitedifference_operator: The operator.
+elements: Specific elements to apply the operator onto. If None, it is applied
+to all elements.</p>
+<p>If the operator includes points which are not within the calculated area
+(=rectangle + those connected to it), they are implicitly assumed to be zero.</p>
+<p>Return:
+result: Result of the operator on the vector. If elements=None (=all elements),
+this can be plotted with simple_plot().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.charge">
+<tt class="descname">charge</tt><big>(</big><em>vec</em>, <em>finitedifference_operator</em>, <em>elements=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.charge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.charge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the charge with a given operator.
+This is a wrapper for apply_operator() which additionally multiplies with epsilon_0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.connect">
+<tt class="descname">connect</tt><big>(</big><em>rect</em>, <em>other_rect</em>, <em>align='top'</em>, <em>position='right'</em>, <em>offset=(0</em>, <em>0)</em>, <em>viceversa=True</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>The connect function sets the relationship of one rectangle in the container to an other
+rectangle.</p>
+<p>align: How the other rectangle is aligned relative to the first rectangle.
+Possible values are &#8216;top&#8217;,&#8217;bottom&#8217;,&#8217;left&#8217; and &#8216;right&#8217;.
+position: Position of the other rectangle relative to the first rectangle.
+Possible values are &#8216;top&#8217;,&#8217;bottom&#8217;,&#8217;left&#8217; and &#8216;right&#8217;.
+offset: offset vector in lattice units, starting from the position given by align and position
+viceversa: equally connect other rectangle automatically. Default is True.</p>
+<dl class="docutils">
+<dt>Examples: align=&#8217;top&#8217;,position=&#8217;right&#8217;: the tops of the rectangles will be aligned, and the other</dt>
+<dd>rectangle is right of the current one.
+align=&#8217;right&#8217;,position=&#8217;bottom&#8217;: the right sides of the rectangles will be aligned,
+and the other rectangle is below the first rectangle.</dd>
+</dl>
+<p>align=&#8217;top&#8217; or &#8216;bottom&#8217; have to be combined with position=&#8217;right&#8217; or &#8216;left&#8217; and vice versa!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.createinhomogeneity">
+<tt class="descname">createinhomogeneity</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.createinhomogeneity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.createinhomogeneity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create inhomogeneity for the whole container.
+You can change the boundary condition values (e.g. different voltage) and create
+the new inhomogeneity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.creatematrix">
+<tt class="descname">creatematrix</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.creatematrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.creatematrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create matrix for the whole container.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.lu_solver">
+<tt class="descname">lu_solver</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.lu_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.lu_solver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the system matrix and solve the system by LU decomposition.</p>
+<p>Return:
+solver: Function that gives the solution x for a given inhomogenity b.
+inhomogeneity: Inhomogeneity of the current configuration.</p>
+<p>Example:
+solver,inhomogeneity=my_container.lu_solver()
+x=solver(inhomogeneity)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.simple_plot">
+<tt class="descname">simple_plot</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.simple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.simple_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a simple plot of the solution.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.solve_and_plot">
+<tt class="descname">solve_and_plot</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.solve_and_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.solve_and_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solve the system and create a simple plot.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Container.vector_to_datamatrix">
+<tt class="descname">vector_to_datamatrix</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Container.vector_to_datamatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Container.vector_to_datamatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a data matrix out of a solution vector of this system that can be plotted
+using imshow() or used for export.</p>
+<p>vec: Vector that is a solution for this system.</p>
+<p>Return:
+datamatrix: Matrix, plottable with imshow().
+extent: Plot range parameter for imshow().</p>
+<p>Example:
+datamatrix,extent = my_container.vector_to_datamatrix(vec)
+imshow(data,extent=extent)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="quantumcapacitance.electrostatics.Element">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">Element</tt><big>(</big><em>rect</em>, <em>i</em>, <em>j</em>, <em>potential=None</em>, <em>charge=0</em>, <em>epsilon=1</em>, <em>fermi_energy_charge_dependence=None</em>, <em>fermi_energy=None</em>, <em>neumannbc=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Element describes a single grid point/discretization element in a geometry. 
+It saves the rectangle it belongs to (rect), its position (i,j) within its rectangle.
+It supplies a function matrixelements() which, given an operator, returns the matrix  
+elements of the element to its neighbours and the inhomogeneity of the element.</p>
+<p>i: Row index
+j: Column index
+potential: If potential is None, the element is a normal gridpoint.</p>
+<blockquote>
+<div>Otherwise, the element has a fixed potential (i.e. a metal/a capacitor).</div></blockquote>
+<dl class="docutils">
+<dt>charge: charge of the element. Default is 0. If potential!=None, the charge value </dt>
+<dd>will be ignored (metal is not charged).</dd>
+<dt>fermi_energy_charge_dependence: How the fermi energy of the material depends on the charge. Default is None.</dt>
+<dd>Mind that this setting assumes that the element is in a homogeneous environment.</dd>
+<dt>fermi_energy: If the Fermi energy depends on the number of charge carriers, the fermi energy (=applied voltage e.g. by a battery)</dt>
+<dd>can be different from the electrostatic potential. fermi_energy_charge_dependence has to be defined in this case.
+Then you can calculate the quantum capacitance of the system.
+If fermi_energy_charge_dependence=None, then fermi_energy=potential.</dd>
+</dl>
+<p>epsilon: Relative dielectrical constant.
+neumannbc: The slope along x or y direction can be fixed, e.g. for a neumann boundary condition.</p>
+<blockquote>
+<div>E.g. neumannbc=(14,&#8217;y&#8217;) or neumannbc=(0,&#8217;x&#8217;). neumannbc and potential cannot be used
+at the same time. Charge has to be 0 (=default value).
+Values != 0 do not seem to work right (see comments).</div></blockquote>
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.charge">
+<tt class="descname">charge</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.charge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Charge of element</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.epsilon">
+<tt class="descname">epsilon</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.epsilon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dielectric constant of Element</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.fermi_energy">
+<tt class="descname">fermi_energy</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.fermi_energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Electrochemical potential of Element</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.fermi_energy_charge_dependence">
+<tt class="descname">fermi_energy_charge_dependence</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.fermi_energy_charge_dependence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dependence of Fermi energy on charge</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.i">
+<tt class="descname">i</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.i" title="Permalink to this definition">¶</a></dt>
+<dd><p>Row index of Element</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Element.index">
+<tt class="descname">index</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Element.index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the index of the element in its rectangle.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Element.inhomogeneity">
+<tt class="descname">inhomogeneity</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Element.inhomogeneity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.inhomogeneity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the inhomogeneity of the element.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.j">
+<tt class="descname">j</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.j" title="Permalink to this definition">¶</a></dt>
+<dd><p>Column index of Element</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Element.matrixelements">
+<tt class="descname">matrixelements</tt><big>(</big><em>finitedifference_operator</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Element.matrixelements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.matrixelements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the matrix elements of the current element to its neighbours.</p>
+<p>finitedifference_operator: The discretized operator of the differential equation.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.neumannbc">
+<tt class="descname">neumannbc</tt><em class="property"> = None</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.neumannbc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Neumann boundary condition of Element</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.potential">
+<tt class="descname">potential</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.potential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Electrostatic potential of Element</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="quantumcapacitance.electrostatics.FiniteDifferenceOperator">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">FiniteDifferenceOperator</tt><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#FiniteDifferenceOperator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.FiniteDifferenceOperator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract basis class for finite difference operators.
+A class derived from it has to supply variables for dx and dy
+and a function which returns the matrix elements between the
+current basis element and its neighbours (see e.g.
+Laplacian2D2ndOrderWithMaterials)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="quantumcapacitance.electrostatics.Laplacian2D2ndOrder">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">Laplacian2D2ndOrder</tt><big>(</big><em>dx</em>, <em>dy</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Laplacian2D2ndOrder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Laplacian2D2ndOrder" title="Permalink to this definition">¶</a></dt>
+<dd><p>2nd order discreticed Laplace operator in two dimensions.</p>
+<p>Default constructor, dx and dy are the length and width of
+the element.</p>
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Laplacian2D2ndOrder.matrixelements">
+<tt class="descname">matrixelements</tt><big>(</big><em>my_neighbours</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Laplacian2D2ndOrder.matrixelements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Laplacian2D2ndOrder.matrixelements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the matrix elements between the main element (i,j)
+and its neighbours, which are:</p>
+<p>(i,j) -4
+(i+1,j) 1
+(i-1,j) 1
+(i,j+1) 1</p>
+<p>...divided by dx*dy.</p>
+<dl class="docutils">
+<dt>my_neighbours: function which returns the element object of a neighbour of the</dt>
+<dd>current element, e.g. my_neighbours(0,0) gibts the current element,
+my_neighbours(1,0) the one under it etc.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="quantumcapacitance.electrostatics.Laplacian2D2ndOrderWithMaterials">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">Laplacian2D2ndOrderWithMaterials</tt><big>(</big><em>dx</em>, <em>dy</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Laplacian2D2ndOrderWithMaterials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Laplacian2D2ndOrderWithMaterials" title="Permalink to this definition">¶</a></dt>
+<dd><p>2nd order discreticed Laplace operator in two dimensions for a
+electrostatic problem with dielectric materials.</p>
+<p>Default constructor, dx and dy are the length and width of
+the element.</p>
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Laplacian2D2ndOrderWithMaterials.matrixelements">
+<tt class="descname">matrixelements</tt><big>(</big><em>my_neighbours</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Laplacian2D2ndOrderWithMaterials.matrixelements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Laplacian2D2ndOrderWithMaterials.matrixelements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the matrix elements between the main element (i,j)
+and its neighbours, which are:</p>
+<p>(i,j) -4
+(i+1,j) 1
+(i-1,j) 1
+(i,j+1) 1</p>
+<p>...divided by dx*dy and with a factor describing the dielectric property.</p>
+<dl class="docutils">
+<dt>my_neighbours: function which returns the element object of a neighbour of the</dt>
+<dd><blockquote class="first">
+<div>current element, e.g. my_neighbours(0,0) gibts the current element,
+my_neighbours(1,0) the one under it etc.</div></blockquote>
+<p class="last">eps1</p>
+</dd>
+<dt>eps2  .  eps3</dt>
+<dd>eps4</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">PeriodicContainer</tt><big>(</big><em>rectangle</em>, <em>mode='x'</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains a single rectangle which is periodically repeated in one direction.
+(by placing copies of itself next to it).</p>
+<p>rectangle: The rectangle to repeat.
+mode: &#8216;x&#8217;: The rectangle is repeated in x direction only (default).</p>
+<blockquote>
+<div>&#8216;y&#8217;: The rectangle is repeated in y direction only.
+&#8216;xy&#8217;:The rectangle is repeated in x and y direction.</div></blockquote>
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.apply_operator">
+<tt class="descname">apply_operator</tt><big>(</big><em>vec</em>, <em>finitedifference_operator</em>, <em>elements=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.apply_operator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.apply_operator" title="Permalink to this definition">¶</a></dt>
+<dd><p>vec: Solution vector to apply the operator onto.
+finitedifference_operator: The operator.
+elements: Specific elements to apply the operator onto. If None, it is applied
+to all elements.</p>
+<p>If the operator includes points which are not within the calculated area
+(=rectangle + those connected to it), they are implicitly assumed to be zero.</p>
+<p>Return:
+result: Result of the operator on the vector. If elements=None (=all elements),
+this can be plotted with simple_plot().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.charge">
+<tt class="descname">charge</tt><big>(</big><em>vec</em>, <em>finitedifference_operator</em>, <em>elements=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.charge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.charge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the charge with a given operator.
+This is a wrapper for apply_operator() which additionally multiplies with epsilon_0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.createinhomogeneity">
+<tt class="descname">createinhomogeneity</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.createinhomogeneity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.createinhomogeneity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create inhomogeneity for the whole container.
+You can change the boundary condition values (e.g. different voltage) and create
+the new inhomogeneity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.creatematrix">
+<tt class="descname">creatematrix</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.creatematrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.creatematrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create matrix for the whole container. The solution of the differential
+equation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.get_values_at_elements">
+<tt class="descname">get_values_at_elements</tt><big>(</big><em>vec</em>, <em>elements</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.get_values_at_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.get_values_at_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get values of given elements in solution vector.</p>
+<p>vec: solution vector
+elements: list of elements to get the solution at</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.lu_solver">
+<tt class="descname">lu_solver</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.lu_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.lu_solver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the system matrix and solve the system by LU decomposition.</p>
+<p>Return:
+solver: Function that gives the solution x for a given inhomogenity b.
+inhomogeneity: Inhomogeneity of the current configuration.</p>
+<p>Example:
+solver,inhomogeneity=my_container.lu_solver()
+x=solver(inhomogeneity)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.simple_plot">
+<tt class="descname">simple_plot</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.simple_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.simple_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a simple plot of the solution.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.solve_and_plot">
+<tt class="descname">solve_and_plot</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.solve_and_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.solve_and_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solve the system and create a simple plot.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.PeriodicContainer.vector_to_datamatrix">
+<tt class="descname">vector_to_datamatrix</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#PeriodicContainer.vector_to_datamatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.PeriodicContainer.vector_to_datamatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a data matrix out of a solution vector of this system that can be plotted
+using imshow().</p>
+<p>vec: Vector that is a solution for this system.</p>
+<p>Return:
+datamatrix: Matrix, plottable with imshow().
+extent: Plot range parameter for imshow().</p>
+<p>Example:
+datamatrix,extent = my_container.vector_to_datamatrix(vec)
+imshow(data,extent=extent)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="quantumcapacitance.electrostatics.Rectangle">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">Rectangle</tt><big>(</big><em>m</em>, <em>n</em>, <em>epsilon</em>, <em>finitedifference_operator</em>, <em>fermi_energy_charge_dependence=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Rectangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Rectangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rectangle describes a rectangular geometry/grid, containing of mxn elements.
+It goes through all its element objects and creates the matrices and inhomogeneities,
+according to the geometry and the boundary conditions, described in the elements.</p>
+<p>m: Number of rows
+n: Number of columns
+epsilon: Relative dielectric constant
+finitedifference_operator: The operator of the differential equation.
+fermi_energy_charge_dependence: How the fermi energy of the material depends on the charge. Default is None.</p>
+<blockquote>
+<div>Mind that this setting assumes that the element is in a homogeneous environment.</div></blockquote>
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Rectangle.createinhomogeneity">
+<tt class="descname">createinhomogeneity</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Rectangle.createinhomogeneity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Rectangle.createinhomogeneity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the inhomogeneity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Rectangle.creatematrices">
+<tt class="descname">creatematrices</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Rectangle.creatematrices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Rectangle.creatematrices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create matrices. The rectangle may be connected with other
+rectangles (the Container class takes care of that).
+The function creates the matrices for the interaction with itself
+and with every other rectangle it is connected to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Rectangle.neighbour">
+<tt class="descname">neighbour</tt><big>(</big><em>i</em>, <em>j</em>, <em>di</em>, <em>dj</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Rectangle.neighbour"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Rectangle.neighbour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given coordinates i,j, find out who the neighbour in di,dj direction is.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="quantumcapacitance.electrostatics.Rectangle.pos_to_index">
+<tt class="descname">pos_to_index</tt><big>(</big><em>i</em>, <em>j</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Rectangle.pos_to_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Rectangle.pos_to_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the index of an element at a given position (i,j).
+The index is a number running from top to bottom, from left to right.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Electrostatics</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#how-to-set-boundary-conditions-and-other-element-properties">How to set boundary conditions and other element properties</a></li>
+<li><a class="reference internal" href="#features-of-the-container-classes">Features of the container classes</a></li>
+<li><a class="reference internal" href="#create-lists-of-elements-for-your-convenience">Create lists of elements for your convenience</a></li>
+<li><a class="reference internal" href="#more-examples">More examples</a></li>
+<li><a class="reference internal" href="#module-quantumcapacitance.electrostatics">Code reference</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to EnvTB&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="quantumcapacitance.html"
+                        title="next chapter">Quantum capacitance</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/electrostatics.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="quantumcapacitance.html" title="Quantum capacitance"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to EnvTB’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Rafael Reiter.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,814 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tight Binding &mdash; EnvTB 1 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="EnvTB 1 documentation" href="index.html" />
+    <link rel="next" title="Physics" href="physics.html" />
+    <link rel="prev" title="Code examples" href="simple.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="physics.html" title="Physics"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="simple.html" title="Code examples"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tight-binding">
+<h1>Tight Binding<a class="headerlink" href="#tight-binding" title="Permalink to this headline">¶</a></h1>
+<p>WHERE CAN ONE CALCULATE AN EIGENVECTOR FOR USE IN THE PLOT AND EXPORT
+FUNCTIONS?</p>
+<div class="section" id="features">
+<h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<p>The wannier90 module has the following features:</p>
+<ol class="arabic simple">
+<li>Read output files from the
+<a class="reference external" href="http://www.vasp.at/">VASP</a> and <a class="reference external" href="http://wannier.org">wannier90</a> program</li>
+<li>Read Slater-Koster nearest-neighbour parameter lists (&#8220;standard&#8221;
+tight-binding, like 1st-nearest-neighbour approximation)</li>
+<li>Change or drop input parameters</li>
+<li>Create unit cells or supercells from input parameters</li>
+<li>Create finite structures (ribbons, dots) from input parameters</li>
+<li>Merge parameters from several input files (e.g. bulk &amp; defect parameters)</li>
+<li>Calculate eigenvalue problems and bandstructures</li>
+<li>Apply magnetic field</li>
+<li>Plot eigenvectors (pseudo-real space representation - proper real space
+representation using Wannier orbitals to come).</li>
+<li>Export or use any data easily</li>
+</ol>
+</div>
+<div class="section" id="load-hamiltonian-parameters">
+<h2>Load Hamiltonian parameters<a class="headerlink" href="#load-hamiltonian-parameters" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian" title="wannier90.w90hamiltonian.Hamiltonian"><tt class="xref py py-class docutils literal"><span class="pre">Hamiltonian</span></tt></a> class is the central class of the module. At the
+moment, it contains too many features and should be split.</p>
+<p>Anyway, after loading the parameters from a file, you have a Hamiltonian
+object which provides you with a lot of functions you can apply on the data.</p>
+<p>Load the module:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">wannier90.w90hamiltonian</span> <span class="kn">import</span> <span class="n">Hamiltonian</span>
+</pre></div>
+</div>
+<p>You can load data from a Slater-Koster nearest-neighbour parameter file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham</span><span class="o">=</span><span class="n">Hamiltonian</span><span class="o">.</span><span class="n">from_nth_nn_list</span><span class="p">(</span><span class="s">&quot;/path/to/nearestneighbourfile.dat&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or from a wannier90 &amp; VASP output:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham</span><span class="o">=</span><span class="n">Hamiltonian</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">wannier90hr_graphene</span><span class="p">,</span><span class="n">poscarfile</span><span class="p">,</span><span class="n">wannier90woutfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can find example data to play with in <tt class="docutils literal"><span class="pre">exampledata</span></tt> in the
+envTB directory.</p>
+</div>
+<div class="section" id="plot-a-bandstructure">
+<h2>Plot a bandstructure<a class="headerlink" href="#plot-a-bandstructure" title="Permalink to this headline">¶</a></h2>
+<p>Before you can calculate a bandstructure, you need a path in the Brillouin
+zone. The function <a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.standard_paths" title="wannier90.w90hamiltonian.Hamiltonian.standard_paths"><tt class="xref py py-meth docutils literal"><span class="pre">standard_paths()</span></tt></a> gives you the standard
+paths for some common crystal structures:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">path</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">standard_paths</span><span class="p">(</span><span class="s">&#39;hexagonal&#39;</span><span class="p">,</span><span class="mi">100</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Alternatively, you can use <a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.point_path" title="wannier90.w90hamiltonian.Hamiltonian.point_path"><tt class="xref py py-meth docutils literal"><span class="pre">point_path()</span></tt></a> to create a path
+between vertices you provide:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">path</span> <span class="o">=</span> <span class="n">ham</span><span class="o">.</span><span class="n">point_path</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then, you can plot the bandstructure to a file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham</span><span class="o">.</span><span class="n">plot_bandstructure</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;/tmp/myplot.png&#39;</span><span class="p">,</span><span class="s">&#39;d&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or store the data in a variable and save it to a file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">data</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">bandstructure_data</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">)</span>
+<span class="n">numpy</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s">&#39;/tmp/bs.dat&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%12.6G</span><span class="s">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can calculate the Bloch eigenvalues of a specific point using
+<a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues" title="wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues"><tt class="xref py py-meth docutils literal"><span class="pre">bloch_eigenvalues()</span></tt></a>.</p>
+</div>
+<div class="section" id="modify-the-hamiltonian">
+<h2>Modify the Hamiltonian<a class="headerlink" href="#modify-the-hamiltonian" title="Permalink to this headline">¶</a></h2>
+<p>After all, tight-binding is about using the parameters of the infinite crystal
+lattice for something different. The functions <a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian" title="wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian"><tt class="xref py py-meth docutils literal"><span class="pre">create_supercell_hamiltonian()</span></tt></a>
+and <a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian" title="wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian"><tt class="xref py py-meth docutils literal"><span class="pre">create_modified_hamiltonian()</span></tt></a> (only a wrapper for the first function,
+actually) give you that feature.</p>
+<p class="rubric">Drop orbitals:</p>
+<p>If you can drop orbitals with a good conscience (e.g. the sigma system
+of graphene), use:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">new_ham</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">usedorbitals</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>A new Hamiltonian called <tt class="docutils literal"><span class="pre">new_ham</span></tt> is created, where only the first two orbitals
+are used. <tt class="docutils literal"><span class="pre">new_ham</span></tt> has all the functionalities of the original Hamiltonian ham
+(plot bandstructure, calculate eigenvectors, modify once more).</p>
+<p class="rubric">Drop hopping parameters:</p>
+<p>If you create parameters with wannier90, you probably don&#8217;t want to use all
+hopping parameters. If you only want to keep hopping parameters to a chosen
+set of neighbour unit cells, use the parameter <tt class="docutils literal"><span class="pre">usedhoppingcells</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">cells_to_keep</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">unitcells_within_zone</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="s">&#39;d&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="n">new_ham</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="n">cells_to_keep</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this example, cells_to_keep contains all cells up to the second row
+of adjacent cells.</p>
+<p class="rubric">Create a supercell</p>
+<p>A supercell is a cell that contains of several copies of the original cell. It
+is defined by</p>
+<ul class="simple">
+<li>the coordinates of the unit cell copies</li>
+<li>the new lattice vectors.</li>
+</ul>
+<p>Both are given in the basis of the current lattice vectors.</p>
+<p>For example, the following command creates a rectangular unit cell consisting
+of two hexagonal unit cells:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">new_ham</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">create_supercell_hamiltonian</span><span class="p">(</span><span class="n">cellcoordinates</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span><span class="n">latticevecs</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>Plot cell diagram</p>
+<p>This command creates a hexagonal unit cell consisting of four smaller hexagonal
+cells. The lattice vectors are, obviously, twice as long as the current ones:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">new_ham</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">create_supercell_hamiltonian</span><span class="p">(</span><span class="n">cellcoordinates</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span><span class="n">latticevecs</span><span class="o">=</span><span class="p">[[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>Add cell diagram and bandstructure plot</p>
+<p class="rubric">Create a ribbon</p>
+<p>In the following example of a zigzag Graphene nanoribbon, one has to accomplish the
+following steps:</p>
+<ol class="arabic">
+<li><p class="first">Create a rectangular unit cell out of the hexagonal unit cell (see above):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham2</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">create_supercell_hamiltonian</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]],[[</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Create a ribbon unit cell which has the width of the ribbon:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham3</span><span class="o">=</span><span class="n">ham2</span><span class="o">.</span><span class="n">create_supercell_hamiltonian</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">unitcells</span><span class="p">)],[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="n">unitcells</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Remove all hoppings to neighbouring cells in y direction and drop the first
+and last orbital of the cell to make it a zigzag ribbon:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham4</span><span class="o">=</span><span class="n">ham3</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">ham3</span><span class="o">.</span><span class="n">drop_dimension_from_cell_list</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">usedorbitals</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">ham3</span><span class="o">.</span><span class="n">nrorbitals</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Plot BS, unit cell geometry and neighbour cell geometry</p>
+<p class="rubric">Shift energy</p>
+<p>Since it&#8217;s convenient to have the Fermi energy at 0 eV, but DFT software doesn&#8217;t
+automatically do that, you can shift the energy range:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">new_ham</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">energyshift</span><span class="o">=</span><span class="mf">3.34</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Add magnetic field</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">new_ham</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">magnetic_B</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">gauge_B</span><span class="o">=</span><span class="s">&#39;landau_x&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Depending on the symmetry of the system, you have to choose the gauge (see
+the function documentation).</p>
+</div>
+<div class="section" id="export-modified-hamiltonian">
+<h2>Export modified Hamiltonian<a class="headerlink" href="#export-modified-hamiltonian" title="Permalink to this headline">¶</a></h2>
+<p>blar</p>
+</div>
+<div class="section" id="plot-wannier-orbitals">
+<h2>Plot Wannier orbitals<a class="headerlink" href="#plot-wannier-orbitals" title="Permalink to this headline">¶</a></h2>
+<p>Es gibt doch irgendwo schon die lineare Interpolation und das Einlesen,
+oder?</p>
+</div>
+<div class="section" id="plot-electron-density">
+<h2>Plot electron density<a class="headerlink" href="#plot-electron-density" title="Permalink to this headline">¶</a></h2>
+<p>Add me, I&#8217;m pretty much the coolest feature, right?</p>
+</div>
+<div class="section" id="mixins">
+<h2>Mixins<a class="headerlink" href="#mixins" title="Permalink to this headline">¶</a></h2>
+<p>blarblar tbc blar</p>
+</div>
+<div class="section" id="more-examples">
+<h2>More examples<a class="headerlink" href="#more-examples" title="Permalink to this headline">¶</a></h2>
+<p>See Example section.</p>
+</div>
+<div class="section" id="more-features">
+<h2>More features<a class="headerlink" href="#more-features" title="Permalink to this headline">¶</a></h2>
+<p>You can find more documentation about the methods when you click on their names.</p>
+<ul class="simple">
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.latticevectors" title="wannier90.w90hamiltonian.Hamiltonian.latticevectors"><tt class="xref py py-meth docutils literal"><span class="pre">latticevectors()</span></tt></a>: lattice vectors of the system.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.reciprocal_latticevectors" title="wannier90.w90hamiltonian.Hamiltonian.reciprocal_latticevectors"><tt class="xref py py-meth docutils literal"><span class="pre">reciprocal_latticevectors()</span></tt></a>: reciprocal lattice vectors
+of the system.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.orbitalspreads" title="wannier90.w90hamiltonian.Hamiltonian.orbitalspreads"><tt class="xref py py-meth docutils literal"><span class="pre">orbitalspreads()</span></tt></a>: orbital spreads (=sizes) of the
+basis orbitals.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.orbitalpositions" title="wannier90.w90hamiltonian.Hamiltonian.orbitalpositions"><tt class="xref py py-meth docutils literal"><span class="pre">orbitalpositions()</span></tt></a>: orbital positions of the basis
+orbitals.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues" title="wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues"><tt class="xref py py-meth docutils literal"><span class="pre">maincell_eigenvalues()</span></tt></a>: calculate eigenvalues of the
+main unit cell as if it were not in a periodic crystal. Use this to
+calculate the spectrum of finite structures.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues" title="wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues"><tt class="xref py py-meth docutils literal"><span class="pre">bloch_eigenvalues()</span></tt></a>: calculate the eigenvalues for
+a single vector <tt class="docutils literal"><span class="pre">k</span></tt>.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.create_orbital_vector_list" title="wannier90.w90hamiltonian.Hamiltonian.create_orbital_vector_list"><tt class="xref py py-meth docutils literal"><span class="pre">create_orbital_vector_list()</span></tt></a>: Concatenate the amplitudes
+of a solution vector with information about their basis elements (coordinates,
+spread). Use this if you want to export more information about the eigenvectors
+than just the vector itself.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.plot_vector" title="wannier90.w90hamiltonian.Hamiltonian.plot_vector"><tt class="xref py py-meth docutils literal"><span class="pre">plot_vector()</span></tt></a>: plot an eigenvector by putting circles
+with a size proportional to the eigenvector amplitudes on the orbital positions.
+The function doesn&#8217;t use the real space probability density of the orbitals.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.unitcells_within_zone" title="wannier90.w90hamiltonian.Hamiltonian.unitcells_within_zone"><tt class="xref py py-meth docutils literal"><span class="pre">unitcells_within_zone()</span></tt></a>: Returns a list of unit cells
+within a certain area. Use it e.g. if you want to drop hopping parameters.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.drop_dimension_from_cell_list" title="wannier90.w90hamiltonian.Hamiltonian.drop_dimension_from_cell_list"><tt class="xref py py-meth docutils literal"><span class="pre">drop_dimension_from_cell_list()</span></tt></a>: Takes a list of unit
+cell coordinates and drops the x,y or/and z dimensionf rom the list - this way
+you can create a 2D material from a 3D material or a 1D material from a 2D
+material.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.standard_paths" title="wannier90.w90hamiltonian.Hamiltonian.standard_paths"><tt class="xref py py-meth docutils literal"><span class="pre">standard_paths()</span></tt></a>: Create standard paths within the
+Brillouin zones of the possible crystal lattices.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.unitcellcoordinates" title="wannier90.w90hamiltonian.Hamiltonian.unitcellcoordinates"><tt class="xref py py-meth docutils literal"><span class="pre">unitcellcoordinates()</span></tt></a>:  Cartesian coordinates of the
+given unit cells.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.drawunitcells" title="wannier90.w90hamiltonian.Hamiltonian.drawunitcells"><tt class="xref py py-meth docutils literal"><span class="pre">drawunitcells()</span></tt></a>: Plot the main cell and the cells
+where there exist hopping matrix elements to.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.point_path" title="wannier90.w90hamiltonian.Hamiltonian.point_path"><tt class="xref py py-meth docutils literal"><span class="pre">point_path()</span></tt></a>: Create a path between given points. Use
+it to create a k-point path for the bandstructure.</li>
+<li><a class="reference internal" href="#wannier90.w90hamiltonian.Hamiltonian.apply_electrostatic_potential" title="wannier90.w90hamiltonian.Hamiltonian.apply_electrostatic_potential"><tt class="xref py py-meth docutils literal"><span class="pre">apply_electrostatic_potential()</span></tt></a>: Apply an
+electrostatic potential.</li>
+</ul>
+</div>
+<div class="section" id="module-wannier90.w90hamiltonian">
+<span id="code-reference"></span><h2>Code reference<a class="headerlink" href="#module-wannier90.w90hamiltonian" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="wannier90.w90hamiltonian.BandstructurePlot">
+<em class="property">class </em><tt class="descclassname">wannier90.w90hamiltonian.</tt><tt class="descname">BandstructurePlot</tt><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combine several bandstructure plots.</p>
+<p>Call plot(kpoints,data) for every bandstructure plot.
+Then, call save(filename) to save to a file.</p>
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.BandstructurePlot.plot">
+<tt class="descname">plot</tt><big>(</big><em>kpoints</em>, <em>data</em>, <em>style='auto'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a bandstructure plot to the figure.</p>
+<p>kpoints: list of kpoints
+data: list of eigenvalues for each kpoint.
+style: set format string of this plot. You can also set the 
+styles of all plots using setstyles().
+Default is &#8216;auto&#8217;, which means that the style list will be used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.BandstructurePlot.reset">
+<tt class="descname">reset</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear the current figure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.BandstructurePlot.save">
+<tt class="descname">save</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the figure to a file. The format is determined
+by the filename.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.BandstructurePlot.set_aspect_ratio">
+<tt class="descname">set_aspect_ratio</tt><big>(</big><em>aspect</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.set_aspect_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.set_aspect_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the aspect ratio. For possible values, see
+<a class="reference external" href="http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect">http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect</a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.BandstructurePlot.set_plot_range">
+<tt class="descname">set_plot_range</tt><big>(</big><em>**kwargs</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.set_plot_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.set_plot_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the plot range using the kwargs
+xmin, xmax, ymin, ymax.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.BandstructurePlot.setstyles">
+<tt class="descname">setstyles</tt><big>(</big><em>stylelist</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.setstyles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.setstyles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the styles for each bandstructure plot.</p>
+<p>stylelist: A list with format strings (see 
+<a class="reference external" href="http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.plot">http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.plot</a>)
+for each plot. If the list is shorter than the number of plots,
+it is repeated.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="wannier90.w90hamiltonian.Hamiltonian">
+<em class="property">class </em><tt class="descclassname">wannier90.w90hamiltonian.</tt><tt class="descname">Hamiltonian</tt><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO: durchschleifen der argumente bei bloch_eigenvalues etc. ist bloed. vl. argumente bei allen anderen
+mit <a href="#id1"><span class="problematic" id="id2">*</span></a>args und auf dokumentation von bloch_eigenvalues verweisen?
+TODO: unitcellcoordinates and numbers is used ambiguously
+TODO: performance: use in-place operations for numpy -=, +=, <a href="#id3"><span class="problematic" id="id4">*</span></a>= and consider numpy.fromfunction
+TODO: to ensure a variable is a numpy array: a = array(a, copy=False)
+TODO: REFACTOR REFACTOR REFACTOR
+TODO: sparse matrices: <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/sparse.html">http://docs.scipy.org/doc/scipy/reference/sparse.html</a>,</p>
+<blockquote>
+<div><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs">http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs</a></div></blockquote>
+<dl class="docutils">
+<dt>TODO: plots konsistenter zur aussenwelt machen, dh steuerung von aussen erlauben (mehrere</dt>
+<dd>plots uebereinander, nebeneinander etc.</dd>
+<dt>TODO: alles sparse + abgeleitete hamiltonians auf die alten verweisen,</dt>
+<dd>nicht explizit schreiben</dd>
+<dt>TODO: moeglichkeit zu einem output-logfile mit versionsnummer, zB</dt>
+<dd>mit globaler variable LOG</dd>
+<dt>TODO; die reihenfolge in create_supercell ist komisch, zB beruecksichtigt energy_shift schon die vergroesserung</dt>
+<dd>der zelle</dd>
+</dl>
+<p>TODO: apply_electrostatic_potential fuer alle fkten mit 1,2,3 argumenten</p>
+<p>There are several ways to initialize the Wannier90 Hamiltonian:
+1) Hamiltonian.from_file(wannier90filename,poscarfilename,wannier90woutfilename)
+2) Hamiltonian.from_raw_data(unitcellmatrixblocks,unitcellnumbers,latticevecs,orbitalspreads,orbitalpositions)
+3) Hamiltonian.from_nth_nn_list(nnfile,customhopping):</p>
+<p>See the documentation of those methods.</p>
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.apply_electrostatic_potential">
+<tt class="descname">apply_electrostatic_potential</tt><big>(</big><em>potential</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.apply_electrostatic_potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.apply_electrostatic_potential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply an electrostatic potential to the system and return the new
+Hamiltonian.</p>
+<p>potential: a LinearInterpolationNOGrid object. If the object is a 1D/2D
+interpolation, the y and z/z coordinate are not used.</p>
+<p>Don&#8217;t forget to match the unit of length and potential!</p>
+<p>Best function yet in OOP.</p>
+<p>Very Pythonic: potential can be anything with ().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.bandstructure_data">
+<tt class="descname">bandstructure_data</tt><big>(</big><em>kpoints</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>parallelmethod=None</em>, <em>parallelthreads=4</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.bandstructure_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.bandstructure_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the bandstructure for a given kpoint list.
+For direct plotting, use plot_bandstructure(kpoints,filename).</p>
+<p>A list of eigenvalues for each kpoint is returned. To sort 
+by band, use data.transpose().</p>
+<p>usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
+you can set them here (get the list of available cells with unitcellnumbers() and
+strip the list from unwanted cells).        
+basis: &#8216;c&#8217; or &#8216;d&#8217;. Determines if the kpoints are given in cartesian
+reciprocal coordinates or direct reciprocal coordinates.
+usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
+sense if the selected orbitals don&#8217;t interact with other orbitals.
+parallel: Option to parallelize the band structure over k-points.</p>
+<blockquote>
+<div>None: No parallelization (default)
+&#8216;multiprocessor.pool&#8217;: Parallelization using the multiprocessor.Pool class
+DOES NOT WORK YET!!!</div></blockquote>
+<p>parallelthreads: Set to the number of threads if parallel != None. Default is 4.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues">
+<tt class="descname">bloch_eigenvalues</tt><big>(</big><em>k</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>return_evecs=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.bloch_eigenvalues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the eigenvalues of the eigenvalue problem with
+Bloch boundary conditions for a given vector k.</p>
+<p>usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
+you can set them here (get the list of available cells with unitcellnumbers() and
+strip the list from unwanted cells).
+basis: &#8216;c&#8217; or &#8216;d&#8217;. Determines if the kpoints are given in cartesian
+reciprocal coordinates or direct reciprocal coordinates.
+usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
+sense if the selected orbitals don&#8217;t interact with other orbitals.
+return_evecs: If True, evecs are also returned as the second return value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian">
+<tt class="descname">create_modified_hamiltonian</tt><big>(</big><em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>energyshift=0</em>, <em>magnetic_B=None</em>, <em>gauge_B='landau_x'</em>, <em>mixin_ham=None</em>, <em>mixin_hoppings=None</em>, <em>mixin_cells=None</em>, <em>mixin_assoc=None</em>, <em>onsite_potential=None</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.create_modified_hamiltonian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Hamiltonian with dropped orbitals or hopping cells. This is just a wrapper for 
+create_supercell_hamiltonian().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.create_orbital_vector_list">
+<tt class="descname">create_orbital_vector_list</tt><big>(</big><em>vector</em>, <em>include_third_dimension=False</em>, <em>include_spread=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.create_orbital_vector_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.create_orbital_vector_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a list of orbital positions with given eigenvector amplitudes. Only the real part from
+the eigenvector is kept.</p>
+<p>vector: Vector to connect to the orbital positions.
+include_third_dimension: Include the z position of the points. Default is False.
+include_spread: Include the spread of the orbital. Default is False.</p>
+<dl class="docutils">
+<dt>Return: A matrix containing the following columns:</dt>
+<dd>x   y   (z)   (spread)    value</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian">
+<tt class="descname">create_supercell_hamiltonian</tt><big>(</big><em>cellcoordinates</em>, <em>latticevecs</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>energyshift=None</em>, <em>magnetic_B=None</em>, <em>gauge_B='landau_x'</em>, <em>mixin_ham=None</em>, <em>mixin_hoppings=None</em>, <em>mixin_cells=None</em>, <em>mixin_assoc=None</em>, <em>onsite_potential=None</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.create_supercell_hamiltonian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the matrix elements for a supercell containing several unit cells, e.g. a volume
+with one unit cell missing in the middle or one slice of a nanoribbon.</p>
+<p>cellcoordinates: unit cells contained in the supercell [[0,0,0],[1,0,0],...]. Use integergrid3d()
+to easily create a unit cell grid (which you can modify).
+latticevectors: lattice vectors of the new unit cell in the basis of the old unit cells (!!).
+E.g. a supercell of four graphene unit cells could have latticevecs=[[2,0,0],[0,2,0],[0,0,1]]. 
+If you want to create a ribbon or a molecule, use a high value in one of the coordinates
+(e.g. a long y lattice vector).
+usedhoppingcells: If you don&#8217;t want to use all hopping parameters, you can set the cells to &#8220;hop&#8221;
+to here (list of cell coordinates).
+usedorbitals: a list of orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
+sense if the selected orbitals don&#8217;t interact with other orbitals. 
+energyshift: Shift energy scale by energyshift, e.g. to shift the Fermi energy to 0.
+magnetic_B: Magnetic field in perpendicular direction (in T)
+gauge_B: &#8216;landau_x&#8217;: Landau gauge for systems with x periodicity (A=(-By,0,0))</p>
+<blockquote>
+<div>&#8216;landau_y:&#8217;: Landau gauge for systems with y periodicity (A=(0,Bx,0))
+&#8216;symmetric&#8217;: Symmetric gauge for systems with x and y periodicity (A=1/2(-By,Bx,0))</div></blockquote>
+<dl class="docutils">
+<dt>mixin_ham: A &#8220;mix-in&#8221; Hamiltonian from which some matrix elements are used. Default is None.</dt>
+<dd>The mixin is done before the other modifications (magnetic field, energyshift)</dd>
+<dt>mixin_hoppings: A list of matrix elements from the main Hamiltonian that should be substituted with matrix elements from mixin_ham.</dt>
+<dd>The conjugate hopping is generated automatically (i.e. (0,1) will be
+automatically expanded to (0,1),(1,0) ). 
+Example: Substitute all matrix elements from orbitals 0,1 to orbitals 0,1,2,3:
+mixin_hoppings=[(0,0),(0,1),(0,2),(0,3),(1,0),(1,1),(1,2),(1,3)]</dd>
+<dt>mixin_cells: List of unit cells. Substitution can be restricted to specific unit cells.</dt>
+<dd>E.g. the main cell: mixin_cells=[[0,0,0]]
+E.g. the main cell and the ones left and right: mixin_cells=[[-1,0,0],[0,0,0],[1,0,0]]
+Default is None, which means that all cells that exist in both Hamiltonians will be substituted.
+Mind that the cell coordinates have to be lists, not tuples!</dd>
+<dt>mixin_assoc: Association list for orbitals in the current Hamiltonian and the mixin Hamiltonian. Type is dictionary.</dt>
+<dd><p class="first">If the mixin Hamiltonian describes a different system, the orbital numbers may not be the same.
+Only the relevant orbitals (those mentioned in mixin_hoppings) have to be here.
+Default is None, which means that the orbital numbers are assumed to be identical.
+Example:    Main Hamiltonian     Mixin Hamiltonian</p>
+<blockquote class="last">
+<div><p>0                    0
+1                    1
+2                    2
+3                    3
+4                    4
+100                  15
+101                  16
+102                  17
+103                  18
+104                  19</p>
+<p>mixin_assoc={0:0,1:1,2:2,3:3,4:4,100:15,101:16,102:17,103:18,104:19}</p>
+</div></blockquote>
+</dd>
+</dl>
+<p>onsite_potential: List of numbers. The values will be added to the 
+diagonal (=onsite) matrix elements of the main cell. This approximates
+an electrostatic potential in the system. Default is None.</p>
+<p>Return:
+New Hamiltonian with the new properties.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.drawunitcells">
+<tt class="descname">drawunitcells</tt><big>(</big><em>unitcellnumbers='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.drawunitcells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.drawunitcells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a plot of a list of unit cells.</p>
+<p>unitcellnumbers: Numbers of unit cells to plot.
+Default value is &#8216;all&#8217;, then unitcellnumbers() is used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.drop_dimension_from_cell_list">
+<tt class="descname">drop_dimension_from_cell_list</tt><big>(</big><em>dimension</em>, <em>unitcellnumbers='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.drop_dimension_from_cell_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.drop_dimension_from_cell_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a list of unit cell coordinates and drops the x,y or/and z dimension
+from the list - this way you can create a 2D material from a 3D material
+or a 1D material from a 2D material. The function deletes all unit cell numbers
+that have a nonzero entry in that dimension.</p>
+<p>dimension: the dimension to drop: 0, 1 or 2. Can also be a list, e.g. (0,1) drops
+the first and second dimension. 
+unitcellnumbers: List of unit cell numbers. Default value is &#8216;all&#8217;.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.from_file">
+<em class="property">classmethod </em><tt class="descname">from_file</tt><big>(</big><em>wannier90filename</em>, <em>poscarfilename</em>, <em>wannier90woutfilename</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>A constructor to create an object based on data from files.
+wannier90filename: Path to the wannier90_hr.dat file
+poscarfilename: Path to the VASP POSCAR file
+wannier90woutfilename: Path to the wannier90.wout file</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.from_nth_nn_list">
+<em class="property">classmethod </em><tt class="descname">from_nth_nn_list</tt><big>(</big><em>nnfile</em>, <em>customhopping=None</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.from_nth_nn_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.from_nth_nn_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>A constructor to create a nth-nearest-neighbour Hamiltonian.</p>
+<p>nnfile: File containing the system information (see example data)
+customhopping: Dictionary, containing hopping parameters overriding those in nnfile.</p>
+<blockquote>
+<div>Example: {0:ONSITE,1:1STNN,2:2NDNN}</div></blockquote>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.from_raw_data">
+<em class="property">classmethod </em><tt class="descname">from_raw_data</tt><big>(</big><em>unitcellmatrixblocks</em>, <em>unitcellnumbers</em>, <em>latticevecs</em>, <em>orbitalspreads</em>, <em>orbitalpositions</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.from_raw_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.from_raw_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>A constructor used to create a custom Hamiltonian.
+unitcellmatrixblocks: Hopping elements, arranged by unit cells.
+unitcellnumbers: coordinates of the unit cells &#8220;hopped&#8221; to.
+latticevecs: lattice vectors.
+orbitalspreads: spreads of the orbitals
+orbitalpositions: positions of the orbitals</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.hermitian_hoppinglist">
+<tt class="descname">hermitian_hoppinglist</tt><big>(</big><em>unitcellnumbers</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.hermitian_hoppinglist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.hermitian_hoppinglist" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function removes unit cells from a list of unit cells whose &#8220;parity
+partners&#8221; are missing to ensure a Hermitian Bloch matrix.</p>
+<p>Return: kept, removed</p>
+<p>kept: Kept unit cell numbers
+removed: removed unit cell numbers (just for control purposes)</p>
+<p>If hopping to a specific unit cell is not used, one has to make sure
+that the parity inversed unit cell (=the cell with the &#8220;negative&#8221;
+coordinates&#8221;) is also dropped.
+That&#8217;s because the matrix elements of the bloch matrix look like this:</p>
+<p>... + gamma_i e^ikR + gamma_i e^-ikR + ...</p>
+<p>The sum of the two terms is cos(ikR) and real.</p>
+<p>&#8211;&gt; The function drops the terms which miss their partner and thus won&#8217;t
+become real.</p>
+<p>Note: It makes sense to remove not only the &#8220;parity partner&#8221;, but all unit
+cells which are identical due to symmetry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.integergrid3d">
+<tt class="descname">integergrid3d</tt><big>(</big><em>i</em>, <em>j</em>, <em>k</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.integergrid3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.integergrid3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an integer grid with the dimensions i,j,k</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.latticevectors">
+<tt class="descname">latticevectors</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.latticevectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.latticevectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the system&#8217;s lattice vectors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues">
+<tt class="descname">maincell_eigenvalues</tt><big>(</big><em>usedorbitals='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.maincell_eigenvalues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the eigenvalues of the main cell (no hopping to adjacent unit cells).</p>
+<p>usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
+sense if the selected orbitals don&#8217;t interact with other orbitals.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.nrorbitals">
+<tt class="descname">nrorbitals</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.nrorbitals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.nrorbitals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of orbitals/bands.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.orbitalpositions">
+<tt class="descname">orbitalpositions</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.orbitalpositions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.orbitalpositions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the wannier90 orbital positions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.orbitalspreads">
+<tt class="descname">orbitalspreads</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.orbitalspreads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.orbitalspreads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the wannier90 orbital spreads.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure">
+<tt class="descname">plot_bandstructure</tt><big>(</big><em>kpoints</em>, <em>filename</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.plot_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the bandstructure at the points kpoints (given in 
+cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)
+if you want to use direct coordinates) and save the plot
+to filename. The ending of filename determines the file format.</p>
+<p>usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
+you can set them here (get the list of available cells with unitcellnumbers() and
+strip the list from unwanted cells).  
+basis: &#8216;c&#8217; or &#8216;d&#8217;. Determines if the kpoints are given in cartesian
+reciprocal coordinates or direct reciprocal coordinates.
+usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
+sense if the selected orbitals don&#8217;t interact with other orbitals.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.plot_orbital_positions">
+<tt class="descname">plot_orbital_positions</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.plot_orbital_positions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.plot_orbital_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the positions of the orbitals in the unit cell.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.plot_vector">
+<tt class="descname">plot_vector</tt><big>(</big><em>vector</em>, <em>scale=1</em>, <em>figsize=None</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.plot_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.plot_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a vector with geometry by putting circles on the positions of the orbitals.
+The size of the circles corresponds to the absolute square, the color to the sign.</p>
+<p>vector: vector to plot
+scale: scale factor for the circles.
+figsize: w,h tuple in inches</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.point_path">
+<tt class="descname">point_path</tt><big>(</big><em>corner_points</em>, <em>nrpointspersegment</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.point_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.point_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a path connecting the corner_points with nrpointspersegment points per segment
+(excluding the next point), resulting in sum(nrpointspersegment)+1 points.
+The points in corner_points can have any dimension.
+nrpointspersegment is a list with one element less than corner_points.
+If nrpointspersegment is an integer, it is assumed to apply to each segment.</p>
+<p>Example: 
+my_hamiltonian.point_path([[0,0],[1,1],[2,2]],[2,2])
+gives        
+[[0.0, 0.0], [0.5, 0.5], [1.0, 1.0], [1.5, 1.5], [2, 2]]
+(note: those are 5 points, which is sum([2,2])+1)</p>
+<p>or equivalently:
+my_hamiltonian.point_path([[0,0],[1,1],[2,2]],2)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.reciprocal_latticevectors">
+<tt class="descname">reciprocal_latticevectors</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.reciprocal_latticevectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.reciprocal_latticevectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the system&#8217;s reciprocal lattice vectors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.standard_paths">
+<tt class="descname">standard_paths</tt><big>(</big><em>name</em>, <em>nrpointspersegment=1</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.standard_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.standard_paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives the standard path for a Bravais lattice in
+direct reciprocal coordinates.</p>
+<p>name: Name of the lattice
+nrpointspersegment: optional; if &gt; 1, a list of intermediate points connecting
+the main points is also returned and can be used for a 
+bandstructure path (nrpointspersegment points per segment).
+Default value: 1</p>
+<p>Return:
+points,names(,path)</p>
+<p>points: points in the path
+names: names of the points
+(path: path with intermediate points. Only returned if nrpointspersegment is &gt; 1)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.unitcellcoordinates">
+<tt class="descname">unitcellcoordinates</tt><big>(</big><em>unitcellnumbers='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.unitcellcoordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.unitcellcoordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cartesian coordinates of the given unit cells.</p>
+<p>unitcellnumbers: a list of the unit cell numbers. 
+Default value is &#8216;all&#8217;, then unitcellnumbers() is used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.unitcellnumbers">
+<tt class="descname">unitcellnumbers</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.unitcellnumbers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.unitcellnumbers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the numbers of the unit cells supplied in the wannier90_hr.dat
+file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.unitcells_within_zone">
+<tt class="descname">unitcells_within_zone</tt><big>(</big><em>zone</em>, <em>basis='c'</em>, <em>norm_order=2</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.unitcells_within_zone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.unitcells_within_zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of unit cells within a certain area. The function
+is comparing the same point in each cell (e.g. always the bottom left end).</p>
+<dl class="docutils">
+<dt>zone: can be a number or a tuple:</dt>
+<dd>number: radius to include cells within.
+tuple: area to include cells within, in the sense of distance from the origin along a direction.</dd>
+</dl>
+<p>basis: determines if zone is given in cartesian (&#8216;c&#8217;) or direct (&#8216;d&#8217;) coordinates.
+IMPORTANT: If direct coordinates are used, use integers for zone, not float!</p>
+<p>norm_order: if zone is a number (=radius), norm_order is the norm to use (mathematical definition, see 
+<a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.norm.html">http://docs.scipy.org/doc/numpy/reference/generated/numpy.linalg.norm.html</a>). Default is 2 (=Euclidean norm)
+Short version: 2 gives you a &#8220;circle&#8221;, numpy.inf a &#8220;square&#8221;.</p>
+<p>Examples:
+Cells within 30 Angstrom:
+unitcells_within_zone(30)
+Cells within a 6x8x1 Angstrom cuboid:
+unitcells_within_zone((3.0,4.0,0.5))
+Cells within a 4x4x4 block in direct coordinates:
+unitcells_within_zone((2,2,2),&#8217;d&#8217;)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.write_matrix_elements">
+<tt class="descname">write_matrix_elements</tt><big>(</big><em>outputfile</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.write_matrix_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.write_matrix_elements" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the wannier90 matrix elements to a file (<a href="#id5"><span class="problematic" id="id6">*</span></a>.wetb) readable by Florian&#8217;s code.
+Information contained in the file:
+- lattice vectors
+- orbital positions
+- orbital spreads
+- matrix elements of the chosen unit cells and orbitals</p>
+<p>Description of the file format:
+The file contains three sections, divided by an arbitrary number of blank lines (one at least,
+obviously). Lines starting with # are comments and are ignored. Anything in a line after the
+data is also ignored (i.e. you can write anything in the same line after the data, with or
+without #).
+First block: lattice vectors in rows
+Second block: orbital spread (first column) and position (other columns) of every orbital
+Third block: Matrix elements.</p>
+<blockquote>
+<div>Column 1-3: Unit cell number
+Column 4: Orbital number in main unit cell
+Column 5: Orbital number in other unit cell (the one the electron &#8220;hops&#8221; to)
+Column 6&amp;7: Real &amp; imaginary part of the matrix element</div></blockquote>
+<p>outputfile: Name of the output file (<a href="#id7"><span class="problematic" id="id8">*</span></a>.wetb - Wannier90-Environmental-dependent-Tight-Binding)
+usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
+you can set them here (get the list of available cells with unitcellnumbers() and
+strip the list from unwanted cells).
+usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
+sense if the selected orbitals don&#8217;t interact with other orbitals.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tight Binding</a><ul>
+<li><a class="reference internal" href="#features">Features</a></li>
+<li><a class="reference internal" href="#load-hamiltonian-parameters">Load Hamiltonian parameters</a></li>
+<li><a class="reference internal" href="#plot-a-bandstructure">Plot a bandstructure</a></li>
+<li><a class="reference internal" href="#modify-the-hamiltonian">Modify the Hamiltonian</a></li>
+<li><a class="reference internal" href="#export-modified-hamiltonian">Export modified Hamiltonian</a></li>
+<li><a class="reference internal" href="#plot-wannier-orbitals">Plot Wannier orbitals</a></li>
+<li><a class="reference internal" href="#plot-electron-density">Plot electron density</a></li>
+<li><a class="reference internal" href="#mixins">Mixins</a></li>
+<li><a class="reference internal" href="#more-examples">More examples</a></li>
+<li><a class="reference internal" href="#more-features">More features</a></li>
+<li><a class="reference internal" href="#module-wannier90.w90hamiltonian">Code reference</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="simple.html"
+                        title="previous chapter">Code examples</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="physics.html"
+                        title="next chapter">Physics</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/wannier90.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="physics.html" title="Physics"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="simple.html" title="Code examples"
+             >previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Rafael Reiter.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

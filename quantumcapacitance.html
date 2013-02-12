@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Quantum capacitance &mdash; EnvTB 1 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="EnvTB 1 documentation" href="index.html" />
+    <link rel="next" title="Code examples" href="simple.html" />
+    <link rel="prev" title="Electrostatics" href="electrostatics.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="simple.html" title="Code examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="electrostatics.html" title="Electrostatics"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="quantum-capacitance">
+<h1>Quantum capacitance<a class="headerlink" href="#quantum-capacitance" title="Permalink to this headline">¶</a></h1>
+<p>get_values_at_elements einbauen beim ladung fuer kapazität zusammenrechnen!</p>
+<p><em>Quantum capacitance</em> is the effect that the capacitance of a material with a
+small density of states at the Fermi energy is reduced. The effect is
+temperature-dependent.</p>
+<p>The code consists of two parts:</p>
+<ol class="arabic simple">
+<li>The function D(E,T) describes the density of states at a given energy E
+as a function of the temperature T. This is implemented for
+<a class="reference internal" href="#quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene" title="quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene"><tt class="xref py py-class docutils literal"><span class="pre">graphene</span> <span class="pre">at</span> <span class="pre">0K</span></tt></a>
+(no temperature dependency, obviously) and <a class="reference internal" href="#quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature" title="quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature"><tt class="xref py py-class docutils literal"><span class="pre">graphene</span> <span class="pre">at</span> <span class="pre">finite</span>
+<span class="pre">temperatures</span></tt></a>.</li>
+<li>The class <a class="reference internal" href="#quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver" title="quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver"><tt class="xref py py-class docutils literal"><span class="pre">QuantumCapacitanceSolver</span></tt></a> finds the electrostatic
+configuration that fulfils the constraints given by D(E,T).</li>
+</ol>
+<p>The default usage is like this:</p>
+<ol class="arabic simple">
+<li>Create <a class="reference internal" href="#quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver" title="quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver"><tt class="xref py py-class docutils literal"><span class="pre">QuantumCapacitanceSolver</span></tt></a> object:
+<tt class="docutils literal"><span class="pre">qcsolver=QuantumCapacitanceSolver(container,solver,elements,operator)</span></tt></li>
+<li>Calculate classical dependency of charge on every possible potential
+configuration of elements: <tt class="docutils literal"><span class="pre">qcsolver.refresh_basisvecs()</span></tt></li>
+<li>Set potential/fermi_energy as you like (e.g. backgate, sidegates...).</li>
+<li>Refresh the contribution of the new configuration:
+<tt class="docutils literal"><span class="pre">qcsolver.refresh_environment_contrib()</span></tt></li>
+<li>Solve: <tt class="docutils literal"><span class="pre">qcsolution=qcsolver.solve()</span></tt></li>
+<li>go to 3) until you are through with all voltages you want to look at.</li>
+</ol>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>The function <a class="reference internal" href="simple.html#simple.GrapheneQuantumCapacitance" title="simple.GrapheneQuantumCapacitance"><tt class="xref py py-func docutils literal"><span class="pre">simple.GrapheneQuantumCapacitance()</span></tt></a> illustrates
+the usage of the quantum capacitance solver:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">GrapheneQuantumCapacitance</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the quantum capacitance of Graphene on SiO2, including temperature.</span>
+
+<span class="sd">    Boundary conditions:</span>
+
+<span class="sd">    * left, right: periodic BC</span>
+<span class="sd">    * top: Neumann BC, slope=0</span>
+<span class="sd">    * bottom: backgate capacitor plate</span>
+
+<span class="sd">    Please read the code comments for further documentation.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#Set system parameters</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mf">1e-9</span>
+    <span class="n">hoehe</span><span class="o">=</span><span class="mi">600</span>
+    <span class="n">breite</span><span class="o">=</span><span class="mi">1</span>
+    <span class="n">backgatevoltage</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">graphenepos</span><span class="o">=</span><span class="mi">299</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mi">300</span>
+    <span class="n">sio2</span><span class="o">=</span><span class="mf">3.9</span>
+
+    <span class="n">vstart</span><span class="o">=-</span><span class="mi">60</span>
+    <span class="n">vend</span><span class="o">=</span><span class="mi">60</span>
+    <span class="n">dv</span><span class="o">=</span><span class="mf">0.5</span>
+
+    <span class="c">#Finite difference operator</span>
+    <span class="n">lapl</span><span class="o">=</span><span class="n">electrostatics</span><span class="o">.</span><span class="n">Laplacian2D2ndOrderWithMaterials</span><span class="p">(</span><span class="n">gridsize</span><span class="p">,</span><span class="n">gridsize</span><span class="p">)</span>
+    <span class="c">#Create Rectangle</span>
+    <span class="n">periodicrect</span><span class="o">=</span><span class="n">electrostatics</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">(</span><span class="n">hoehe</span><span class="p">,</span><span class="n">breite</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="n">lapl</span><span class="p">)</span>
+
+    <span class="c">#Set boundary condition at the top</span>
+    <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">breite</span><span class="p">):</span>
+        <span class="n">periodicrect</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">y</span><span class="p">]</span><span class="o">.</span><span class="n">neumannbc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;xf&#39;</span><span class="p">)</span>
+
+    <span class="c">#Create list of backgate and GNR elements</span>
+    <span class="n">backgateelements</span><span class="o">=</span><span class="p">[</span><span class="n">periodicrect</span><span class="p">[</span><span class="n">hoehe</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">breite</span><span class="p">)]</span>
+    <span class="n">grapheneelements</span><span class="o">=</span><span class="p">[</span><span class="n">periodicrect</span><span class="p">[</span><span class="n">graphenepos</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">breite</span><span class="p">)]</span>
+
+    <span class="c">#Set initial backgate element boundary condition (not necessary)</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">backgateelements</span><span class="p">:</span>
+        <span class="n">element</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="n">backgatevoltage</span>
+
+    <span class="c">#Create D(E,T) function</span>
+    <span class="n">Ef_dependence_function</span><span class="o">=</span><span class="n">quantumcapacitance</span><span class="o">.</span><span class="n">BulkGrapheneWithTemperature</span><span class="p">(</span><span class="n">temperature</span><span class="p">,</span><span class="n">gridsize</span><span class="p">)</span><span class="o">.</span><span class="n">Ef_interp</span>
+
+    <span class="c">#Set electrochemical potential and D(E,T) for the GNR elements</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">grapheneelements</span><span class="p">:</span>
+        <span class="n">element</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">0</span>
+        <span class="n">element</span><span class="o">.</span><span class="n">fermi_energy</span><span class="o">=</span><span class="mi">0</span>
+        <span class="n">element</span><span class="o">.</span><span class="n">fermi_energy_charge_dependence</span><span class="o">=</span><span class="n">Ef_dependence_function</span>
+
+    <span class="c">#Set dielectric material</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">graphenepos</span><span class="p">,</span><span class="n">hoehe</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">breite</span><span class="p">):</span>
+            <span class="n">periodicrect</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span><span class="o">.</span><span class="n">epsilon</span><span class="o">=</span><span class="n">sio2</span>
+
+    <span class="c">#Create periodic container</span>
+    <span class="n">percont</span><span class="o">=</span><span class="n">electrostatics</span><span class="o">.</span><span class="n">PeriodicContainer</span><span class="p">(</span><span class="n">periodicrect</span><span class="p">,</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+
+    <span class="c">#Invert discretization matrix</span>
+    <span class="n">solver</span><span class="p">,</span><span class="n">inhomogeneity</span><span class="o">=</span><span class="n">percont</span><span class="o">.</span><span class="n">lu_solver</span><span class="p">()</span>
+
+    <span class="c">#Create QuantumCapacitanceSolver object</span>
+    <span class="n">qcsolver</span><span class="o">=</span><span class="n">quantumcapacitance</span><span class="o">.</span><span class="n">QuantumCapacitanceSolver</span><span class="p">(</span><span class="n">percont</span><span class="p">,</span><span class="n">solver</span><span class="p">,</span><span class="n">grapheneelements</span><span class="p">,</span><span class="n">lapl</span><span class="p">)</span>
+
+    <span class="c">#Refresh basisvectors for calculation. Necessary once at the beginning.</span>
+    <span class="n">qcsolver</span><span class="o">.</span><span class="n">refresh_basisvecs</span><span class="p">()</span>
+
+    <span class="c">#Create volgate list</span>
+    <span class="n">voltages</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">vstart</span><span class="p">,</span><span class="n">vend</span><span class="p">,</span><span class="n">dv</span><span class="p">)</span>
+
+    <span class="n">charges</span><span class="o">=</span><span class="p">[]</span>
+
+    <span class="c">#Loop over voltages</span>
+    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">voltages</span><span class="p">:</span>
+        <span class="c">#Set backgate elements to voltage</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">backgateelements</span><span class="p">:</span>
+            <span class="n">elem</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="n">v</span>
+        <span class="c">#Check change of environment</span>
+        <span class="n">qcsolver</span><span class="o">.</span><span class="n">refresh_environment_contrib</span><span class="p">()</span>
+        <span class="c">#Solve quantum capacitance problem &amp; set potential property of elements</span>
+        <span class="n">qcsolution</span><span class="o">=</span><span class="n">qcsolver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+        <span class="c">#Create new inhomogeneity because potential has changed</span>
+        <span class="n">inhom</span><span class="o">=</span><span class="n">percont</span><span class="o">.</span><span class="n">createinhomogeneity</span><span class="p">()</span>
+        <span class="c">#Solve system with new inhomogeneity</span>
+        <span class="n">sol</span><span class="o">=</span><span class="n">solver</span><span class="p">(</span><span class="n">inhom</span><span class="p">)</span>
+        <span class="c">#Save the charge configuration in the GNR</span>
+        <span class="n">charges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">percont</span><span class="o">.</span><span class="n">charge</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span><span class="n">lapl</span><span class="p">,</span><span class="n">grapheneelements</span><span class="p">))</span>
+    <span class="c">#Sum over charge and take derivative = capacitance</span>
+    <span class="n">totalcharge</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">charges</span><span class="p">])</span>
+    <span class="n">capacitance</span><span class="o">=</span><span class="p">(</span><span class="n">totalcharge</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">-</span><span class="n">totalcharge</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">grapheneelements</span><span class="p">)</span><span class="o">*</span><span class="n">gridsize</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">dv</span><span class="p">)</span>
+
+    <span class="c">#Plot result</span>
+    <span class="n">fig</span><span class="o">=</span><span class="n">pylab</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&#39;Quantum capacitance of Graphene on SiO2&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Backgate voltage [V]&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;GNR capacitance [$10^{-6} F/m^2$]&#39;</span><span class="p">)</span>
+    <span class="n">pylab</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">voltages</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="mf">1e6</span><span class="o">*</span><span class="n">capacitance</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The result:</p>
+<img alt="images/quantumcapacitance_example.png" src="images/quantumcapacitance_example.png" />
+</div>
+<div class="section" id="code-reference">
+<h2>Code reference<a class="headerlink" href="#code-reference" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.quantumcapacitance.</tt><tt class="descname">BulkGrapheneWithTemperature</tt><big>(</big><em>T</em>, <em>grid_height</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/quantumcapacitance.html#BulkGrapheneWithTemperature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>How the Fermi energy of graphene (Dirac cone) depends on the charge density at finite temperatures.</p>
+<p>The algorithm includes a function inversion, which can either be done with interpolation (Ef_interp()) or
+with a root search (Ef()). The interpolation is strongly suggested for higher speed.</p>
+<p>The variables minEf, max Ef, Eftol, dEf are the parameters for the interpolation/root search. minEf and maxEf
+have to span the relevant energy window around the equilibrium Fermi energy = 0. If steps occur, decrease Eftol/dEf.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene">
+<em class="property">static </em><tt class="descclassname">FermiEnergyChargeDependence.</tt><tt class="descname">bulk_graphene</tt><big>(</big><em>charge</em>, <em>grid_height=1e-09</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/quantumcapacitance.html#FermiEnergyChargeDependence.bulk_graphene"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene" title="Permalink to this definition">¶</a></dt>
+<dd><p>How the Fermi energy of graphene depends on the charge density at 0K.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver">
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.quantumcapacitance.</tt><tt class="descname">QuantumCapacitanceSolver</tt><big>(</big><em>container</em>, <em>solver</em>, <em>elements</em>, <em>charge_operator</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/quantumcapacitance.html#QuantumCapacitanceSolver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the quantum capacitance of a system with a density of states
+D(E) which is not a function of space (not D(E,x)).</p>
+<p>Note: QuantumCapacitanceSolver changes the potential property of the
+participating elements. The constant property is fermi_energy (i.e.
+if you connect an external voltage of 5V, set fermi_energy=5).</p>
+<p>Usage:</p>
+<ol class="arabic simple">
+<li>Create object: qcsolver=QuantumCapacitanceSolver(container,solver,
+elements,operator)</li>
+<li>Calculate classical dependency of charge on every possible potential 
+configuration of elements: qcsolver.refresh_basisvecs()</li>
+<li>Set potential/fermi_energy as you like (e.g. backgate, sidegates...).</li>
+<li>Refresh the contribution of the new configuration:         
+qcsolver.refresh_environment_contrib()</li>
+<li>Solve:
+qcsolution=qcsolver.solve()</li>
+<li>go to 3) until you are through with all voltages you want to look at.</li>
+</ol>
+<p>container: the container which describes the system.
+solver: the solution of the system, e.g. generated by 
+my_container.lu_solver().
+elements: the elements (from the system described by container) that 
+participate in the calculation. The property 
+fermi_energy_charge_dependence needs to be set.
+charge_operator: The operator which gives the charge (without 
+epsilon_0).</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quantum capacitance</a><ul>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#code-reference">Code reference</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="electrostatics.html"
+                        title="previous chapter">Electrostatics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="simple.html"
+                        title="next chapter">Code examples</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/quantumcapacitance.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="simple.html" title="Code examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="electrostatics.html" title="Electrostatics"
+             >previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Rafael Reiter.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
