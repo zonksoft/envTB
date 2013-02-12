@@ -27,6 +27,10 @@ class Hamiltonian:
           nicht explizit schreiben
     TODO: moeglichkeit zu einem output-logfile mit versionsnummer, zB
           mit globaler variable LOG
+
+    TODO; die reihenfolge in create_supercell ist komisch, zB beruecksichtigt energy_shift schon die vergroesserung
+          der zelle
+    TODO: apply_electrostatic_potential fuer alle fkten mit 1,2,3 argumenten
     """
     
     __unitcellmatrixblocks=[]
@@ -875,7 +879,7 @@ class Hamiltonian:
                 checked.append(e)
         return checked        
     
-    def create_supercell_hamiltonian(self,cellcoordinates,latticevecs,usedhoppingcells='all',usedorbitals='all',energyshift=None,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None):
+    def create_supercell_hamiltonian(self,cellcoordinates,latticevecs,usedhoppingcells='all',usedorbitals='all',energyshift=None,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None,onsite_potential=None):
         """
         Creates the matrix elements for a supercell containing several unit cells, e.g. a volume
         with one unit cell missing in the middle or one slice of a nanoribbon.
@@ -924,6 +928,10 @@ class Hamiltonian:
                                  104                  19
                                  
                                  mixin_assoc={0:0,1:1,2:2,3:3,4:4,100:15,101:16,102:17,103:18,104:19}
+        onsite_potential: List of numbers. The values will be added to the 
+        diagonal (=onsite) matrix elements of the main cell. This approximates
+        an electrostatic potential in the system. Default is None.                         
+        
         
         
         Return:
@@ -1028,9 +1036,10 @@ class Hamiltonian:
                         unitcellmatrixblocks[mycellidx][i,j]=othermatrixblocks[othercellidx][k,l]
                         
 
-            
-            
-    
+        #Add onsite potential = electrostatic potential
+        if onsite_potential != None:
+            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=numpy.diag(onsite_potential)       
+                        
         #Shift diagonal elements of main cell hopping block
         if energyshift!=None:
             unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=numpy.diag((orbitals_per_unitcell*nr_unitcells_in_supercell)*[energyshift])       
@@ -1053,7 +1062,7 @@ class Hamiltonian:
                 if gauge_B=='symmetric':
                     phasematrix=numpy.exp(1j*magnetic_B*Tesla_conversion_factor*numpy.array([[0.5*((other[1]-main[1])*(other[0]+main[0])-(other[0]-main[0])*(other[1]+main[1])) for other in othercell_orbitalpositions] for main in numpy.array(orbitalpositions)]))
                 
-                unitcellmatrixblocks[i]*=phasematrix    
+                unitcellmatrixblocks[i]*=phasematrix  
                 
         return self.from_raw_data(unitcellmatrixblocks, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions)
     
@@ -1113,13 +1122,34 @@ class Hamiltonian:
         else:
             return int(-numpy.ceil(-x)) 
     
-    def create_modified_hamiltonian(self,usedhoppingcells='all',usedorbitals='all',energyshift=0,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None):
+    def create_modified_hamiltonian(self,usedhoppingcells='all',usedorbitals='all',energyshift=0,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None,onsite_potential=None):
         """
         Creates a Hamiltonian with dropped orbitals or hopping cells. This is just a wrapper for 
         create_supercell_hamiltonian().
         """
         
-        return self.create_supercell_hamiltonian([[0,0,0]], [[1,0,0],[0,1,0],[0,0,1]], usedhoppingcells, usedorbitals,energyshift,magnetic_B,gauge_B,mixin_ham,mixin_hoppings,mixin_cells,mixin_assoc)
+        return self.create_supercell_hamiltonian([[0,0,0]], [[1,0,0],[0,1,0],[0,0,1]], usedhoppingcells, usedorbitals,energyshift,magnetic_B,gauge_B,mixin_ham,mixin_hoppings,mixin_cells,mixin_assoc,onsite_potential)
+
+    def apply_electrostatic_potential(self,potential):
+        """
+        Apply an electrostatic potential to the system and return the new
+        Hamiltonian.
+        
+        potential: a LinearInterpolationNOGrid object. If the object is a 1D/2D
+        interpolation, the y and z/z coordinate are not used.
+        
+        Don't forget to match the unit of length and potential!
+        
+        Best function yet in OOP.
+        
+        Very Pythonic: potential can be anything with ().
+        """
+        
+        dim=potential.dim()
+        
+        points=numpy.array(self.__orbitalpositions)[:,:dim]
+        potential=potential.map_function_to_points(points)
+        return self.create_modified_hamiltonian(onsite_potential=potential)
     
     def integergrid3d(self,i,j,k):
         """

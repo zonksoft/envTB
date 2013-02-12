@@ -20,6 +20,7 @@ class LinearInterpolationNOGrid:
     
     Note: the gridpoints on the upper boundary in each direction 
     are not accessible by the interpolation function.
+    TODO: fix that.
     
     Also note: Pay attention to the ordering of the ``func`` array.
     """
@@ -54,7 +55,7 @@ class LinearInterpolationNOGrid:
         
         #Convert lists to numpy.array
         self.__func=numpy.array(func,copy=False)
-        self.__dim=len(func.shape)
+        self.__dim=len(self.__func.shape)
         self.__default=default
         
         if start==None:
@@ -158,3 +159,10 @@ class LinearInterpolationNOGrid:
         points: list of points
         """
         return [self.__call__(point) for point in points]
+    
+    def dim(self):
+        """
+        Return the dimension of the interpolation function.
+        """
+        
+        return self.__dim
