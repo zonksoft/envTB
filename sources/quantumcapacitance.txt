@@ -30,6 +30,12 @@ The default usage is like this:
 5. Solve: ``qcsolution=qcsolver.solve()``
 6. go to 3) until you are through with all voltages you want to look at.
 
+You can use three different equations that connect the classical system with
+the quantum mechanical system: Potential comparison, charge comparison or
+nonlocal charge comparison. See the physics section for more information. The
+equation option of the constructor lets you choose the equation. If you don't
+know what this is about, just use the default value.
+
 Example
 -------
 
