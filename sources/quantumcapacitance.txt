@@ -30,6 +30,7 @@ The default usage is like this:
 5. Solve: ``qcsolution=qcsolver.solve()``
 6. go to 3) until you are through with all voltages you want to look at.
 
+
 Example
 -------
 
