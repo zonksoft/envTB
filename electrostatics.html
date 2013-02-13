@@ -409,7 +409,7 @@ imshow(data,extent=extent)</p>
 
 <dl class="class">
 <dt id="quantumcapacitance.electrostatics.Element">
-<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">Element</tt><big>(</big><em>rect</em>, <em>i</em>, <em>j</em>, <em>potential=None</em>, <em>charge=0</em>, <em>epsilon=1</em>, <em>fermi_energy_charge_dependence=None</em>, <em>fermi_energy=None</em>, <em>neumannbc=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Element" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">quantumcapacitance.electrostatics.</tt><tt class="descname">Element</tt><big>(</big><em>rect</em>, <em>i</em>, <em>j</em>, <em>potential=None</em>, <em>charge=0</em>, <em>epsilon=1</em>, <em>fermi_energy_charge_dependence=None</em>, <em>fermi_energy=None</em>, <em>neumannbc=None</em>, <em>charge_fermi_energy_dependence=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/electrostatics.html#Element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.electrostatics.Element" title="Permalink to this definition">¶</a></dt>
 <dd><p>Element describes a single grid point/discretization element in a geometry. 
 It saves the rectangle it belongs to (rect), its position (i,j) within its rectangle.
 It supplies a function matrixelements() which, given an operator, returns the matrix  
@@ -424,11 +424,13 @@ potential: If potential is None, the element is a normal gridpoint.</p>
 <dd>will be ignored (metal is not charged).</dd>
 <dt>fermi_energy_charge_dependence: How the fermi energy of the material depends on the charge. Default is None.</dt>
 <dd>Mind that this setting assumes that the element is in a homogeneous environment.</dd>
-<dt>fermi_energy: If the Fermi energy depends on the number of charge carriers, the fermi energy (=applied voltage e.g. by a battery)</dt>
-<dd>can be different from the electrostatic potential. fermi_energy_charge_dependence has to be defined in this case.
-Then you can calculate the quantum capacitance of the system.
-If fermi_energy_charge_dependence=None, then fermi_energy=potential.</dd>
 </dl>
+<p>charge_fermi_energy_dependence: Like the former, but the other way round.
+fermi_energy: If the Fermi energy depends on the number of charge carriers, the fermi energy (=applied voltage e.g. by a battery)</p>
+<blockquote>
+<div>can be different from the electrostatic potential. fermi_energy_charge_dependence has to be defined in this case.
+Then you can calculate the quantum capacitance of the system.
+If fermi_energy_charge_dependence=None, then fermi_energy=potential.</div></blockquote>
 <p>epsilon: Relative dielectrical constant.
 neumannbc: The slope along x or y direction can be fixed, e.g. for a neumann boundary condition.</p>
 <blockquote>
@@ -439,6 +441,12 @@ Values != 0 do not seem to work right (see comments).</div></blockquote>
 <dt id="quantumcapacitance.electrostatics.Element.charge">
 <tt class="descname">charge</tt><em class="property"> = 0</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.charge" title="Permalink to this definition">¶</a></dt>
 <dd><p>Charge of element</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="quantumcapacitance.electrostatics.Element.charge_fermi_energy_dependence">
+<tt class="descname">charge_fermi_energy_dependence</tt><em class="property"> = None</em><a class="headerlink" href="#quantumcapacitance.electrostatics.Element.charge_fermi_energy_dependence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dependence of charge on Fermi energy</p>
 </dd></dl>
 
 <dl class="attribute">
