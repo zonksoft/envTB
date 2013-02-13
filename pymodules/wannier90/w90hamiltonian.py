@@ -40,6 +40,7 @@ class Hamiltonian:
     #TODO: make a map/dictionary out of those two
     __latticevecs=0
     __nrbands=0
+    __fermi_energy=None
     
     def __init__(self):
         """
@@ -56,6 +57,12 @@ class Hamiltonian:
         #TODO: wannier90filename should be the id of the wannier90 calculation, and specific
         #filenames derived from that ('bla' -> bla.win, bla.wout, bla_hr.dat etc.). Then,
         #kick out all filename method arguments
+        
+    def fermi_energy(self):
+        """
+        Return the system's Fermi energy.
+        """
+        return self.__fermi_energy
         
     def latticevectors(self):
         """
@@ -86,12 +93,13 @@ class Hamiltonian:
         return list(self.__orbitalpositions) 
         
     @classmethod
-    def from_file(cls,wannier90filename,poscarfilename,wannier90woutfilename):
+    def from_file(cls,wannier90filename,poscarfilename,wannier90woutfilename,outcarfilename):
         """
         A constructor to create an object based on data from files.
         wannier90filename: Path to the wannier90_hr.dat file
         poscarfilename: Path to the VASP POSCAR file
         wannier90woutfilename: Path to the wannier90.wout file
+        outcarfilename: Path to the VASP OUTCAR file
         """        
         self = cls()
         
@@ -100,11 +108,12 @@ class Hamiltonian:
         self.__nrbands,wanndata = self.__read_wannier90_hr_file(wannier90filename)
         self.__unitcellmatrixblocks, self.__unitcellnumbers = self.__process_wannier90_hr_data(wanndata)
         self.__orbitalspreads,self.__orbitalpositions=self.__orbital_spreads_and_positions(wannier90woutfilename)
+        self.__fermi_energy=self.__get_fermi_energy_from_outcar(outcarfilename)
         
         return self
     
     @classmethod
-    def from_raw_data(cls,unitcellmatrixblocks,unitcellnumbers,latticevecs,orbitalspreads,orbitalpositions):
+    def from_raw_data(cls,unitcellmatrixblocks,unitcellnumbers,latticevecs,orbitalspreads,orbitalpositions,fermi_energy):
         """
         A constructor used to create a custom Hamiltonian.
         unitcellmatrixblocks: Hopping elements, arranged by unit cells.
@@ -121,6 +130,7 @@ class Hamiltonian:
         self.__nrbands = len(unitcellmatrixblocks[0])
         self.__orbitalspreads=orbitalspreads
         self.__orbitalpositions=orbitalpositions
+        self.__fermi_energy=fermi_energy
         
         return self
         
@@ -161,6 +171,19 @@ class Hamiltonian:
         self.__orbitalpositions=orbitalpositions
         
         return self
+    
+    def __get_fermi_energy_from_outcar(self,outcarfilename):
+        f = open("/tmp/OUTCAR", 'r')
+        lines = f.readlines()
+        
+        for nr,line in enumerate(lines):
+            ret = line.find("E-fermi :")
+            if ret >=0:
+                break   
+                
+        fermi_energy=float(lines[nr].split()[2])
+        
+        return fermi_energy
         
     def __read_nth_nn_file(self,nnfile):
         latticevecsstr,orbdatastr,defaulthoppingstr,nndatastr=general.split_by_empty_lines(general.read_file_as_table(nnfile),True)
@@ -845,6 +868,7 @@ class Hamiltonian:
         """
         
         #TODO: What about performance? Stuff gets copied pretty often
+        #maybe use this http://stackoverflow.com/a/4944929/1447622
         
         f = open(wannier90_wout_filename, 'r')
         lines = f.readlines()
@@ -894,7 +918,8 @@ class Hamiltonian:
         to here (list of cell coordinates).
         usedorbitals: a list of orbitals to use. Default is 'all'. Note: this only makes
         sense if the selected orbitals don't interact with other orbitals. 
-        energyshift: Shift energy scale by energyshift, e.g. to shift the Fermi energy to 0.
+        energyshift: Shift energy scale by energyshift, e.g. to shift the Fermi energy to 0. Also shifts the Fermi
+        energy variable of the Hamiltonian.
         magnetic_B: Magnetic field in perpendicular direction (in T)
         gauge_B: 'landau_x': Landau gauge for systems with x periodicity (A=(-By,0,0))
                  'landau_y:': Landau gauge for systems with y periodicity (A=(0,Bx,0))
@@ -1064,7 +1089,12 @@ class Hamiltonian:
                 
                 unitcellmatrixblocks[i]*=phasematrix  
                 
-        return self.from_raw_data(unitcellmatrixblocks, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions)
+        if energyshift != None and self.__fermi_energy != None:
+            newfermi_energy=self.__fermi_energy+energyshift
+        else:
+            newfermi_energy=self.__fermi_energy
+                
+        return self.from_raw_data(unitcellmatrixblocks, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions,newfermi_energy)
     
     def __metric(self,basis):
         """
@@ -1150,6 +1180,15 @@ class Hamiltonian:
         points=numpy.array(self.__orbitalpositions)[:,:dim]
         potential=potential.map_function_to_points(points)
         return self.create_modified_hamiltonian(onsite_potential=potential)
+    
+    def shift_fermi_energy_to_zero(self):
+        """
+        Applies an energy shift so that the new Fermi energy is at 0.
+        
+        The new Hamiltonian is returned.
+        """
+        
+        return self.create_modified_hamiltonian(energyshift=-self.fermi_energy())
     
     def integergrid3d(self,i,j,k):
         """
