@@ -220,7 +220,8 @@ interpolation=False.</p>
 <dt id="quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver">
 <em class="property">class </em><tt class="descclassname">quantumcapacitance.quantumcapacitance.</tt><tt class="descname">QuantumCapacitanceSolver</tt><big>(</big><em>container</em>, <em>solver</em>, <em>elements</em>, <em>charge_operator</em>, <em>equation='potential'</em>, <em>nonlocal_charge_potential_function=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/quantumcapacitance.html#QuantumCapacitanceSolver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the quantum capacitance of a system with a density of states
-D(E) which is not a function of space (not D(E,x)).</p>
+D(E). D(E,x) should work too (with equation=&#8217;charge_nonlocal), but hasn&#8217;t
+been tested yet.</p>
 <p>Note: QuantumCapacitanceSolver changes the potential property of the
 participating elements. The constant property is fermi_energy (i.e.
 if you connect an external voltage of 5V, set fermi_energy=5).</p>
