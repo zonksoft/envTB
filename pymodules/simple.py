@@ -385,9 +385,12 @@ def PotentialOfSimpleConductor2D():
     pylab.imshow(container.vector_to_datamatrix(sol)[0])
     pylab.show()
 
-def GrapheneQuantumCapacitance():
+def GrapheneQuantumCapacitance(equation='potential'):
     """
     Calculate the quantum capacitance of Graphene on SiO2, including temperature.
+    
+    equation: 'charge' or 'potential', see documentation of 
+    QuantumCapacitanceSolver.
     
     Boundary conditions:
 
@@ -409,7 +412,7 @@ def GrapheneQuantumCapacitance():
     vstart=-60
     vend=60
     dv=0.5
-  
+    
     #Finite difference operator
     lapl=electrostatics.Laplacian2D2ndOrderWithMaterials(gridsize,gridsize)
     #Create Rectangle
@@ -427,15 +430,17 @@ def GrapheneQuantumCapacitance():
     for element in backgateelements:
         element.potential=backgatevoltage
         
-    #Create D(E,T) function    
+    #Create D(E,T) function.     
     Ef_dependence_function=quantumcapacitance.BulkGrapheneWithTemperature(temperature,gridsize).Ef_interp
+    Ef_dependence_function_2=quantumcapacitance.BulkGrapheneWithTemperature(temperature,gridsize,interpolation=False).Q
     
     #Set electrochemical potential and D(E,T) for the GNR elements
     for element in grapheneelements:
         element.potential=0
         element.fermi_energy=0
         element.fermi_energy_charge_dependence=Ef_dependence_function
-
+        element.charge_fermi_energy_dependence=Ef_dependence_function_2
+    
     #Set dielectric material
     for x in range(graphenepos,hoehe):
         for y in range(breite):
@@ -447,8 +452,10 @@ def GrapheneQuantumCapacitance():
     #Invert discretization matrix
     solver,inhomogeneity=percont.lu_solver()
     
-    #Create QuantumCapacitanceSolver object
-    qcsolver=quantumcapacitance.QuantumCapacitanceSolver(percont,solver,grapheneelements,lapl)
+    #Create QuantumCapacitanceSolver object.
+    #Depending on equation, either fermi_energy_charge_dependence or charge_fermi_energy_dependence will be used.
+    #You don't have to set the other one.
+    qcsolver=quantumcapacitance.QuantumCapacitanceSolver(percont,solver,grapheneelements,lapl,equation=equation)
     
     #Refresh basisvectors for calculation. Necessary once at the beginning.
     qcsolver.refresh_basisvecs()
@@ -460,6 +467,7 @@ def GrapheneQuantumCapacitance():
     
     #Loop over voltages
     for v in voltages:
+        print v
         #Set backgate elements to voltage
         for elem in backgateelements:
             elem.potential=v
@@ -476,7 +484,7 @@ def GrapheneQuantumCapacitance():
     #Sum over charge and take derivative = capacitance
     totalcharge=numpy.array([sum(x) for x in charges])
     capacitance=(totalcharge[2:]-totalcharge[:-2])/len(grapheneelements)*gridsize/(2*dv)
-
+    
     #Plot result
     fig=pylab.figure()
     ax = fig.add_subplot(111)

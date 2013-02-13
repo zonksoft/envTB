@@ -49,6 +49,8 @@ class Element:
     charge=0
     #: Dependence of Fermi energy on charge
     fermi_energy_charge_dependence=0
+    #: Dependence of charge on Fermi energy
+    charge_fermi_energy_dependence=None
     #: Electrochemical potential of Element
     fermi_energy=0
     #: Dielectric constant of Element
@@ -56,7 +58,7 @@ class Element:
     #: Neumann boundary condition of Element
     neumannbc=None
     
-    def __init__(self,rect,i,j,potential=None,charge=0,epsilon=1,fermi_energy_charge_dependence=None,fermi_energy=None,neumannbc=None):
+    def __init__(self,rect,i,j,potential=None,charge=0,epsilon=1,fermi_energy_charge_dependence=None,fermi_energy=None,neumannbc=None,charge_fermi_energy_dependence=None):
         """
         i: Row index
         j: Column index
@@ -66,6 +68,7 @@ class Element:
                 will be ignored (metal is not charged).
         fermi_energy_charge_dependence: How the fermi energy of the material depends on the charge. Default is None.
                                         Mind that this setting assumes that the element is in a homogeneous environment.
+        charge_fermi_energy_dependence: Like the former, but the other way round.
         fermi_energy: If the Fermi energy depends on the number of charge carriers, the fermi energy (=applied voltage e.g. by a battery)
                       can be different from the electrostatic potential. fermi_energy_charge_dependence has to be defined in this case.
                       Then you can calculate the quantum capacitance of the system.
@@ -83,6 +86,7 @@ class Element:
         self.potential=potential
         self.charge=charge
         self.fermi_energy_charge_dependence=fermi_energy_charge_dependence
+        self.charge_fermi_energy_dependence=charge_fermi_energy_dependence
         self.fermi_energy=fermi_energy
         if fermi_energy==None:
             fermi_energy=potential
