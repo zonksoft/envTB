@@ -505,6 +505,10 @@ class Hamiltonian:
         A list of eigenvalues for each kpoint is returned. To sort 
         by band, use data.transpose().
         
+        If kpoints is a string, this string will be interpreted as the
+        name of the crystal structure (see standard_paths), and the crystal
+        structure's default kpoint path will be used.
+        
         usedhoppingcells: If you don't want to use all hopping parameters,
         you can set them here (get the list of available cells with unitcellnumbers() and
         strip the list from unwanted cells).        
@@ -518,7 +522,10 @@ class Hamiltonian:
             DOES NOT WORK YET!!!
         parallelthreads: Set to the number of threads if parallel != None. Default is 4.
         """
-                
+        
+        if isinstance(kpoints,str):
+            kpoints=self.standard_paths(kpoints)[2]
+            basis='d'
         if parallelmethod==None:
             data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells,usedorbitals) for kpoint in kpoints])
         if parallelmethod=='multiprocessor.pool':
@@ -571,12 +578,18 @@ class Hamiltonian:
         return numpy.transpose([numpy.linspace(v1[j], \
                 v2[j],nrpoints,endpoint=False) for j in range(dimension)]).tolist()
         
-    def plot_bandstructure(self,kpoints,filename,basis='c',usedhoppingcells='all',usedorbitals='all'):
+    def plot_bandstructure(self,kpoints,filename=None,basis='c',usedhoppingcells='all',usedorbitals='all',mark_reclattice_points=False,mark_fermi_energy=False):
         """
         Calculate the bandstructure at the points kpoints (given in 
         cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)
         if you want to use direct coordinates) and save the plot
-        to filename. The ending of filename determines the file format.
+        to filename. The ending of filename determines the file format. If 
+        filename=None (default), the plot will not be saved (you can display
+        it using pyplot.show() ).
+        
+        If kpoints is a string, this string will be interpreted as the
+        name of the crystal structure (see standard_paths), and the crystal
+        structure's default kpoint path will be used.
         
         usedhoppingcells: If you don't want to use all hopping parameters,
         you can set them here (get the list of available cells with unitcellnumbers() and
@@ -584,13 +597,37 @@ class Hamiltonian:
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
         usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
-        sense if the selected orbitals don't interact with other orbitals.        
+        sense if the selected orbitals don't interact with other orbitals.  
+        mark_reclattice_points: You can mark important reciprocal lattice points, like
+        \Gamma or K. This variable can be (i) True if you use a string for kpoints
+        (ii) a list which contains the names of the points and the points:
+        mark_reclattice_points=[names,points]. The points have to be in 
+        cartesian coordinates. Default is False.
+        mark_fermi_energy: If you supply the Fermi energy here, a line will be
+        drawn. If True, the Fermi energy will be taken from fermi_energy().
+        Default is False.
         """
+        
 
+            
         data=self.bandstructure_data(kpoints,basis,usedhoppingcells,usedorbitals)
         bplot=BandstructurePlot()
+        
+        if isinstance(kpoints,str):
+            reclattice_points,reclattice_names,kpoints=self.standard_paths(kpoints)
+            basis='d'
+            
         bplot.plot(kpoints, data)
-        bplot.save(filename)
+        if isinstance(mark_fermi_energy,(float,long,int)):
+            bplot.plot_fermi_energy(mark_fermi_energy)
+            
+        if mark_reclattice_points != False:
+            if mark_reclattice_points == True:
+                bplot.plot_lattice_point_vlines(reclattice_points, reclattice_names)
+            else:
+                pass
+        if filename!=None:
+            bplot.save(filename)
         
     def drawunitcells(self,unitcellnumbers='all'):
         """
@@ -810,16 +847,18 @@ class Hamiltonian:
         """
         return self.__nrbands
     
-    def standard_paths(self,name,nrpointspersegment=1):
+    def standard_paths(self,name,nrpointspersegment=100):
         """
         Gives the standard path for a Bravais lattice in
         direct reciprocal coordinates.
+        
+        At the moment, there are 'hexagonal', 'fcc', '1D' and '1D-symmetric'.
         
         name: Name of the lattice
         nrpointspersegment: optional; if > 1, a list of intermediate points connecting
         the main points is also returned and can be used for a 
         bandstructure path (nrpointspersegment points per segment).
-        Default value: 1
+        Default value: 100
         
         Return:
         points,names(,path)
@@ -842,8 +881,19 @@ class Hamiltonian:
                     ('W',[3./4,1./2,1./4]),
                     ('L',[1./2,1./2,1./2]),
                     ('G',[0,0,0]),
-                    ('K',[3./4,3./8,3./8])                    
+                    ('K',[3./4,3./8,3./8])
                     ]
+        elif name=='1D':
+            path = [
+                    ('G',[0,0,0]),
+                    ('M',[0.5,0,0])         
+                    ]            
+        elif name=='1D-symmetric':
+            path = [
+                    ('M',[-0.5,0,0]),   
+                    ('G',[0,0,0]),
+                    ('M',[0.5,0,0])         
+                    ]                        
         else:
             raise Exception("Bravais lattice name not found!")
             
@@ -1291,6 +1341,17 @@ class BandstructurePlot:
         self.__plotcounter+=1
         for band in data.transpose():
             pyplot.plot(pathlength,band,stylestring, linewidth=0.3)
+            
+    def plot_fermi_energy(self,fermi_energy):
+        pyplot.figure(self.__myplot.number) 
+        pyplot.axhline(y=fermi_energy,color='r')
+        
+    def plot_lattice_point_vlines(self,reclatticepoints,reclatticenames=None):
+        positions=self.__kpoints_to_pathlength(reclatticepoints)
+        for x in positions:
+            pyplot.axvline(x=x,dashes=(10,10),color='#AAAAAA')
+        if reclatticenames!=None:
+            pyplot.xticks( positions, reclatticenames )
             
     
     def save(self,filename):
