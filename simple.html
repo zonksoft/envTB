@@ -62,6 +62,30 @@ You can find them in the <tt class="docutils literal"><span class="pre">simple</
 <span class="n">simple</span><span class="o">.</span><span class="n">NameOfExample</span><span class="p">()</span>
 </pre></div>
 </div>
+<div class="section" id="example-input-files">
+<h2>Example input files<a class="headerlink" href="#example-input-files" title="Permalink to this headline">¶</a></h2>
+<p>The folder <tt class="docutils literal"><span class="pre">exampledata</span></tt> contains example data from third-party applications
+that you can use.</p>
+<p class="rubric">01_graphene_vasp_wannier90</p>
+<p>A DFT-LDA calculation of Graphene, as well as the Wannier orbital matrix
+elements resulting from it. The data was calculated using VASP and wannier90.</p>
+<p>VASP files:</p>
+<ul class="simple">
+<li>EIGENVAL - kpoints and energies of the bandstructure</li>
+<li>POSCAR - unit cell configuration (lattice vectors, atom positions)</li>
+<li>PROCAR - electronic density of the ground state, projected on atomic orbitals</li>
+<li>OUTCAR - output protocol, containing the Fermi energy</li>
+</ul>
+<p>wannier90 files:</p>
+<ul class="simple">
+<li>wannier90_hr.dat - matrix elements in the Wannier-orbital basis</li>
+<li>wannier90.wout - output protocol, containing the orbital positions and spreads</li>
+</ul>
+<p class="rubric">02_graphene_3rdnn</p>
+<p>Nth-nearest-neighbor parameterization files for the pi system of Graphene.
+It contains valid parameters for 1st-NN and 3rd-NN. If you have own parameters,
+you can use up to 10th-NN with the supplied neighbor lists.</p>
+</div>
 <div class="section" id="electrostatics">
 <h2>Electrostatics<a class="headerlink" href="#electrostatics" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
@@ -251,6 +275,7 @@ output: path to the output image file.</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Code examples</a><ul>
+<li><a class="reference internal" href="#example-input-files">Example input files</a></li>
 <li><a class="reference internal" href="#electrostatics">Electrostatics</a></li>
 <li><a class="reference internal" href="#quantum-capacitance">Quantum capacitance</a></li>
 <li><a class="reference internal" href="#tight-binding">Tight-Binding</a></li>

@@ -1,0 +1,60 @@
+Code examples
+=============
+
+The easiest way to start out is to look at examples.
+You can find them in the ``simple`` module. Run them by including it::
+
+  import simple
+  simple.NameOfExample()
+
+Example input files
+-------------------
+
+The folder ``exampledata`` contains example data from third-party applications
+that you can use.
+
+.. rubric:: 01_graphene_vasp_wannier90
+
+A DFT-LDA calculation of Graphene, as well as the Wannier orbital matrix
+elements resulting from it. The data was calculated using VASP and wannier90.
+
+VASP files:
+
+* EIGENVAL - kpoints and energies of the bandstructure
+* POSCAR - unit cell configuration (lattice vectors, atom positions)
+* PROCAR - electronic density of the ground state, projected on atomic orbitals
+* OUTCAR - output protocol, containing the Fermi energy
+
+wannier90 files:
+
+* wannier90_hr.dat - matrix elements in the Wannier-orbital basis
+* wannier90.wout - output protocol, containing the orbital positions and spreads
+
+.. rubric:: 02_graphene_3rdnn
+
+Nth-nearest-neighbor parameterization files for the \pi system of Graphene. 
+It contains valid parameters for 1st-NN and 3rd-NN. If you have own parameters,
+you can use up to 10th-NN with the supplied neighbor lists.
+
+Electrostatics
+--------------
+
+.. autofunction:: simple.SimpleElectrostaticProblem
+.. autofunction:: simple.PotentialOfSimpleConductor2D
+.. autofunction:: simple.PotentialOfGluedRectangles2D
+
+Quantum capacitance
+-------------------
+
+.. autofunction:: simple.GrapheneQuantumCapacitance
+.. autofunction:: calculations.graphenequantumcapacitance.LoopQuantumCapacitanceWithSidegatesFixedSystem
+
+Tight-Binding
+-------------
+
+.. autofunction:: simple.PlotGraphenenthNNBandstructure
+.. autofunction:: simple.PlotGrapheneWannierBandstructure
+.. autofunction:: simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure
+.. autofunction:: simple.plot_armchair_graphene_nanoribbon_pz_bandstructure
+.. autofunction:: simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn
+.. autofunction:: simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn
