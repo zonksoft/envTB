@@ -173,7 +173,7 @@ class Hamiltonian:
         return self
     
     def __get_fermi_energy_from_outcar(self,outcarfilename):
-        f = open("/tmp/OUTCAR", 'r')
+        f = open(outcarfilename, 'r')
         lines = f.readlines()
         
         for nr,line in enumerate(lines):
@@ -618,7 +618,8 @@ class Hamiltonian:
             basis='d'
             
         bplot.plot(kpoints, data)
-        if isinstance(mark_fermi_energy,(float,long,int)):
+        if isinstance(mark_fermi_energy,(float,long,int)):  
+            """"This doesn't work properly"""
             bplot.plot_fermi_energy(mark_fermi_energy)
             
         if mark_reclattice_points != False:
