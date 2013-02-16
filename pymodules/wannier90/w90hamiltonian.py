@@ -618,9 +618,11 @@ class Hamiltonian:
             basis='d'
             
         bplot.plot(kpoints, data)
-        if isinstance(mark_fermi_energy,(float,long,int)):  
+        if not isinstance(mark_fermi_energy,bool):
             """"This doesn't work properly"""
             bplot.plot_fermi_energy(mark_fermi_energy)
+        elif mark_fermi_energy:
+            bplot.plot_fermi_energy(self.fermi_energy())
             
         if mark_reclattice_points != False:
             if mark_reclattice_points == True:
