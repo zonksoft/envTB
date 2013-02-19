@@ -100,6 +100,8 @@
     <span class="n">charge</span><span class="o">=</span><span class="mi">0</span>
     <span class="c">#: Dependence of Fermi energy on charge</span>
     <span class="n">fermi_energy_charge_dependence</span><span class="o">=</span><span class="mi">0</span>
+    <span class="c">#: Dependence of charge on Fermi energy</span>
+    <span class="n">charge_fermi_energy_dependence</span><span class="o">=</span><span class="bp">None</span>
     <span class="c">#: Electrochemical potential of Element</span>
     <span class="n">fermi_energy</span><span class="o">=</span><span class="mi">0</span>
     <span class="c">#: Dielectric constant of Element</span>
@@ -107,7 +109,7 @@
     <span class="c">#: Neumann boundary condition of Element</span>
     <span class="n">neumannbc</span><span class="o">=</span><span class="bp">None</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rect</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">potential</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">epsilon</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">fermi_energy_charge_dependence</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">fermi_energy</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">neumannbc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rect</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">potential</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">epsilon</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">fermi_energy_charge_dependence</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">fermi_energy</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">neumannbc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">charge_fermi_energy_dependence</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        i: Row index</span>
 <span class="sd">        j: Column index</span>
@@ -117,6 +119,7 @@
 <span class="sd">                will be ignored (metal is not charged).</span>
 <span class="sd">        fermi_energy_charge_dependence: How the fermi energy of the material depends on the charge. Default is None.</span>
 <span class="sd">                                        Mind that this setting assumes that the element is in a homogeneous environment.</span>
+<span class="sd">        charge_fermi_energy_dependence: Like the former, but the other way round.</span>
 <span class="sd">        fermi_energy: If the Fermi energy depends on the number of charge carriers, the fermi energy (=applied voltage e.g. by a battery)</span>
 <span class="sd">                      can be different from the electrostatic potential. fermi_energy_charge_dependence has to be defined in this case.</span>
 <span class="sd">                      Then you can calculate the quantum capacitance of the system.</span>
@@ -134,6 +137,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="n">potential</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">charge</span><span class="o">=</span><span class="n">charge</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fermi_energy_charge_dependence</span><span class="o">=</span><span class="n">fermi_energy_charge_dependence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">charge_fermi_energy_dependence</span><span class="o">=</span><span class="n">charge_fermi_energy_dependence</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fermi_energy</span><span class="o">=</span><span class="n">fermi_energy</span>
         <span class="k">if</span> <span class="n">fermi_energy</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
             <span class="n">fermi_energy</span><span class="o">=</span><span class="n">potential</span>

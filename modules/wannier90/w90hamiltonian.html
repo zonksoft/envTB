@@ -91,6 +91,7 @@
     <span class="c">#TODO: make a map/dictionary out of those two</span>
     <span class="n">__latticevecs</span><span class="o">=</span><span class="mi">0</span>
     <span class="n">__nrbands</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">__fermi_energy</span><span class="o">=</span><span class="bp">None</span>
     
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -108,6 +109,12 @@
         <span class="c">#filenames derived from that (&#39;bla&#39; -&gt; bla.win, bla.wout, bla_hr.dat etc.). Then,</span>
         <span class="c">#kick out all filename method arguments</span>
         
+<div class="viewcode-block" id="Hamiltonian.fermi_energy"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.fermi_energy">[docs]</a>    <span class="k">def</span> <span class="nf">fermi_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the system&#39;s Fermi energy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span>
+        </div>
 <div class="viewcode-block" id="Hamiltonian.latticevectors"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.latticevectors">[docs]</a>    <span class="k">def</span> <span class="nf">latticevectors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the system&#39;s lattice vectors.</span>
@@ -137,12 +144,13 @@
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__orbitalpositions</span><span class="p">)</span> 
         </div>
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Hamiltonian.from_file"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.from_file">[docs]</a>    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">wannier90filename</span><span class="p">,</span><span class="n">poscarfilename</span><span class="p">,</span><span class="n">wannier90woutfilename</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.from_file"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.from_file">[docs]</a>    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">wannier90filename</span><span class="p">,</span><span class="n">poscarfilename</span><span class="p">,</span><span class="n">wannier90woutfilename</span><span class="p">,</span><span class="n">outcarfilename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A constructor to create an object based on data from files.</span>
 <span class="sd">        wannier90filename: Path to the wannier90_hr.dat file</span>
 <span class="sd">        poscarfilename: Path to the VASP POSCAR file</span>
 <span class="sd">        wannier90woutfilename: Path to the wannier90.wout file</span>
+<span class="sd">        outcarfilename: Path to the VASP OUTCAR file</span>
 <span class="sd">        &quot;&quot;&quot;</span>        
         <span class="bp">self</span> <span class="o">=</span> <span class="n">cls</span><span class="p">()</span>
         
@@ -151,11 +159,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span><span class="p">,</span><span class="n">wanndata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__read_wannier90_hr_file</span><span class="p">(</span><span class="n">wannier90filename</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellnumbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__process_wannier90_hr_data</span><span class="p">(</span><span class="n">wanndata</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__orbitalspreads</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">__orbitalpositions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__orbital_spreads_and_positions</span><span class="p">(</span><span class="n">wannier90woutfilename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__get_fermi_energy_from_outcar</span><span class="p">(</span><span class="n">outcarfilename</span><span class="p">)</span>
         
         <span class="k">return</span> <span class="bp">self</span>
     </div>
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Hamiltonian.from_raw_data"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.from_raw_data">[docs]</a>    <span class="k">def</span> <span class="nf">from_raw_data</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">unitcellmatrixblocks</span><span class="p">,</span><span class="n">unitcellnumbers</span><span class="p">,</span><span class="n">latticevecs</span><span class="p">,</span><span class="n">orbitalspreads</span><span class="p">,</span><span class="n">orbitalpositions</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.from_raw_data"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.from_raw_data">[docs]</a>    <span class="k">def</span> <span class="nf">from_raw_data</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">unitcellmatrixblocks</span><span class="p">,</span><span class="n">unitcellnumbers</span><span class="p">,</span><span class="n">latticevecs</span><span class="p">,</span><span class="n">orbitalspreads</span><span class="p">,</span><span class="n">orbitalpositions</span><span class="p">,</span><span class="n">fermi_energy</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A constructor used to create a custom Hamiltonian.</span>
 <span class="sd">        unitcellmatrixblocks: Hopping elements, arranged by unit cells.</span>
@@ -172,6 +181,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__orbitalspreads</span><span class="o">=</span><span class="n">orbitalspreads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__orbitalpositions</span><span class="o">=</span><span class="n">orbitalpositions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span><span class="o">=</span><span class="n">fermi_energy</span>
         
         <span class="k">return</span> <span class="bp">self</span>
         </div>
@@ -212,7 +222,20 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__orbitalpositions</span><span class="o">=</span><span class="n">orbitalpositions</span>
         
         <span class="k">return</span> <span class="bp">self</span>
-        </div>
+    </div>
+    <span class="k">def</span> <span class="nf">__get_fermi_energy_from_outcar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outcarfilename</span><span class="p">):</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">outcarfilename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">nr</span><span class="p">,</span><span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;E-fermi :&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>   
+                
+        <span class="n">fermi_energy</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">nr</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">])</span>
+        
+        <span class="k">return</span> <span class="n">fermi_energy</span>
+        
     <span class="k">def</span> <span class="nf">__read_nth_nn_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nnfile</span><span class="p">):</span>
         <span class="n">latticevecsstr</span><span class="p">,</span><span class="n">orbdatastr</span><span class="p">,</span><span class="n">defaulthoppingstr</span><span class="p">,</span><span class="n">nndatastr</span><span class="o">=</span><span class="n">general</span><span class="o">.</span><span class="n">split_by_empty_lines</span><span class="p">(</span><span class="n">general</span><span class="o">.</span><span class="n">read_file_as_table</span><span class="p">(</span><span class="n">nnfile</span><span class="p">),</span><span class="bp">True</span><span class="p">)</span>
         
@@ -533,6 +556,10 @@
 <span class="sd">        A list of eigenvalues for each kpoint is returned. To sort </span>
 <span class="sd">        by band, use data.transpose().</span>
 <span class="sd">        </span>
+<span class="sd">        If kpoints is a string, this string will be interpreted as the</span>
+<span class="sd">        name of the crystal structure (see standard_paths), and the crystal</span>
+<span class="sd">        structure&#39;s default kpoint path will be used.</span>
+<span class="sd">        </span>
 <span class="sd">        usedhoppingcells: If you don&#39;t want to use all hopping parameters,</span>
 <span class="sd">        you can set them here (get the list of available cells with unitcellnumbers() and</span>
 <span class="sd">        strip the list from unwanted cells).        </span>
@@ -546,7 +573,10 @@
 <span class="sd">            DOES NOT WORK YET!!!</span>
 <span class="sd">        parallelthreads: Set to the number of threads if parallel != None. Default is 4.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-                
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+            <span class="n">kpoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">standard_paths</span><span class="p">(</span><span class="n">kpoints</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">basis</span><span class="o">=</span><span class="s">&#39;d&#39;</span>
         <span class="k">if</span> <span class="n">parallelmethod</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
             <span class="n">data</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">bloch_eigenvalues</span><span class="p">(</span><span class="n">kpoint</span><span class="p">,</span><span class="n">basis</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="p">,</span><span class="n">usedorbitals</span><span class="p">)</span> <span class="k">for</span> <span class="n">kpoint</span> <span class="ow">in</span> <span class="n">kpoints</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">parallelmethod</span><span class="o">==</span><span class="s">&#39;multiprocessor.pool&#39;</span><span class="p">:</span>
@@ -599,12 +629,18 @@
         <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">v1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> \
                 <span class="n">v2</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">nrpoints</span><span class="p">,</span><span class="n">endpoint</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dimension</span><span class="p">)])</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         
-<div class="viewcode-block" id="Hamiltonian.plot_bandstructure"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure">[docs]</a>    <span class="k">def</span> <span class="nf">plot_bandstructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.plot_bandstructure"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure">[docs]</a>    <span class="k">def</span> <span class="nf">plot_bandstructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">mark_reclattice_points</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">mark_fermi_energy</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate the bandstructure at the points kpoints (given in </span>
 <span class="sd">        cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)</span>
 <span class="sd">        if you want to use direct coordinates) and save the plot</span>
-<span class="sd">        to filename. The ending of filename determines the file format.</span>
+<span class="sd">        to filename. The ending of filename determines the file format. If </span>
+<span class="sd">        filename=None (default), the plot will not be saved (you can display</span>
+<span class="sd">        it using pyplot.show() ).</span>
+<span class="sd">        </span>
+<span class="sd">        If kpoints is a string, this string will be interpreted as the</span>
+<span class="sd">        name of the crystal structure (see standard_paths), and the crystal</span>
+<span class="sd">        structure&#39;s default kpoint path will be used.</span>
 <span class="sd">        </span>
 <span class="sd">        usedhoppingcells: If you don&#39;t want to use all hopping parameters,</span>
 <span class="sd">        you can set them here (get the list of available cells with unitcellnumbers() and</span>
@@ -612,13 +648,40 @@
 <span class="sd">        basis: &#39;c&#39; or &#39;d&#39;. Determines if the kpoints are given in cartesian</span>
 <span class="sd">        reciprocal coordinates or direct reciprocal coordinates.</span>
 <span class="sd">        usedorbitals: a list of used orbitals to use. Default is &#39;all&#39;. Note: this only makes</span>
-<span class="sd">        sense if the selected orbitals don&#39;t interact with other orbitals.        </span>
+<span class="sd">        sense if the selected orbitals don&#39;t interact with other orbitals.  </span>
+<span class="sd">        mark_reclattice_points: You can mark important reciprocal lattice points, like</span>
+<span class="sd">        \Gamma or K. This variable can be (i) True if you use a string for kpoints</span>
+<span class="sd">        (ii) a list which contains the names of the points and the points:</span>
+<span class="sd">        mark_reclattice_points=[names,points]. The points have to be in </span>
+<span class="sd">        cartesian coordinates. Default is False.</span>
+<span class="sd">        mark_fermi_energy: If you supply the Fermi energy here, a line will be</span>
+<span class="sd">        drawn. If True, the Fermi energy will be taken from fermi_energy().</span>
+<span class="sd">        Default is False.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        
 
+            
         <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bandstructure_data</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="n">basis</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="p">,</span><span class="n">usedorbitals</span><span class="p">)</span>
         <span class="n">bplot</span><span class="o">=</span><span class="n">BandstructurePlot</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+            <span class="n">reclattice_points</span><span class="p">,</span><span class="n">reclattice_names</span><span class="p">,</span><span class="n">kpoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">standard_paths</span><span class="p">(</span><span class="n">kpoints</span><span class="p">)</span>
+            <span class="n">basis</span><span class="o">=</span><span class="s">&#39;d&#39;</span>
+            
         <span class="n">bplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
-        <span class="n">bplot</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mark_fermi_energy</span><span class="p">,</span><span class="nb">bool</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;&quot;This doesn&#39;t work properly&quot;&quot;&quot;</span>
+            <span class="n">bplot</span><span class="o">.</span><span class="n">plot_fermi_energy</span><span class="p">(</span><span class="n">mark_fermi_energy</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mark_fermi_energy</span><span class="p">:</span>
+            <span class="n">bplot</span><span class="o">.</span><span class="n">plot_fermi_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fermi_energy</span><span class="p">())</span>
+            
+        <span class="k">if</span> <span class="n">mark_reclattice_points</span> <span class="o">!=</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mark_reclattice_points</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">bplot</span><span class="o">.</span><span class="n">plot_lattice_point_vlines</span><span class="p">(</span><span class="n">reclattice_points</span><span class="p">,</span> <span class="n">reclattice_names</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">if</span> <span class="n">filename</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">pyplot</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         </div>
 <div class="viewcode-block" id="Hamiltonian.drawunitcells"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.drawunitcells">[docs]</a>    <span class="k">def</span> <span class="nf">drawunitcells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">unitcellnumbers</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -663,9 +726,7 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
         
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">40</span><span class="p">,</span><span class="mi">40</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">40</span><span class="p">,</span><span class="mi">40</span><span class="p">)</span>
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  
-        
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">40</span><span class="p">,</span><span class="mi">40</span><span class="p">)</span>      
            
         </div>
 <div class="viewcode-block" id="Hamiltonian.unitcellcoordinates"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.unitcellcoordinates">[docs]</a>    <span class="k">def</span> <span class="nf">unitcellcoordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">unitcellnumbers</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
@@ -838,16 +899,18 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span>
     </div>
-<div class="viewcode-block" id="Hamiltonian.standard_paths"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.standard_paths">[docs]</a>    <span class="k">def</span> <span class="nf">standard_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">nrpointspersegment</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.standard_paths"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.standard_paths">[docs]</a>    <span class="k">def</span> <span class="nf">standard_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">nrpointspersegment</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Gives the standard path for a Bravais lattice in</span>
 <span class="sd">        direct reciprocal coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">        At the moment, there are &#39;hexagonal&#39;, &#39;fcc&#39;, &#39;1D&#39; and &#39;1D-symmetric&#39;.</span>
 <span class="sd">        </span>
 <span class="sd">        name: Name of the lattice</span>
 <span class="sd">        nrpointspersegment: optional; if &gt; 1, a list of intermediate points connecting</span>
 <span class="sd">        the main points is also returned and can be used for a </span>
 <span class="sd">        bandstructure path (nrpointspersegment points per segment).</span>
-<span class="sd">        Default value: 1</span>
+<span class="sd">        Default value: 100</span>
 <span class="sd">        </span>
 <span class="sd">        Return:</span>
 <span class="sd">        points,names(,path)</span>
@@ -870,8 +933,19 @@
                     <span class="p">(</span><span class="s">&#39;W&#39;</span><span class="p">,[</span><span class="mf">3.</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span><span class="mf">1.</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mf">1.</span><span class="o">/</span><span class="mi">4</span><span class="p">]),</span>
                     <span class="p">(</span><span class="s">&#39;L&#39;</span><span class="p">,[</span><span class="mf">1.</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mf">1.</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mf">1.</span><span class="o">/</span><span class="mi">2</span><span class="p">]),</span>
                     <span class="p">(</span><span class="s">&#39;G&#39;</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span>
-                    <span class="p">(</span><span class="s">&#39;K&#39;</span><span class="p">,[</span><span class="mf">3.</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span><span class="mf">3.</span><span class="o">/</span><span class="mi">8</span><span class="p">,</span><span class="mf">3.</span><span class="o">/</span><span class="mi">8</span><span class="p">])</span>                    
+                    <span class="p">(</span><span class="s">&#39;K&#39;</span><span class="p">,[</span><span class="mf">3.</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span><span class="mf">3.</span><span class="o">/</span><span class="mi">8</span><span class="p">,</span><span class="mf">3.</span><span class="o">/</span><span class="mi">8</span><span class="p">])</span>
                     <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">name</span><span class="o">==</span><span class="s">&#39;1D&#39;</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="s">&#39;G&#39;</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span>
+                    <span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">,[</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>         
+                    <span class="p">]</span>            
+        <span class="k">elif</span> <span class="n">name</span><span class="o">==</span><span class="s">&#39;1D-symmetric&#39;</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">,[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span>   
+                    <span class="p">(</span><span class="s">&#39;G&#39;</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span>
+                    <span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">,[</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>         
+                    <span class="p">]</span>                        
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Bravais lattice name not found!&quot;</span><span class="p">)</span>
             
@@ -896,6 +970,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         
         <span class="c">#TODO: What about performance? Stuff gets copied pretty often</span>
+        <span class="c">#maybe use this http://stackoverflow.com/a/4944929/1447622</span>
         
         <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">wannier90_wout_filename</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
         <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
@@ -945,7 +1020,8 @@
 <span class="sd">        to here (list of cell coordinates).</span>
 <span class="sd">        usedorbitals: a list of orbitals to use. Default is &#39;all&#39;. Note: this only makes</span>
 <span class="sd">        sense if the selected orbitals don&#39;t interact with other orbitals. </span>
-<span class="sd">        energyshift: Shift energy scale by energyshift, e.g. to shift the Fermi energy to 0.</span>
+<span class="sd">        energyshift: Shift energy scale by energyshift, e.g. to shift the Fermi energy to 0. Also shifts the Fermi</span>
+<span class="sd">        energy variable of the Hamiltonian.</span>
 <span class="sd">        magnetic_B: Magnetic field in perpendicular direction (in T)</span>
 <span class="sd">        gauge_B: &#39;landau_x&#39;: Landau gauge for systems with x periodicity (A=(-By,0,0))</span>
 <span class="sd">                 &#39;landau_y:&#39;: Landau gauge for systems with y periodicity (A=(0,Bx,0))</span>
@@ -1115,7 +1191,12 @@
                 
                 <span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*=</span><span class="n">phasematrix</span>  
                 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_raw_data</span><span class="p">(</span><span class="n">unitcellmatrixblocks</span><span class="p">,</span> <span class="n">unitcellnumbers</span><span class="p">,</span> <span class="n">newlatticevecs</span><span class="p">,</span><span class="n">orbitalspreads</span><span class="p">,</span><span class="n">orbitalpositions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">energyshift</span> <span class="o">!=</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">newfermi_energy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span><span class="o">+</span><span class="n">energyshift</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">newfermi_energy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span>
+                
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_raw_data</span><span class="p">(</span><span class="n">unitcellmatrixblocks</span><span class="p">,</span> <span class="n">unitcellnumbers</span><span class="p">,</span> <span class="n">newlatticevecs</span><span class="p">,</span><span class="n">orbitalspreads</span><span class="p">,</span><span class="n">orbitalpositions</span><span class="p">,</span><span class="n">newfermi_energy</span><span class="p">)</span>
     </div>
     <span class="k">def</span> <span class="nf">__metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">basis</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1202,6 +1283,15 @@
         <span class="n">potential</span><span class="o">=</span><span class="n">potential</span><span class="o">.</span><span class="n">map_function_to_points</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">onsite_potential</span><span class="o">=</span><span class="n">potential</span><span class="p">)</span>
     </div>
+<div class="viewcode-block" id="Hamiltonian.shift_fermi_energy_to_zero"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.shift_fermi_energy_to_zero">[docs]</a>    <span class="k">def</span> <span class="nf">shift_fermi_energy_to_zero</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Applies an energy shift so that the new Fermi energy is at 0.</span>
+<span class="sd">        </span>
+<span class="sd">        The new Hamiltonian is returned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">energyshift</span><span class="o">=-</span><span class="bp">self</span><span class="o">.</span><span class="n">fermi_energy</span><span class="p">())</span>
+    </div>
 <div class="viewcode-block" id="Hamiltonian.integergrid3d"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.integergrid3d">[docs]</a>    <span class="k">def</span> <span class="nf">integergrid3d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates an integer grid with the dimensions i,j,k</span>
@@ -1217,26 +1307,12 @@
 <span class="sd">    Then, call save(filename) to save to a file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="n">__stylelist</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;b-&#39;</span><span class="p">,</span><span class="s">&#39;g-&#39;</span><span class="p">,</span><span class="s">&#39;r-&#39;</span><span class="p">,</span><span class="s">&#39;c-&#39;</span><span class="p">,</span><span class="s">&#39;m-&#39;</span><span class="p">,</span><span class="s">&#39;y-&#39;</span><span class="p">,</span><span class="s">&#39;k-&#39;</span><span class="p">]</span>
-    <span class="n">__plotcounter</span><span class="o">=</span><span class="mi">0</span>
-    <span class="n">__myplot</span><span class="o">=</span><span class="mi">0</span>
+<span class="c">#    __stylelist=[&#39;b-&#39;,&#39;g-&#39;,&#39;r-&#39;,&#39;c-&#39;,&#39;m-&#39;,&#39;y-&#39;,&#39;k-&#39;]</span>
+<span class="c">#    __plotcounter=0</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">=</span><span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="k">pass</span>    
         
-<div class="viewcode-block" id="BandstructurePlot.setstyles"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.BandstructurePlot.setstyles">[docs]</a>    <span class="k">def</span> <span class="nf">setstyles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">stylelist</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set the styles for each bandstructure plot. </span>
-<span class="sd">        </span>
-<span class="sd">        stylelist: A list with format strings (see </span>
-<span class="sd">        http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.plot)</span>
-<span class="sd">        for each plot. If the list is shorter than the number of plots,</span>
-<span class="sd">        it is repeated.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">__stylelist</span> <span class="o">=</span> <span class="n">stylelist</span>
-        
-        </div>
     <span class="k">def</span> <span class="nf">__kpoints_to_pathlength</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">points</span><span class="p">):</span>       
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        points: list of points</span>
@@ -1251,79 +1327,82 @@
             <span class="n">distances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distances</span>
     
-<div class="viewcode-block" id="BandstructurePlot.set_aspect_ratio"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.BandstructurePlot.set_aspect_ratio">[docs]</a>    <span class="k">def</span> <span class="nf">set_aspect_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">aspect</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set the aspect ratio. For possible values, see</span>
-<span class="sd">        http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-        <span class="n">ax</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="n">aspect</span><span class="p">)</span>
-    </div>
-<div class="viewcode-block" id="BandstructurePlot.set_plot_range"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.BandstructurePlot.set_plot_range">[docs]</a>    <span class="k">def</span> <span class="nf">set_plot_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set the plot range using the kwargs</span>
-<span class="sd">        xmin, xmax, ymin, ymax.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="c">#http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.axis</span>
-        
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="c">#    def set_aspect_ratio(self,aspect):</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        Set the aspect ratio. For possible values, see</span>
+<span class="c">#        http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        ax = pyplot.gca()</span>
+<span class="c">#        ax.set_aspect(aspect)</span>
+    
+<span class="c">#    def set_plot_range(self,**kwargs):</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        Set the plot range using the kwargs</span>
+<span class="c">#        xmin, xmax, ymin, ymax.</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#</span>
+<span class="c">#        #http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.axis</span>
+<span class="c">#        </span>
+<span class="c">#        pyplot.figure(self.__myplot.number)</span>
+<span class="c">#        pyplot.axis(**kwargs)</span>
         
         <span class="c">#ax = pyplot.gca()</span>
         <span class="c">#ax.set_autoscale_on(False)</span>
         
-    </div>
-<div class="viewcode-block" id="BandstructurePlot.plot"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.BandstructurePlot.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;auto&#39;</span><span class="p">):</span>
+    
+<div class="viewcode-block" id="BandstructurePlot.plot"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.BandstructurePlot.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">data</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a bandstructure plot to the figure.</span>
 <span class="sd">        </span>
 <span class="sd">        kpoints: list of kpoints</span>
 <span class="sd">        data: list of eigenvalues for each kpoint.</span>
-<span class="sd">        style: set format string of this plot. You can also set the </span>
-<span class="sd">        styles of all plots using setstyles().</span>
-<span class="sd">        Default is &#39;auto&#39;, which means that the style list will be used.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        At the beginning, the figure is set to __myplot which was set in the constructor</span>
-<span class="sd">        to avoid interference between plot functions.</span>
-<span class="sd">        http://stackoverflow.com/questions/7986567/matplotlib-how-to-set-the-current-figure/7987462#7987462</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> 
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        At the beginning, the figure is set to __myplot which was set in the constructor</span>
+<span class="c">#        to avoid interference between plot functions.</span>
+<span class="c">#        http://stackoverflow.com/questions/7986567/matplotlib-how-to-set-the-current-figure/7987462#7987462</span>
+<span class="c">#        &quot;&quot;&quot;</span>
 
         <span class="n">pathlength</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__kpoints_to_pathlength</span><span class="p">(</span><span class="n">kpoints</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s">&#39;auto&#39;</span><span class="p">:</span>
-            <span class="n">stylestring</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__stylelist</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__plotcounter</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__stylelist</span><span class="p">)]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">stylestring</span><span class="o">=</span><span class="n">style</span>
+<span class="c">#        if style == &#39;auto&#39;:</span>
+<span class="c">#            stylestring=self.__stylelist[self.__plotcounter % len(self.__stylelist)]</span>
+<span class="c">#        else:</span>
+<span class="c">#            stylestring=style</span>
             
-        <span class="bp">self</span><span class="o">.</span><span class="n">__plotcounter</span><span class="o">+=</span><span class="mi">1</span>
+<span class="c">#        self.__plotcounter+=1</span>
         <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">():</span>
-            <span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pathlength</span><span class="p">,</span><span class="n">band</span><span class="p">,</span><span class="n">stylestring</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+            <span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pathlength</span><span class="p">,</span><span class="n">band</span><span class="p">)</span>
+            </div>
+    <span class="k">def</span> <span class="nf">plot_fermi_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fermi_energy</span><span class="p">):</span>
+        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> 
+        <span class="n">pyplot</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">fermi_energy</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">plot_lattice_point_vlines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">reclatticepoints</span><span class="p">,</span><span class="n">reclatticenames</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">positions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__kpoints_to_pathlength</span><span class="p">(</span><span class="n">reclatticepoints</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
+            <span class="n">pyplot</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;#AAAAAA&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reclatticenames</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">pyplot</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span> <span class="n">positions</span><span class="p">,</span> <span class="n">reclatticenames</span> <span class="p">)</span>
             
-    </div>
-<div class="viewcode-block" id="BandstructurePlot.save"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.BandstructurePlot.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Save the figure to a file. The format is determined</span>
-<span class="sd">        by the filename.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> 
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="p">(</span><span class="mi">150</span><span class="p">))</span>
-        </div>
-<div class="viewcode-block" id="BandstructurePlot.reset"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.BandstructurePlot.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Clear the current figure.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> 
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
-        </div>
-    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> 
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     
+<span class="c">#    def save(self,filename):</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        Save the figure to a file. The format is determined</span>
+<span class="c">#        by the filename.</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        pyplot.savefig(filename,dpi=(150))</span>
+        
+<span class="c">#    def reset(self):</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        Clear the current figure.</span>
+<span class="c">#        &quot;&quot;&quot;</span>
+<span class="c">#        pyplot.clf()</span>
+        
+<span class="c">#    def show(self):</span>
+<span class="c">#        pyplot.show()</span>
+    
+
     </div>
 </pre></div>
 

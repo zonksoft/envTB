@@ -176,7 +176,7 @@
     
     <span class="k">return</span> <span class="n">highestgoodpzband</span><span class="p">,</span><span class="n">energyatgammaofhighestgoodpzband</span>
 
-<div class="viewcode-block" id="plot_zigzag_graphene_nanoribbon_pz_bandstructure"><a class="viewcode-back" href="../simple.html#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure">[docs]</a><span class="k">def</span> <span class="nf">plot_zigzag_graphene_nanoribbon_pz_bandstructure</span><span class="p">(</span><span class="n">wannier90hr_graphene</span><span class="p">,</span><span class="n">poscarfile</span><span class="p">,</span><span class="n">wannier90woutfile</span><span class="p">,</span><span class="n">width</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">usedhoppingcells_rings</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_zigzag_graphene_nanoribbon_pz_bandstructure"><a class="viewcode-back" href="../simple.html#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure">[docs]</a><span class="k">def</span> <span class="nf">plot_zigzag_graphene_nanoribbon_pz_bandstructure</span><span class="p">(</span><span class="n">wannier90hr_graphene</span><span class="p">,</span><span class="n">poscarfile</span><span class="p">,</span><span class="n">wannier90woutfile</span><span class="p">,</span><span class="n">outcarfile</span><span class="p">,</span><span class="n">width</span><span class="p">,</span><span class="n">output</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">usedhoppingcells_rings</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot the \pi bandstructure of a zigzag graphene nanoribbon based on a wannier90 calculation of</span>
 <span class="sd">    bulk graphene. The \pz orbitals have to be the first two orbitals in the wannier90 file.</span>
@@ -185,8 +185,9 @@
 <span class="sd">    wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk</span>
 <span class="sd">    calculation</span>
 <span class="sd">    poscarfile: path to the VASP POSCAR file of the graphene bulk calculation</span>
+<span class="sd">    outcarfile: path to the VASP OUTCAR file</span>
 <span class="sd">    width: width of the ribbon (number of rings).</span>
-<span class="sd">    output: path to the output image file.</span>
+<span class="sd">    output: path to the output image file. If None, nothing will be saved. Default is None.</span>
 <span class="sd">    usedhoppingcells_rings: If you don&#39;t want to use all hopping parameters,</span>
 <span class="sd">    you can set the number of &#39;rings&#39; surrounding the main cell here. If it is a list</span>
 <span class="sd">    (e.g. range(5)), several plots are created.</span>
@@ -209,7 +210,7 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">usedhoppingcells_rings</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
         <span class="n">usedhoppingcells_rings</span><span class="o">=</span><span class="p">[</span><span class="n">usedhoppingcells_rings</span><span class="p">]</span>
     
-    <span class="n">ham</span><span class="o">=</span><span class="n">w90hamiltonian</span><span class="o">.</span><span class="n">Hamiltonian</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">wannier90hr_graphene</span><span class="p">,</span><span class="n">poscarfile</span><span class="p">,</span><span class="n">wannier90woutfile</span><span class="p">)</span>
+    <span class="n">ham</span><span class="o">=</span><span class="n">w90hamiltonian</span><span class="o">.</span><span class="n">Hamiltonian</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">wannier90hr_graphene</span><span class="p">,</span><span class="n">poscarfile</span><span class="p">,</span><span class="n">wannier90woutfile</span><span class="p">,</span><span class="n">outcarfile</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">ring</span> <span class="ow">in</span> <span class="n">usedhoppingcells_rings</span><span class="p">:</span>    
         <span class="k">if</span> <span class="n">ring</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
@@ -221,9 +222,10 @@
         <span class="n">ham3</span><span class="o">=</span><span class="n">ham2</span><span class="o">.</span><span class="n">create_supercell_hamiltonian</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">unitcells</span><span class="p">)],[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="n">unitcells</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
         <span class="n">ham4</span><span class="o">=</span><span class="n">ham3</span><span class="o">.</span><span class="n">create_modified_hamiltonian</span><span class="p">(</span><span class="n">ham3</span><span class="o">.</span><span class="n">drop_dimension_from_cell_list</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="n">usedorbitals</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">ham3</span><span class="o">.</span><span class="n">nrorbitals</span><span class="p">()</span><span class="o">-</span><span class="n">get_rid_of</span><span class="p">))</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">ham4</span><span class="o">.</span><span class="n">point_path</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]],</span><span class="mi">100</span><span class="p">)</span>
-        <span class="n">ham4</span><span class="o">.</span><span class="n">plot_bandstructure</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">ring</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;_&quot;</span><span class="o">+</span><span class="n">output</span><span class="p">,</span><span class="s">&#39;d&#39;</span><span class="p">)</span>
-        <span class="n">data</span><span class="o">=</span><span class="n">ham4</span><span class="o">.</span><span class="n">bandstructure_data</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">)</span>
-        <span class="n">numpy</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ring</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;_&quot;</span><span class="o">+</span><span class="n">output</span><span class="o">+</span><span class="s">&#39;.dat&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%12.6G</span><span class="s">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">ham4</span><span class="o">.</span><span class="n">plot_bandstructure</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">ring</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;_&quot;</span><span class="o">+</span><span class="n">output</span><span class="p">,</span><span class="s">&#39;d&#39;</span><span class="p">)</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ring</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;_&quot;</span><span class="o">+</span><span class="n">output</span><span class="o">+</span><span class="s">&#39;.dat&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%12.6G</span><span class="s">&quot;</span><span class="p">)</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">ham4</span><span class="o">.</span><span class="n">bandstructure_data</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">)</span> <span class="c">#data is calculated twice, that&#39;s kind of stupid</span>
         
         <span class="k">return</span> <span class="n">ham4</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">path</span>
     </div>
@@ -436,9 +438,12 @@
     <span class="n">pylab</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">container</span><span class="o">.</span><span class="n">vector_to_datamatrix</span><span class="p">(</span><span class="n">sol</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">pylab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </div>
-<div class="viewcode-block" id="GrapheneQuantumCapacitance"><a class="viewcode-back" href="../simple.html#simple.GrapheneQuantumCapacitance">[docs]</a><span class="k">def</span> <span class="nf">GrapheneQuantumCapacitance</span><span class="p">():</span>
+<div class="viewcode-block" id="GrapheneQuantumCapacitance"><a class="viewcode-back" href="../simple.html#simple.GrapheneQuantumCapacitance">[docs]</a><span class="k">def</span> <span class="nf">GrapheneQuantumCapacitance</span><span class="p">(</span><span class="n">equation</span><span class="o">=</span><span class="s">&#39;potential&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculate the quantum capacitance of Graphene on SiO2, including temperature.</span>
+<span class="sd">    </span>
+<span class="sd">    equation: &#39;charge&#39; or &#39;potential&#39;, see documentation of </span>
+<span class="sd">    QuantumCapacitanceSolver.</span>
 <span class="sd">    </span>
 <span class="sd">    Boundary conditions:</span>
 
@@ -460,7 +465,7 @@
     <span class="n">vstart</span><span class="o">=-</span><span class="mi">60</span>
     <span class="n">vend</span><span class="o">=</span><span class="mi">60</span>
     <span class="n">dv</span><span class="o">=</span><span class="mf">0.5</span>
-  
+    
     <span class="c">#Finite difference operator</span>
     <span class="n">lapl</span><span class="o">=</span><span class="n">electrostatics</span><span class="o">.</span><span class="n">Laplacian2D2ndOrderWithMaterials</span><span class="p">(</span><span class="n">gridsize</span><span class="p">,</span><span class="n">gridsize</span><span class="p">)</span>
     <span class="c">#Create Rectangle</span>
@@ -478,15 +483,17 @@
     <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">backgateelements</span><span class="p">:</span>
         <span class="n">element</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="n">backgatevoltage</span>
         
-    <span class="c">#Create D(E,T) function    </span>
+    <span class="c">#Create D(E,T) function.     </span>
     <span class="n">Ef_dependence_function</span><span class="o">=</span><span class="n">quantumcapacitance</span><span class="o">.</span><span class="n">BulkGrapheneWithTemperature</span><span class="p">(</span><span class="n">temperature</span><span class="p">,</span><span class="n">gridsize</span><span class="p">)</span><span class="o">.</span><span class="n">Ef_interp</span>
+    <span class="n">Ef_dependence_function_2</span><span class="o">=</span><span class="n">quantumcapacitance</span><span class="o">.</span><span class="n">BulkGrapheneWithTemperature</span><span class="p">(</span><span class="n">temperature</span><span class="p">,</span><span class="n">gridsize</span><span class="p">,</span><span class="n">interpolation</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span><span class="o">.</span><span class="n">Q</span>
     
     <span class="c">#Set electrochemical potential and D(E,T) for the GNR elements</span>
     <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">grapheneelements</span><span class="p">:</span>
         <span class="n">element</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="mi">0</span>
         <span class="n">element</span><span class="o">.</span><span class="n">fermi_energy</span><span class="o">=</span><span class="mi">0</span>
         <span class="n">element</span><span class="o">.</span><span class="n">fermi_energy_charge_dependence</span><span class="o">=</span><span class="n">Ef_dependence_function</span>
-
+        <span class="n">element</span><span class="o">.</span><span class="n">charge_fermi_energy_dependence</span><span class="o">=</span><span class="n">Ef_dependence_function_2</span>
+    
     <span class="c">#Set dielectric material</span>
     <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">graphenepos</span><span class="p">,</span><span class="n">hoehe</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">breite</span><span class="p">):</span>
@@ -498,8 +505,10 @@
     <span class="c">#Invert discretization matrix</span>
     <span class="n">solver</span><span class="p">,</span><span class="n">inhomogeneity</span><span class="o">=</span><span class="n">percont</span><span class="o">.</span><span class="n">lu_solver</span><span class="p">()</span>
     
-    <span class="c">#Create QuantumCapacitanceSolver object</span>
-    <span class="n">qcsolver</span><span class="o">=</span><span class="n">quantumcapacitance</span><span class="o">.</span><span class="n">QuantumCapacitanceSolver</span><span class="p">(</span><span class="n">percont</span><span class="p">,</span><span class="n">solver</span><span class="p">,</span><span class="n">grapheneelements</span><span class="p">,</span><span class="n">lapl</span><span class="p">)</span>
+    <span class="c">#Create QuantumCapacitanceSolver object.</span>
+    <span class="c">#Depending on equation, either fermi_energy_charge_dependence or charge_fermi_energy_dependence will be used.</span>
+    <span class="c">#You don&#39;t have to set the other one.</span>
+    <span class="n">qcsolver</span><span class="o">=</span><span class="n">quantumcapacitance</span><span class="o">.</span><span class="n">QuantumCapacitanceSolver</span><span class="p">(</span><span class="n">percont</span><span class="p">,</span><span class="n">solver</span><span class="p">,</span><span class="n">grapheneelements</span><span class="p">,</span><span class="n">lapl</span><span class="p">,</span><span class="n">equation</span><span class="o">=</span><span class="n">equation</span><span class="p">)</span>
     
     <span class="c">#Refresh basisvectors for calculation. Necessary once at the beginning.</span>
     <span class="n">qcsolver</span><span class="o">.</span><span class="n">refresh_basisvecs</span><span class="p">()</span>
@@ -511,6 +520,7 @@
     
     <span class="c">#Loop over voltages</span>
     <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">voltages</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">v</span>
         <span class="c">#Set backgate elements to voltage</span>
         <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">backgateelements</span><span class="p">:</span>
             <span class="n">elem</span><span class="o">.</span><span class="n">potential</span><span class="o">=</span><span class="n">v</span>
@@ -527,7 +537,7 @@
     <span class="c">#Sum over charge and take derivative = capacitance</span>
     <span class="n">totalcharge</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">charges</span><span class="p">])</span>
     <span class="n">capacitance</span><span class="o">=</span><span class="p">(</span><span class="n">totalcharge</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">-</span><span class="n">totalcharge</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">grapheneelements</span><span class="p">)</span><span class="o">*</span><span class="n">gridsize</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">dv</span><span class="p">)</span>
-
+    
     <span class="c">#Plot result</span>
     <span class="n">fig</span><span class="o">=</span><span class="n">pylab</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
     <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
