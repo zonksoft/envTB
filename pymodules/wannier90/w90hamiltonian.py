@@ -630,7 +630,7 @@ class Hamiltonian:
             else:
                 pass
         if filename!=None:
-            bplot.save(filename)
+            pyplot.savefig(filename)
         
     def drawunitcells(self,unitcellnumbers='all'):
         """
@@ -675,9 +675,7 @@ class Hamiltonian:
         ax.add_patch(patch)
         
         ax.set_xlim(-40,40)
-        ax.set_ylim(-40,40)
-        pyplot.show()  
-        
+        ax.set_ylim(-40,40)      
            
         
     def unitcellcoordinates(self,unitcellnumbers='all'):
@@ -1258,25 +1256,11 @@ class BandstructurePlot:
     Then, call save(filename) to save to a file.
     """
     
-    __stylelist=['b-','g-','r-','c-','m-','y-','k-']
-    __plotcounter=0
-    __myplot=0
+#    __stylelist=['b-','g-','r-','c-','m-','y-','k-']
+#    __plotcounter=0
 
     def __init__(self):
-        self.__myplot=pyplot.figure()
-        
-    def setstyles(self,stylelist):
-        """
-        Set the styles for each bandstructure plot. 
-        
-        stylelist: A list with format strings (see 
-        http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.plot)
-        for each plot. If the list is shorter than the number of plots,
-        it is repeated.
-        """
-        
-        self.__stylelist = stylelist
-        
+        pass    
         
     def __kpoints_to_pathlength(self,points):       
         """
@@ -1292,58 +1276,52 @@ class BandstructurePlot:
             distances.append(distance)
         return distances
     
-    def set_aspect_ratio(self,aspect):
-        """
-        Set the aspect ratio. For possible values, see
-        http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect
-        """
-        
-        pyplot.figure(self.__myplot.number)
-        ax = pyplot.gca()
-        ax.set_aspect(aspect)
+#    def set_aspect_ratio(self,aspect):
+#        """
+#        Set the aspect ratio. For possible values, see
+#        http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect
+#        """
+#        ax = pyplot.gca()
+#        ax.set_aspect(aspect)
     
-    def set_plot_range(self,**kwargs):
-        """
-        Set the plot range using the kwargs
-        xmin, xmax, ymin, ymax.
-        """
-
-        #http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.axis
-        
-        pyplot.figure(self.__myplot.number)
-        pyplot.axis(**kwargs)
+#    def set_plot_range(self,**kwargs):
+#        """
+#        Set the plot range using the kwargs
+#        xmin, xmax, ymin, ymax.
+#        """
+#
+#        #http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.axis
+#        
+#        pyplot.figure(self.__myplot.number)
+#        pyplot.axis(**kwargs)
         
         #ax = pyplot.gca()
         #ax.set_autoscale_on(False)
         
     
-    def plot(self,kpoints,data,style='auto'):
+    def plot(self,kpoints,data):
         """
         Add a bandstructure plot to the figure.
         
         kpoints: list of kpoints
         data: list of eigenvalues for each kpoint.
-        style: set format string of this plot. You can also set the 
-        styles of all plots using setstyles().
-        Default is 'auto', which means that the style list will be used.
         """
         
-        """
-        At the beginning, the figure is set to __myplot which was set in the constructor
-        to avoid interference between plot functions.
-        http://stackoverflow.com/questions/7986567/matplotlib-how-to-set-the-current-figure/7987462#7987462
-        """
-        pyplot.figure(self.__myplot.number) 
+#        """
+#        At the beginning, the figure is set to __myplot which was set in the constructor
+#        to avoid interference between plot functions.
+#        http://stackoverflow.com/questions/7986567/matplotlib-how-to-set-the-current-figure/7987462#7987462
+#        """
 
         pathlength=self.__kpoints_to_pathlength(kpoints)
-        if style == 'auto':
-            stylestring=self.__stylelist[self.__plotcounter % len(self.__stylelist)]
-        else:
-            stylestring=style
+#        if style == 'auto':
+#            stylestring=self.__stylelist[self.__plotcounter % len(self.__stylelist)]
+#        else:
+#            stylestring=style
             
-        self.__plotcounter+=1
+#        self.__plotcounter+=1
         for band in data.transpose():
-            pyplot.plot(pathlength,band,stylestring, linewidth=0.3)
+            pyplot.plot(pathlength,band)
             
     def plot_fermi_energy(self,fermi_energy):
         pyplot.figure(self.__myplot.number) 
@@ -1357,23 +1335,21 @@ class BandstructurePlot:
             pyplot.xticks( positions, reclatticenames )
             
     
-    def save(self,filename):
-        """
-        Save the figure to a file. The format is determined
-        by the filename.
-        """
-        pyplot.figure(self.__myplot.number) 
-        pyplot.savefig(filename,dpi=(150))
+#    def save(self,filename):
+#        """
+#        Save the figure to a file. The format is determined
+#        by the filename.
+#        """
+#        pyplot.savefig(filename,dpi=(150))
         
-    def reset(self):
-        """
-        Clear the current figure.
-        """
-        pyplot.figure(self.__myplot.number) 
-        pyplot.clf()
+#    def reset(self):
+#        """
+#        Clear the current figure.
+#        """
+#        pyplot.clf()
         
-    def show(self):
-        pyplot.figure(self.__myplot.number) 
-        pyplot.show()
+#    def show(self):
+#        pyplot.show()
     
+
     

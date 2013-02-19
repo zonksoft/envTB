@@ -125,7 +125,7 @@ def TopPzBandNrAtGamma(procar_filename,gnrwidth_rings,pzoffset=0):
     
     return highestgoodpzband,energyatgammaofhighestgoodpzband
 
-def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscarfile,wannier90woutfile,width,output,usedhoppingcells_rings='all'):
+def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscarfile,wannier90woutfile,outcarfile,width,output=None,usedhoppingcells_rings='all'):
     """
     Plot the \pi bandstructure of a zigzag graphene nanoribbon based on a wannier90 calculation of
     bulk graphene. The \pz orbitals have to be the first two orbitals in the wannier90 file.
@@ -134,8 +134,9 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscar
     wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk
     calculation
     poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+    outcarfile: path to the VASP OUTCAR file
     width: width of the ribbon (number of rings).
-    output: path to the output image file.
+    output: path to the output image file. If None, nothing will be saved. Default is None.
     usedhoppingcells_rings: If you don't want to use all hopping parameters,
     you can set the number of 'rings' surrounding the main cell here. If it is a list
     (e.g. range(5)), several plots are created.
@@ -158,7 +159,7 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscar
     if not isinstance(usedhoppingcells_rings,list):
         usedhoppingcells_rings=[usedhoppingcells_rings]
     
-    ham=w90hamiltonian.Hamiltonian.from_file(wannier90hr_graphene,poscarfile,wannier90woutfile)
+    ham=w90hamiltonian.Hamiltonian.from_file(wannier90hr_graphene,poscarfile,wannier90woutfile,outcarfile)
     
     for ring in usedhoppingcells_rings:    
         if ring=='all':
@@ -170,9 +171,10 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,poscar
         ham3=ham2.create_supercell_hamiltonian([[0,i,0] for i in range(unitcells)],[[1,0,0],[0,unitcells,0],[0,0,1]])
         ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-get_rid_of))
         path = ham4.point_path([[0,0,0],[0.5,0,0]],100)
-        ham4.plot_bandstructure(path,str(ring)+"_"+output,'d')
-        data=ham4.bandstructure_data(path, 'd')
-        numpy.savetxt(str(ring)+"_"+output+'.dat', numpy.real(data), fmt="%12.6G")
+        if output!=None:
+            ham4.plot_bandstructure(path,str(ring)+"_"+output,'d')
+            numpy.savetxt(str(ring)+"_"+output+'.dat', numpy.real(data), fmt="%12.6G")
+        data=ham4.bandstructure_data(path, 'd') #data is calculated twice, that's kind of stupid
         
         return ham4,data,path
     

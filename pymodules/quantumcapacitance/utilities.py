@@ -166,3 +166,4 @@ class LinearInterpolationNOGrid:
         """
         
         return self.__dim
+
