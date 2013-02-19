@@ -76,6 +76,15 @@ elements resulting from it. The data was calculated using VASP and wannier90.</p
 <li>PROCAR - electronic density of the ground state, projected on atomic orbitals</li>
 <li>OUTCAR - output protocol, containing the Fermi energy</li>
 </ul>
+<p>The easiest way to use the files is probably to start python in the example data
+directory. Then, you don&#8217;t have to supply an absolute path to the files:</p>
+<div class="highlight-python"><pre>cd /path/to/envtb/exampledata/01_graphene_vasp_wannier90
+python
+&gt;&gt;&gt; from wannier90.w90hamiltonian import Hamiltonian
+&gt;&gt;&gt; ham=Hamiltonian.from_file("wannier90_hr.dat","POSCAR","wannier90.wout","OUTCAR")</pre>
+</div>
+<p>If you run the IPython web interface, you can start it anyway you like and then
+execute the above <tt class="docutils literal"><span class="pre">cd</span></tt> command in IPython.</p>
 <p>wannier90 files:</p>
 <ul class="simple">
 <li>wannier90_hr.dat - matrix elements in the Wannier-orbital basis</li>
@@ -203,15 +212,16 @@ output: path to the output image file.</p>
 
 <dl class="function">
 <dt id="simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure">
-<tt class="descclassname">simple.</tt><tt class="descname">plot_zigzag_graphene_nanoribbon_pz_bandstructure</tt><big>(</big><em>wannier90hr_graphene</em>, <em>poscarfile</em>, <em>wannier90woutfile</em>, <em>width</em>, <em>output</em>, <em>usedhoppingcells_rings='all'</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_zigzag_graphene_nanoribbon_pz_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">simple.</tt><tt class="descname">plot_zigzag_graphene_nanoribbon_pz_bandstructure</tt><big>(</big><em>wannier90hr_graphene</em>, <em>poscarfile</em>, <em>wannier90woutfile</em>, <em>outcarfile</em>, <em>width</em>, <em>output=None</em>, <em>usedhoppingcells_rings='all'</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_zigzag_graphene_nanoribbon_pz_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the pi bandstructure of a zigzag graphene nanoribbon based on a wannier90 calculation of
 bulk graphene. The pz orbitals have to be the first two orbitals in the wannier90 file.
 A .dat file with the bandstructure data is also saved as output.dat (each line representing one k-point).</p>
 <p>wannier90hr_graphene: path to the wannier90_hr.dat file containing the graphene bulk
 calculation
 poscarfile: path to the VASP POSCAR file of the graphene bulk calculation
+outcarfile: path to the VASP OUTCAR file
 width: width of the ribbon (number of rings).
-output: path to the output image file.
+output: path to the output image file. If None, nothing will be saved. Default is None.
 usedhoppingcells_rings: If you don&#8217;t want to use all hopping parameters,
 you can set the number of &#8216;rings&#8217; surrounding the main cell here. If it is a list
 (e.g. range(5)), several plots are created.

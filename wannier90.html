@@ -115,6 +115,15 @@ between vertices you provide:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">ham</span><span class="o">.</span><span class="n">plot_bandstructure</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;/tmp/myplot.png&#39;</span><span class="p">,</span><span class="s">&#39;d&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Alternatively, you can do this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham</span><span class="o">.</span><span class="n">plot_bandstructure</span><span class="p">(</span><span class="s">&#39;hexagonal&#39;</span><span class="p">,</span><span class="s">&#39;/tmp/myplot.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or even shorter, if you only want to display the plot (you have to admit that this
+is <em>really</em> simple):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ham</span><span class="o">.</span><span class="n">plot_bandstructure</span><span class="p">(</span><span class="s">&#39;hexagonal&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>Or store the data in a variable and save it to a file:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">data</span><span class="o">=</span><span class="n">ham</span><span class="o">.</span><span class="n">bandstructure_data</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;d&#39;</span><span class="p">)</span>
 <span class="n">numpy</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s">&#39;/tmp/bs.dat&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">fmt</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%12.6G</span><span class="s">&quot;</span><span class="p">)</span>
@@ -277,50 +286,10 @@ so that the new Fermi energy is at 0.</li>
 Then, call save(filename) to save to a file.</p>
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.BandstructurePlot.plot">
-<tt class="descname">plot</tt><big>(</big><em>kpoints</em>, <em>data</em>, <em>style='auto'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.plot" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">plot</tt><big>(</big><em>kpoints</em>, <em>data</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a bandstructure plot to the figure.</p>
 <p>kpoints: list of kpoints
-data: list of eigenvalues for each kpoint.
-style: set format string of this plot. You can also set the 
-styles of all plots using setstyles().
-Default is &#8216;auto&#8217;, which means that the style list will be used.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="wannier90.w90hamiltonian.BandstructurePlot.reset">
-<tt class="descname">reset</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.reset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Clear the current figure.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="wannier90.w90hamiltonian.BandstructurePlot.save">
-<tt class="descname">save</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save the figure to a file. The format is determined
-by the filename.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="wannier90.w90hamiltonian.BandstructurePlot.set_aspect_ratio">
-<tt class="descname">set_aspect_ratio</tt><big>(</big><em>aspect</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.set_aspect_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.set_aspect_ratio" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the aspect ratio. For possible values, see
-<a class="reference external" href="http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect">http://matplotlib.sourceforge.net/api/axes_api.html#matplotlib.axes.Axes.set_aspect</a></p>
-</dd></dl>
-
-<dl class="method">
-<dt id="wannier90.w90hamiltonian.BandstructurePlot.set_plot_range">
-<tt class="descname">set_plot_range</tt><big>(</big><em>**kwargs</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.set_plot_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.set_plot_range" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the plot range using the kwargs
-xmin, xmax, ymin, ymax.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="wannier90.w90hamiltonian.BandstructurePlot.setstyles">
-<tt class="descname">setstyles</tt><big>(</big><em>stylelist</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot.setstyles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot.setstyles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the styles for each bandstructure plot.</p>
-<p>stylelist: A list with format strings (see 
-<a class="reference external" href="http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.plot">http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.plot</a>)
-for each plot. If the list is shorter than the number of plots,
-it is repeated.</p>
+data: list of eigenvalues for each kpoint.</p>
 </dd></dl>
 
 </dd></dl>
@@ -372,6 +341,9 @@ interpolation, the y and z/z coordinate are not used.</p>
 For direct plotting, use plot_bandstructure(kpoints,filename).</p>
 <p>A list of eigenvalues for each kpoint is returned. To sort 
 by band, use data.transpose().</p>
+<p>If kpoints is a string, this string will be interpreted as the
+name of the crystal structure (see standard_paths), and the crystal
+structure&#8217;s default kpoint path will be used.</p>
 <p>usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
 you can set them here (get the list of available cells with unitcellnumbers() and
 strip the list from unwanted cells).        
@@ -602,18 +574,31 @@ sense if the selected orbitals don&#8217;t interact with other orbitals.</p>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure">
-<tt class="descname">plot_bandstructure</tt><big>(</big><em>kpoints</em>, <em>filename</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.plot_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">plot_bandstructure</tt><big>(</big><em>kpoints</em>, <em>filename=None</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>mark_reclattice_points=False</em>, <em>mark_fermi_energy=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.plot_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the bandstructure at the points kpoints (given in 
 cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)
 if you want to use direct coordinates) and save the plot
-to filename. The ending of filename determines the file format.</p>
+to filename. The ending of filename determines the file format. If 
+filename=None (default), the plot will not be saved (you can display
+it using pyplot.show() ).</p>
+<p>If kpoints is a string, this string will be interpreted as the
+name of the crystal structure (see standard_paths), and the crystal
+structure&#8217;s default kpoint path will be used.</p>
 <p>usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
 you can set them here (get the list of available cells with unitcellnumbers() and
 strip the list from unwanted cells).  
 basis: &#8216;c&#8217; or &#8216;d&#8217;. Determines if the kpoints are given in cartesian
 reciprocal coordinates or direct reciprocal coordinates.
 usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
-sense if the selected orbitals don&#8217;t interact with other orbitals.</p>
+sense if the selected orbitals don&#8217;t interact with other orbitals.  
+mark_reclattice_points: You can mark important reciprocal lattice points, like
+Gamma or K. This variable can be (i) True if you use a string for kpoints
+(ii) a list which contains the names of the points and the points:
+mark_reclattice_points=[names,points]. The points have to be in 
+cartesian coordinates. Default is False.
+mark_fermi_energy: If you supply the Fermi energy here, a line will be
+drawn. If True, the Fermi energy will be taken from fermi_energy().
+Default is False.</p>
 </dd></dl>
 
 <dl class="method">
@@ -664,14 +649,15 @@ my_hamiltonian.point_path([[0,0],[1,1],[2,2]],2)</p>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.standard_paths">
-<tt class="descname">standard_paths</tt><big>(</big><em>name</em>, <em>nrpointspersegment=1</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.standard_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.standard_paths" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">standard_paths</tt><big>(</big><em>name</em>, <em>nrpointspersegment=100</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.standard_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.standard_paths" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gives the standard path for a Bravais lattice in
 direct reciprocal coordinates.</p>
+<p>At the moment, there are &#8216;hexagonal&#8217;, &#8216;fcc&#8217;, &#8216;1D&#8217; and &#8216;1D-symmetric&#8217;.</p>
 <p>name: Name of the lattice
 nrpointspersegment: optional; if &gt; 1, a list of intermediate points connecting
 the main points is also returned and can be used for a 
 bandstructure path (nrpointspersegment points per segment).
-Default value: 1</p>
+Default value: 100</p>
 <p>Return:
 points,names(,path)</p>
 <p>points: points in the path

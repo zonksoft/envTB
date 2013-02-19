@@ -1,0 +1,28 @@
+Utility classes and functions
+=============================
+
+Trilinear interpolation
+-----------------------
+
+The class :py:class:`~.LinearInterpolationNOGrid` supports linear, bilinear
+and trilinear interpolation for data on an even grid in 1D, 2D or 3D, with
+orthogonal or non-orthogonal lattice vectors. Please see the code reference
+for documentation.
+
+Code reference
+--------------
+
+.. automodule:: quantumcapacitance.utilities
+   :members:
+
+Workflow recommendation
+-----------------------
+
+This is not a utility class, but it's the best place to put this information.
+
+(Work on this!)
+
+* IPython web interface
+* Use ? for documentation
+* combine plots and use pyplot.show()
+* handle data, numpy.savetxt

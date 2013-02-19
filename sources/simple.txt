@@ -25,6 +25,17 @@ VASP files:
 * PROCAR - electronic density of the ground state, projected on atomic orbitals
 * OUTCAR - output protocol, containing the Fermi energy
 
+The easiest way to use the files is probably to start python in the example data
+directory. Then, you don't have to supply an absolute path to the files::
+
+  cd /path/to/envtb/exampledata/01_graphene_vasp_wannier90
+  python
+  >>> from wannier90.w90hamiltonian import Hamiltonian
+  >>> ham=Hamiltonian.from_file("wannier90_hr.dat","POSCAR","wannier90.wout","OUTCAR")
+
+If you run the IPython web interface, you can start it anyway you like and then 
+execute the above ``cd`` command in IPython.
+
 wannier90 files:
 
 * wannier90_hr.dat - matrix elements in the Wannier-orbital basis
