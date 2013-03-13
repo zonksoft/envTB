@@ -3,7 +3,7 @@ from vasp import procar
 from wannier90 import w90hamiltonian
 import numpy
 from quantumcapacitance import electrostatics,quantumcapacitance
-from matplotlib import pylab
+from matplotlib import pyplot
 """
 This file contains functions for often used procedures.
 They can also be considered as use cases.
@@ -317,8 +317,7 @@ def SimpleElectrostaticProblem():
     cont=electrostatics.PeriodicContainer(rect,'y')
     solver,inhomogeneity=cont.lu_solver()
     sol=solver(inhomogeneity)
-    pylab.plot(sol)
-    pylab.show()
+    pyplot.plot(sol)
     print sol
 
 def PotentialOfGluedRectangles2D():
@@ -357,8 +356,7 @@ def PotentialOfGluedRectangles2D():
 
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
-    pylab.imshow(container.vector_to_datamatrix(sol)[0])
-    pylab.show()
+    pyplot.imshow(container.vector_to_datamatrix(sol)[0])
 
 def PotentialOfSimpleConductor2D():
     """
@@ -384,8 +382,7 @@ def PotentialOfSimpleConductor2D():
     container=electrostatics.Container((rechteck,))
     solver,inhomogeneity=container.lu_solver()
     sol=solver(inhomogeneity)
-    pylab.imshow(container.vector_to_datamatrix(sol)[0])
-    pylab.show()
+    pyplot.imshow(container.vector_to_datamatrix(sol)[0])
 
 def GrapheneQuantumCapacitance(equation='potential'):
     """
@@ -401,6 +398,11 @@ def GrapheneQuantumCapacitance(equation='potential'):
     * bottom: backgate capacitor plate
 
     Please read the code comments for further documentation.
+    
+    Return:
+    
+    voltages: The voltages where the capacitance is calculated (x values)
+    capacitance: the quantum capacitance (y(x) values)
     """
     #Set system parameters
     gridsize=1e-9
@@ -469,7 +471,7 @@ def GrapheneQuantumCapacitance(equation='potential'):
     
     #Loop over voltages
     for v in voltages:
-        print v
+        #print v
         #Set backgate elements to voltage
         for elem in backgateelements:
             elem.potential=v
@@ -488,10 +490,10 @@ def GrapheneQuantumCapacitance(equation='potential'):
     capacitance=(totalcharge[2:]-totalcharge[:-2])/len(grapheneelements)*gridsize/(2*dv)
     
     #Plot result
-    fig=pylab.figure()
-    ax = fig.add_subplot(111)
+    ax=pyplot.gca()
     ax.set_title('Quantum capacitance of Graphene on SiO2')
     ax.set_xlabel('Backgate voltage [V]')
     ax.set_ylabel('GNR capacitance [$10^{-6} F/m^2$]')
-    pylab.plot(voltages[1:-1],1e6*capacitance)
-    pylab.show()
+    pyplot.plot(voltages[1:-1],1e6*capacitance)
+
+    return voltages[1:-1],capacitance

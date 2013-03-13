@@ -290,6 +290,7 @@ class Hamiltonian:
         """
         Sorts a list by the given column sortcolumn and returns the order. 
         If key==None (default), all columns are sorted, with the last column running fastest.
+        E.g. for sorting by the second column, set key=lambda w: w[1]
         """
         if key==None:
             return [i[0] for i in sorted(enumerate(data),key=lambda x: x[1])]
@@ -606,6 +607,14 @@ class Hamiltonian:
         mark_fermi_energy: If you supply the Fermi energy here, a line will be
         drawn. If True, the Fermi energy will be taken from fermi_energy().
         Default is False.
+        
+        Return:
+        lines: List of matplotlib.lines.Line2D objects that were drawn. You
+        can change the style, color etc., like:
+            for line in lines:
+                line.set_color('red')
+        fermi_energy_line: The fermi energy mark Line2D object.
+        lattice_point_lines: The lattice point marks Line2D object.
         """
         
 
@@ -617,20 +626,25 @@ class Hamiltonian:
             reclattice_points,reclattice_names,kpoints=self.standard_paths(kpoints)
             basis='d'
             
-        bplot.plot(kpoints, data)
+        lattice_point_lines=None
+        fermi_energy_line=None
+            
+        lines=bplot.plot(kpoints, data)
         if not isinstance(mark_fermi_energy,bool):
             """"This doesn't work properly"""
-            bplot.plot_fermi_energy(mark_fermi_energy)
+            fermi_energy_line=bplot.plot_fermi_energy(mark_fermi_energy)
         elif mark_fermi_energy:
-            bplot.plot_fermi_energy(self.fermi_energy())
+            fermi_energy_line=bplot.plot_fermi_energy(self.fermi_energy())
             
         if mark_reclattice_points != False:
             if mark_reclattice_points == True:
-                bplot.plot_lattice_point_vlines(reclattice_points, reclattice_names)
+                lattice_point_lines=bplot.plot_lattice_point_vlines(reclattice_points, reclattice_names)
             else:
                 pass
         if filename!=None:
             pyplot.savefig(filename)
+            
+        return lines,fermi_energy_line,lattice_point_lines
         
     def drawunitcells(self,unitcellnumbers='all'):
         """
@@ -1320,19 +1334,18 @@ class BandstructurePlot:
 #            stylestring=style
             
 #        self.__plotcounter+=1
-        for band in data.transpose():
-            pyplot.plot(pathlength,band)
+        return [pyplot.plot(pathlength,band)[0] for band in data.transpose()]
             
     def plot_fermi_energy(self,fermi_energy):
-        pyplot.figure(self.__myplot.number) 
-        pyplot.axhline(y=fermi_energy,color='r')
+        return pyplot.axhline(y=fermi_energy,color='r')
         
     def plot_lattice_point_vlines(self,reclatticepoints,reclatticenames=None):
         positions=self.__kpoints_to_pathlength(reclatticepoints)
-        for x in positions:
-            pyplot.axvline(x=x,dashes=(10,10),color='#AAAAAA')
+
         if reclatticenames!=None:
             pyplot.xticks( positions, reclatticenames )
+            
+        return [pyplot.axvline(x=x,dashes=(10,10),color='#AAAAAA') for x in positions]
             
     
 #    def save(self,filename):
