@@ -393,7 +393,28 @@ class Hamiltonian:
             blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]][numpy.ix_(orbitalnrs,orbitalnrs)]
         
         evals,evecs=linalg.eig(blochmatrix)
-        return numpy.sort(evals.real)            
+        return numpy.sort(evals.real)         
+    
+    def maincell_hamiltonian_matrix(self,usedorbitals='all'):  
+        """
+        Returns the Hamiltonian matrix for the main cell, without hopping
+        parameters to other cells. This is the matrix whose eigenvalues
+        you can calculate using maincell_eigenvalues().
+        
+        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
+        sense if the selected orbitals don't interact with other orbitals.        
+        """ 
+        
+        if usedorbitals=='all':
+            orbitalnrs=range(self.__nrbands)
+        else:
+            orbitalnrs=usedorbitals
+        if usedorbitals=='all':
+            blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]]
+        else:
+            blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]][numpy.ix_(orbitalnrs,orbitalnrs)]   
+            
+        return blochmatrix     
     
     def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',usedorbitals='all',return_evecs=False):
         """
