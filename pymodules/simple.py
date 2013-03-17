@@ -217,7 +217,7 @@ def plot_armchair_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,posc
         data=ham4.bandstructure_data(path, 'd')
         numpy.savetxt(str(ring)+"_"+output+'.dat', numpy.real(data), fmt="%12.6G")
 
-def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,magnetic_B=0):
+def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,length,magnetic_B=0):
     """
     Plot the \pi bandstructure of a zigzag graphene nanoribbon based on a n-th nearest neighbour parameterization of
     bulk graphene. 
@@ -226,6 +226,9 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,magn
     nnfile: path to the nearest-neighbour input file (see example files)
     width: width of the ribbon (number of rings).
     output: path to the output image file.
+    length: length in x-direction of the returned (not the bandstructure plot!) unit cell (in rings)
+    
+    Return: Hamiltonian of the unit cell with given length
     """
     if width%2 == 0:
         unitcells = width/2+1
@@ -241,8 +244,10 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,magn
     ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-get_rid_of),magnetic_B=magnetic_B)
     path = ham4.point_path([[-0.5,0,0],[0.5,0,0]],30)
     ham4.plot_bandstructure(path,output,'d')
+    ham5=ham4.create_supercell_hamiltonian([[i,0,0] for i in range(length)],[[length,0,0],[0,1,0],[0,0,1]])
     data=ham4.bandstructure_data(path, 'd')
     numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
+    return ham5
 
 def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output):
     """
