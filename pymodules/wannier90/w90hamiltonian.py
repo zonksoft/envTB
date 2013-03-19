@@ -8,6 +8,7 @@ from matplotlib import pyplot
 from matplotlib.path import Path
 import matplotlib.patches as patches
 import itertools
+from scipy import sparse
 
 class Hamiltonian:
     
@@ -127,7 +128,7 @@ class Hamiltonian:
         self.__unitcellnumbers = unitcellnumbers
         self.__unitcellmatrixblocks = unitcellmatrixblocks
         self.__latticevecs = poscar.LatticeVectors(latticevecs)
-        self.__nrbands = len(unitcellmatrixblocks[0])
+        self.__nrbands = unitcellmatrixblocks[0].shape[0]
         self.__orbitalspreads=orbitalspreads
         self.__orbitalpositions=orbitalpositions
         self.__fermi_energy=fermi_energy
@@ -213,10 +214,10 @@ class Hamiltonian:
         unitcellmatrixblocks = []
         
         for unitcell in unitcells:
-            block=numpy.zeros((nrbands,nrbands))
+            block=sparse.lil_matrix((nrbands,nrbands))
             for element in unitcell:
-                block[element[3]][element[4]]=hopping[element[5]]
-            unitcellmatrixblocks.append(block)
+                block[element[3],element[4]]=hopping[element[5]]
+            unitcellmatrixblocks.append(block.tocsr())
                 
         return unitcellmatrixblocks,unitcellnumbers
         
@@ -416,7 +417,7 @@ class Hamiltonian:
             
         return blochmatrix     
     
-    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',usedorbitals='all',return_evecs=False):
+    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',return_evecs=False):
         """
         Calculates the eigenvalues of the eigenvalue problem with
         Bloch boundary conditions for a given vector k.
@@ -426,8 +427,6 @@ class Hamiltonian:
         strip the list from unwanted cells).
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
-        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
-        sense if the selected orbitals don't interact with other orbitals.
         return_evecs: If True, evecs are also returned as the second return value.
         """
         
@@ -443,25 +442,18 @@ class Hamiltonian:
         if basis=='d':
             k=self.__latticevecs.direct_to_cartesian_reciprocal(k)
             
-        if usedorbitals=='all':
-            orbitalnrs=range(self.__nrbands)
-        else:
-            orbitalnrs=usedorbitals
+
+        orbitalnrs=range(self.__nrbands)
+
 
         bloch_phases=self.__bloch_phases(k)
-        blochmatrix = numpy.zeros((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
+        blochmatrix = sparse.lil_matrix((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
         
-        if usedorbitals=='all':
-            for i in usedunitcellnrs:
-                blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
-        else:
-            for i in usedunitcellnrs:
-                # the same thing, but it saves memory not to use [numpy.ix_(orbitalnrs,orbitalnrs)] if it's not
-                # necessary
-                #http://stackoverflow.com/questions/4257394/slicing-of-a-numpy-2d-array-or-how-do-i-extract-an-mxm-submatrix-from-an-nxn-ar/4258079#4258079
-                blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i][numpy.ix_(orbitalnrs,orbitalnrs)]
 
-        evals,evecs=linalg.eig(blochmatrix)
+        for i in usedunitcellnrs:
+            blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
+
+        evals,evecs=linalg.eig(blochmatrix.todense())
         
         
         
@@ -519,7 +511,7 @@ class Hamiltonian:
         
         self.plot_vector(10*numpy.ones(len(self.__orbitalpositions)))
     
-    def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all',usedorbitals='all',parallelmethod=None,parallelthreads=4):
+    def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all',parallelmethod=None,parallelthreads=4):
         """
         Calculates the bandstructure for a given kpoint list.
         For direct plotting, use plot_bandstructure(kpoints,filename).
@@ -536,8 +528,6 @@ class Hamiltonian:
         strip the list from unwanted cells).        
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
-        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
-        sense if the selected orbitals don't interact with other orbitals.
         parallel: Option to parallelize the band structure over k-points.
             None: No parallelization (default)
             'multiprocessor.pool': Parallelization using the multiprocessor.Pool class
@@ -549,7 +539,7 @@ class Hamiltonian:
             kpoints=self.standard_paths(kpoints)[2]
             basis='d'
         if parallelmethod==None:
-            data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells,usedorbitals) for kpoint in kpoints])
+            data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells) for kpoint in kpoints])
         if parallelmethod=='multiprocessor.pool':
             data=[]
 
@@ -600,7 +590,7 @@ class Hamiltonian:
         return numpy.transpose([numpy.linspace(v1[j], \
                 v2[j],nrpoints,endpoint=False) for j in range(dimension)]).tolist()
         
-    def plot_bandstructure(self,kpoints,filename=None,basis='c',usedhoppingcells='all',usedorbitals='all',mark_reclattice_points=False,mark_fermi_energy=False):
+    def plot_bandstructure(self,kpoints,filename=None,basis='c',usedhoppingcells='all',mark_reclattice_points=False,mark_fermi_energy=False):
         """
         Calculate the bandstructure at the points kpoints (given in 
         cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)
@@ -618,8 +608,6 @@ class Hamiltonian:
         strip the list from unwanted cells).  
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
-        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
-        sense if the selected orbitals don't interact with other orbitals.  
         mark_reclattice_points: You can mark important reciprocal lattice points, like
         \Gamma or K. This variable can be (i) True if you use a string for kpoints
         (ii) a list which contains the names of the points and the points:
@@ -640,7 +628,7 @@ class Hamiltonian:
         
 
             
-        data=self.bandstructure_data(kpoints,basis,usedhoppingcells,usedorbitals)
+        data=self.bandstructure_data(kpoints,basis,usedhoppingcells)
         bplot=BandstructurePlot()
         
         if isinstance(kpoints,str):
@@ -652,7 +640,6 @@ class Hamiltonian:
             
         lines=bplot.plot(kpoints, data)
         if not isinstance(mark_fermi_energy,bool):
-            """"This doesn't work properly"""
             fermi_energy_line=bplot.plot_fermi_energy(mark_fermi_energy)
         elif mark_fermi_energy:
             fermi_energy_line=bplot.plot_fermi_energy(self.fermi_energy())
@@ -1063,9 +1050,14 @@ class Hamiltonian:
             usedunitcellnrs=self.__unitcellcoordinates_to_nrs(usedhoppingcells)
         
         
-        nr_unitcells_in_supercell=len(cellcoordinates)     
+        nr_unitcells_in_supercell=len(cellcoordinates)   
+        
+        cellcoordinates_reverse_dict={}
+        for i,coord in enumerate(cellcoordinates):
+            cellcoordinates_reverse_dict[tuple(coord)]=i
         
         unitcellmatrixblocks=[]
+        #unitcellmatrixblocks_dryctr=[]
         unitcellnumbers=[]
         
         if usedorbitals=='all':
@@ -1083,49 +1075,52 @@ class Hamiltonian:
         orbitalpositions=[list(oldorbitalpositions[orb]+cell) for cell in oldunitcellcoordinates for orb in orbitalnrs]
         
         metric_numerator,metric_denominator=self.__metric(latticevecs)
-        
+        latticevecs_dot_metric_numerator=numpy.dot(latticevecs,metric_numerator)
         #Loop over cells in supercell
+        
+        """
+        Besser: zuerst alle indizes/positionen aufstellen, dann mit sparse.bmat die matrix zusammenbauen.
+        Andere fkten auch aktualisieren!!
+        
+        ...und auch mal mixins und connections zw. bauteilen (kleben) verbessern. vl wie elektrostatik-kleben?
+        """
         for cellnr,cell in enumerate(numpy.array(cellcoordinates)):
+            print '\rSupercell: set',str(cellnr+1),'of',nr_unitcells_in_supercell,
             #Loop over old blocks
             for i,oldnumber,oldblock in zip(range(len(oldunitcellmatrixblocks)),numpy.array(oldunitcellnumbers),oldunitcellmatrixblocks):
                 if i in usedunitcellnrs:
-                    oldblock_selectedorbitals=oldblock[numpy.ix_(orbitalnrs,orbitalnrs)]
+                    if usedorbitals=='all':
+                        oldblock_selectedorbitals=oldblock
+                    else:
+                        oldblock_selectedorbitals=oldblock[numpy.array(orbitalnrs)[:,numpy.newaxis],numpy.array(orbitalnrs)]
+                        
                     hopto=cell+oldnumber
                     
-                    hopto_scaled_times_metric_denominator=numpy.dot(numpy.dot(latticevecs,metric_numerator),hopto);
+                    hopto_scaled_times_metric_denominator=numpy.dot(latticevecs_dot_metric_numerator,hopto)
                     hopto_scaled=list(hopto_scaled_times_metric_denominator/metric_denominator)
                     hopto_rest_times_metric_denominator=hopto_scaled_times_metric_denominator%metric_denominator
-                    hopto_nr=list(numpy.dot(hopto_rest_times_metric_denominator,latticevecs)/metric_denominator)
+                    hopto_nr=tuple(numpy.dot(hopto_rest_times_metric_denominator,latticevecs)/metric_denominator)
                     
                     try:
                         skip_block=False
-                        hopto_nr_index=cellcoordinates.index(hopto_nr) 
+                        hopto_nr_index=cellcoordinates_reverse_dict[hopto_nr]#cellcoordinates.index(hopto_nr) 
                     except ValueError:
                         skip_block=True #if the cell to hop to is not in the cellcoordinates list, the block is skipped
                     
-                    if skip_block==False:
-                        #print hopto,hopto_scaled,hopto_nr,hopto_nr_index
-    
-                        """
-                        #hopto_scaled=[x/y for x,y in zip(hopto,scaling)]
-                        hopto_nr=[x%y for x,y in zip(hopto,scaling)]
-                        hopto_nr_index=cellcoordinates.index(hopto_nr) #if the cell to hop to is not in the cellcoordinates list, this will fail -> then the block has to be skipped -> implement!!
-                        """
-                        #print hopfrom,oldnumber,hopto,hopto_scaled,hopto_nr,hopto_nr_index
-                        
+                    if skip_block==False:                        
                         try:
                             unitcellindex=unitcellnumbers.index(hopto_scaled)
                         except ValueError:
                             unitcellindex=len(unitcellnumbers)
                             unitcellnumbers.append(hopto_scaled)
-                            unitcellmatrixblocks.append(numpy.zeros((orbitals_per_unitcell*nr_unitcells_in_supercell,
-                                                                    orbitals_per_unitcell*nr_unitcells_in_supercell),dtype=complex))
+                            unitcellmatrixblocks.append(sparse.lil_matrix((orbitals_per_unitcell*nr_unitcells_in_supercell,
+                                                                    orbitals_per_unitcell*nr_unitcells_in_supercell)))
                         
-                        #print unitcellindex    
+                        """THIS LINE TAKES TIME"""
                         unitcellmatrixblocks[unitcellindex][cellnr*orbitals_per_unitcell:(cellnr+1)*orbitals_per_unitcell,
                                                             hopto_nr_index*orbitals_per_unitcell:(hopto_nr_index+1)*orbitals_per_unitcell]=oldblock_selectedorbitals
-                
         
+        print 
         oldlatticevecs=self.__latticevecs.latticevecs()
         newlatticevecs=numpy.dot(numpy.array(latticevecs),oldlatticevecs) # (A.B)'=B'.A' - new latticevectors in real coordinates
         
@@ -1149,11 +1144,11 @@ class Hamiltonian:
 
         #Add onsite potential = electrostatic potential
         if onsite_potential != None:
-            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=numpy.diag(onsite_potential)       
+            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=sparse.lil_matrix(numpy.diag(onsite_potential))       
                         
         #Shift diagonal elements of main cell hopping block
         if energyshift!=None:
-            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=numpy.diag((orbitals_per_unitcell*nr_unitcells_in_supercell)*[energyshift])       
+            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=sparse.lil_matrix(numpy.diag((orbitals_per_unitcell*nr_unitcells_in_supercell)*[energyshift]))
         
     
         #Apply magnetic field
@@ -1174,13 +1169,16 @@ class Hamiltonian:
                     phasematrix=numpy.exp(1j*magnetic_B*Tesla_conversion_factor*numpy.array([[0.5*((other[1]-main[1])*(other[0]+main[0])-(other[0]-main[0])*(other[1]+main[1])) for other in othercell_orbitalpositions] for main in numpy.array(orbitalpositions)]))
                 
                 unitcellmatrixblocks[i]*=phasematrix  
-                
+          
         if energyshift != None and self.__fermi_energy != None:
             newfermi_energy=self.__fermi_energy+energyshift
         else:
             newfermi_energy=self.__fermi_energy
-                
-        return self.from_raw_data(unitcellmatrixblocks, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions,newfermi_energy)
+            
+        unitcellmatrixblocks_csr=[block.tocsr() for block in unitcellmatrixblocks]
+      
+        return self.from_raw_data(unitcellmatrixblocks_csr, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions,newfermi_energy)
+        return unitcellmatrixblocks
     
     def __metric(self,basis):
         """
