@@ -1,0 +1,19 @@
+#Lattice vectors:
+    1.000000     0.000000     0.000000
+    0.000000     1.000000     0.000000
+    0.000000     0.000000     1.000000
+
+
+#Spreads and positions of the orbitals:
+    0.500000     0.500000     0.500000     0.000000
+
+#Default hopping values
+0	-4.000000e-00
+1	1.000000e+00
+
+#veca   vecb  vecc  thisorb otherorb hoppingnr
+-1	0	0	0	0	1
+0	-1	0	0	0	1
+0	0	0	0	0	0
+0	1	0	0	0	1
+1	0	0	0	0	1
