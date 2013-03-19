@@ -976,7 +976,7 @@ class Hamiltonian:
                 checked.append(e)
         return checked        
     
-    def create_supercell_hamiltonian(self,cellcoordinates,latticevecs,usedhoppingcells='all',usedorbitals='all',energyshift=None,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None,onsite_potential=None):
+    def create_supercell_hamiltonian(self,cellcoordinates,latticevecs,usedhoppingcells='all',usedorbitals='all',energyshift=None,magnetic_B=None,gauge_B='landau_x',mixin_ham=None,mixin_hoppings=None,mixin_cells=None,mixin_assoc=None,onsite_potential=None,output_maincell_only=False):
         """
         Creates the matrix elements for a supercell containing several unit cells, e.g. a volume
         with one unit cell missing in the middle or one slice of a nanoribbon.
@@ -1030,7 +1030,9 @@ class Hamiltonian:
         diagonal (=onsite) matrix elements of the main cell. This approximates
         an electrostatic potential in the system. Default is None.                         
         
-        
+        output_maincell_only: If True, only the main cell matrix block will be
+        calculated. This makes sense for a big system of which you want to
+        calculate the eigenvalues, not the bandstructure. Default is false
         
         Return:
         New Hamiltonian with the new properties.
@@ -1057,7 +1059,7 @@ class Hamiltonian:
             cellcoordinates_reverse_dict[tuple(coord)]=i
         
         unitcellmatrixblocks=[]
-        #unitcellmatrixblocks_dryctr=[]
+        unitcellmatrixblocks_dryctr=[]
         unitcellnumbers=[]
         
         if usedorbitals=='all':
@@ -1085,14 +1087,14 @@ class Hamiltonian:
         ...und auch mal mixins und connections zw. bauteilen (kleben) verbessern. vl wie elektrostatik-kleben?
         """
         for cellnr,cell in enumerate(numpy.array(cellcoordinates)):
-            print '\rSupercell: set',str(cellnr+1),'of',nr_unitcells_in_supercell,
             #Loop over old blocks
             for i,oldnumber,oldblock in zip(range(len(oldunitcellmatrixblocks)),numpy.array(oldunitcellnumbers),oldunitcellmatrixblocks):
                 if i in usedunitcellnrs:
                     if usedorbitals=='all':
                         oldblock_selectedorbitals=oldblock
                     else:
-                        oldblock_selectedorbitals=oldblock[numpy.array(orbitalnrs)[:,numpy.newaxis],numpy.array(orbitalnrs)]
+                        #the conversion to csr is annoying, but necessary
+                        oldblock_selectedorbitals=oldblock.tocsr()[numpy.array(orbitalnrs)[:,numpy.newaxis],numpy.array(orbitalnrs)]
                         
                     hopto=cell+oldnumber
                     
@@ -1106,6 +1108,9 @@ class Hamiltonian:
                         hopto_nr_index=cellcoordinates_reverse_dict[hopto_nr]#cellcoordinates.index(hopto_nr) 
                     except ValueError:
                         skip_block=True #if the cell to hop to is not in the cellcoordinates list, the block is skipped
+                        
+                    if output_maincell_only and hopto_scaled!=[0,0,0]:
+                        skip_block=True
                     
                     if skip_block==False:                        
                         try:
@@ -1115,15 +1120,23 @@ class Hamiltonian:
                             unitcellnumbers.append(hopto_scaled)
                             unitcellmatrixblocks.append(sparse.lil_matrix((orbitals_per_unitcell*nr_unitcells_in_supercell,
                                                                     orbitals_per_unitcell*nr_unitcells_in_supercell)))
+                            unitcellmatrixblocks_dryctr.append([])                            
                         
-                        """THIS LINE TAKES TIME"""
-                        unitcellmatrixblocks[unitcellindex][cellnr*orbitals_per_unitcell:(cellnr+1)*orbitals_per_unitcell,
-                                                            hopto_nr_index*orbitals_per_unitcell:(hopto_nr_index+1)*orbitals_per_unitcell]=oldblock_selectedorbitals
+                        #unitcellmatrixblocks[unitcellindex][cellnr*orbitals_per_unitcell:(cellnr+1)*orbitals_per_unitcell,
+                        #                                    hopto_nr_index*orbitals_per_unitcell:(hopto_nr_index+1)*orbitals_per_unitcell]=oldblock_selectedorbitals
+                        unitcellmatrixblocks_dryctr[unitcellindex].append([i,cellnr,hopto_nr_index])
         
-        print 
         oldlatticevecs=self.__latticevecs.latticevecs()
         newlatticevecs=numpy.dot(numpy.array(latticevecs),oldlatticevecs) # (A.B)'=B'.A' - new latticevectors in real coordinates
-        
+                        
+        unitcellmatrixblocks_sparse=[]
+        emptyblock=sparse.coo_matrix((orbitals_per_unitcell,orbitals_per_unitcell))
+        for i,cell in enumerate(unitcellmatrixblocks_dryctr):
+            unitcellmatrixblocks_sparse_template= [ [ emptyblock for i in range(nr_unitcells_in_supercell) ] for j in range(nr_unitcells_in_supercell) ]
+            for block,i,j in cell:
+                unitcellmatrixblocks_sparse_template[i][j]=oldunitcellmatrixblocks[block]
+            unitcellmatrixblocks_sparse.append(sparse.bmat(unitcellmatrixblocks_sparse_template))
+           
         #Mix in matrix elements from other hamiltonian
         if mixin_ham!=None:
             othermatrixblocks=mixin_ham._Hamiltonian__unitcellmatrixblocks
@@ -1175,10 +1188,10 @@ class Hamiltonian:
         else:
             newfermi_energy=self.__fermi_energy
             
-        unitcellmatrixblocks_csr=[block.tocsr() for block in unitcellmatrixblocks]
+        #unitcellmatrixblocks_csr=[block.tocsr() for block in unitcellmatrixblocks_sparse]
       
-        return self.from_raw_data(unitcellmatrixblocks_csr, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions,newfermi_energy)
-        return unitcellmatrixblocks
+        return self.from_raw_data(unitcellmatrixblocks_sparse, unitcellnumbers, newlatticevecs,orbitalspreads,orbitalpositions,newfermi_energy)
+        #return unitcellmatrixblocks
     
     def __metric(self,basis):
         """
