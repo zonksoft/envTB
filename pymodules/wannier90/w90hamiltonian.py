@@ -1057,6 +1057,10 @@ class Hamiltonian:
         for i,coord in enumerate(cellcoordinates):
             cellcoordinates_reverse_dict[tuple(coord)]=i
         
+<<<<<<< HEAD
+=======
+        unitcellmatrixblocks=[]
+>>>>>>> branch 'master' of https://github.com/zonksoft/envTB.git
         unitcellmatrixblocks_dryctr=[]
         unitcellnumbers=[]
         
@@ -1086,8 +1090,19 @@ class Hamiltonian:
         """
         for cellnr,cell in enumerate(numpy.array(cellcoordinates)):
             #Loop over old blocks
+<<<<<<< HEAD
             for i,oldnumber in zip(range(len(oldunitcellmatrixblocks)),numpy.array(oldunitcellnumbers)):
                 if i in usedunitcellnrs:                        
+=======
+            for i,oldnumber,oldblock in zip(range(len(oldunitcellmatrixblocks)),numpy.array(oldunitcellnumbers),oldunitcellmatrixblocks):
+                if i in usedunitcellnrs:
+                    if usedorbitals=='all':
+                        oldblock_selectedorbitals=oldblock
+                    else:
+                        #the conversion to csr is annoying, but necessary
+                        oldblock_selectedorbitals=oldblock.tocsr()[numpy.array(orbitalnrs)[:,numpy.newaxis],numpy.array(orbitalnrs)]
+                        
+>>>>>>> branch 'master' of https://github.com/zonksoft/envTB.git
                     hopto=cell+oldnumber
                     
                     hopto_scaled_times_metric_denominator=numpy.dot(latticevecs_dot_metric_numerator,hopto)
@@ -1110,6 +1125,11 @@ class Hamiltonian:
                         except ValueError:
                             unitcellindex=len(unitcellnumbers)
                             unitcellnumbers.append(hopto_scaled)
+<<<<<<< HEAD
+=======
+                            unitcellmatrixblocks.append(sparse.lil_matrix((orbitals_per_unitcell*nr_unitcells_in_supercell,
+                                                                    orbitals_per_unitcell*nr_unitcells_in_supercell)))
+>>>>>>> branch 'master' of https://github.com/zonksoft/envTB.git
                             unitcellmatrixblocks_dryctr.append([])                            
                         
                         #unitcellmatrixblocks[unitcellindex][cellnr*orbitals_per_unitcell:(cellnr+1)*orbitals_per_unitcell,
@@ -1119,6 +1139,7 @@ class Hamiltonian:
         oldlatticevecs=self.__latticevecs.latticevecs()
         newlatticevecs=numpy.dot(numpy.array(latticevecs),oldlatticevecs) # (A.B)'=B'.A' - new latticevectors in real coordinates
                         
+<<<<<<< HEAD
         
         if usedorbitals=='all':
             oldblocks_selectedorbitals=oldunitcellmatrixblocks
@@ -1133,6 +1154,14 @@ class Hamiltonian:
             unitcellmatrixblocks_sparse_template= [ [ emptyblock if i==j else None for i in range(nr_unitcells_in_supercell) ] for j in range(nr_unitcells_in_supercell) ]
             for block,i,j in cell:
                 unitcellmatrixblocks_sparse_template[i][j]=oldblocks_selectedorbitals[block]
+=======
+        unitcellmatrixblocks_sparse=[]
+        emptyblock=sparse.coo_matrix((orbitals_per_unitcell,orbitals_per_unitcell))
+        for i,cell in enumerate(unitcellmatrixblocks_dryctr):
+            unitcellmatrixblocks_sparse_template= [ [ emptyblock for i in range(nr_unitcells_in_supercell) ] for j in range(nr_unitcells_in_supercell) ]
+            for block,i,j in cell:
+                unitcellmatrixblocks_sparse_template[i][j]=oldunitcellmatrixblocks[block]
+>>>>>>> branch 'master' of https://github.com/zonksoft/envTB.git
             unitcellmatrixblocks_sparse.append(sparse.bmat(unitcellmatrixblocks_sparse_template))
            
         #Mix in matrix elements from other hamiltonian
