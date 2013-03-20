@@ -217,7 +217,7 @@ def plot_armchair_graphene_nanoribbon_pz_bandstructure(wannier90hr_graphene,posc
         data=ham4.bandstructure_data(path, 'd')
         numpy.savetxt(str(ring)+"_"+output+'.dat', numpy.real(data), fmt="%12.6G")
 
-def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,length,magnetic_B=0):
+def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,length,magnetic_B=None):
     """
     Plot the \pi bandstructure of a zigzag graphene nanoribbon based on a n-th nearest neighbour parameterization of
     bulk graphene. 
@@ -242,14 +242,14 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,leng
     ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]])
     ham3=ham2.create_supercell_hamiltonian([[0,i,0] for i in range(unitcells)],[[1,0,0],[0,unitcells,0],[0,0,1]])
     ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(1),usedorbitals=range(1,ham3.nrorbitals()-get_rid_of),magnetic_B=magnetic_B)
-    path = ham4.point_path([[-0.5,0,0],[0.5,0,0]],30)
+    path = ham4.point_path([[-0.5,0,0],[0.5,0,0]],100)
     ham4.plot_bandstructure(path,output,'d')
     ham5=ham4.create_supercell_hamiltonian([[i,0,0] for i in range(length)],[[length,0,0],[0,1,0],[0,0,1]])
     data=ham4.bandstructure_data(path, 'd')
     numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
     return ham5
 
-def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output):
+def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,magnetic_B=None):
     """
     Plot the \pi bandstructure of an armchair graphene nanoribbon based on a n-th nearest neighbour parameterization of
     bulk graphene. 
@@ -264,7 +264,7 @@ def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output):
     ham=w90hamiltonian.Hamiltonian.from_nth_nn_list(nnfile)
     ham2=ham.create_supercell_hamiltonian([[0,0,0],[1,0,0]],[[1,-1,0],[1,1,0],[0,0,1]])
     ham3=ham2.create_supercell_hamiltonian([[i,0,0] for i in range(unitcells)],[[unitcells,0,0],[0,1,0],[0,0,1]])
-    ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(0))
+    ham4=ham3.create_modified_hamiltonian(ham3.drop_dimension_from_cell_list(0),magnetic_B=magnetic_B,gauge_B='landau_y')
     path = ham4.point_path([[0,-0.5,0],[0,0.5,0]],100)
     ham4.plot_bandstructure(path,output,'d')
     data=ham4.bandstructure_data(path, 'd')
