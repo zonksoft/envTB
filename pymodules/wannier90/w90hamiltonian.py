@@ -1,3 +1,8 @@
+"""
+Alle Funktionen durchtesten!!!! Sparse matrix Umstellung hat vl noch
+Spuren hinterlassen
+"""
+
 import general
 import numpy
 import math
@@ -376,51 +381,68 @@ class Hamiltonian:
         
         output.close()    
     
-    def maincell_eigenvalues(self,usedorbitals='all'):
+    def maincell_eigenvalues(self,solver='dense',return_evecs=False,**kwargs):
         """
         Calculates the eigenvalues of the main cell (no hopping to adjacent unit cells).
         
-        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
-        sense if the selected orbitals don't interact with other orbitals.
+        solver: eigenvalue solver. There are:
+            'dense': Assuming a dense matrix; returns all eigenvalues. Uses
+            scipy.linalg.eig. E.g.
+            >>> evals=ham.maincell_eigenvalues()
+            'scipy_arpack': find a given number of eigenvalues and eigenvectors of
+            a BIG, SPARSE matrix (including shift-invert). It can never give you
+            all eigenvalues. Uses ARPACK through scipy.sparse.linalg.eigsh.
+            You have to supply additional parameters for eigsh using **kwargs, e.g.
+            >>> ham.maincell_eigenvalues('arpack',k=10,sigma=0.0,ncv=100)
+            See http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html
+            for the available parameters. You will probably need k,sigma, and maybe nvc, which.
+            Consider using which='SM' if E_F=0.
+        return_evecs: Also return eigenvectors.
         """
         
-        if usedorbitals=='all':
-            orbitalnrs=range(self.__nrbands)
-        else:
-            orbitalnrs=usedorbitals
-        if usedorbitals=='all':
-            blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]]
-        else:
-            blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]][numpy.ix_(orbitalnrs,orbitalnrs)]
+        #XXX: Make solver an abstract class
+        blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]]
         
-        evals,evecs=linalg.eig(blochmatrix)
-        return numpy.sort(evals.real)         
-    
-    def maincell_hamiltonian_matrix(self,usedorbitals='all'):  
+        evals=None
+        evecs=None
+        
+        if return_evecs and solver=='scipy_arpack':
+            raise NotImplementedError
+        
+        if solver=='scipy_arpack':
+            #http://docs.scipy.org/doc/scipy/reference/tutorial/arpack.html
+            #XXX: inverter superlu works best with csc matrices. Can one do something about that?
+            #XXX: k=10 --> vectors have length 10? WRONG!!!
+            evals,evecs=sparse.linalg.eigsh(blochmatrix,**kwargs)
+            #return numpy.sort(evals.real)
+        elif solver=='dense':
+            evals,evecs=linalg.eig(blochmatrix.todense())
+            #return numpy.sort(evals.real)
+        else:
+            raise ValueError('Supplied solver not found')
+        
+        if return_evecs:
+            evals_ordering=self.__sorting_order(evals)
+            return numpy.array(self.__apply_order(evals,evals_ordering)), numpy.array(self.__apply_order(evecs,evals_ordering))
+        else:
+            return numpy.sort(evals.real)
+        
+    def maincell_hamiltonian_matrix(self):  
         """
         Returns the Hamiltonian matrix for the main cell, without hopping
         parameters to other cells. This is the matrix whose eigenvalues
-        you can calculate using maincell_eigenvalues().
-        
-        usedorbitals: a list of used orbitals to use. Default is 'all'. Note: this only makes
-        sense if the selected orbitals don't interact with other orbitals.        
+        you can calculate using maincell_eigenvalues().      
         """ 
-        
-        if usedorbitals=='all':
-            orbitalnrs=range(self.__nrbands)
-        else:
-            orbitalnrs=usedorbitals
-        if usedorbitals=='all':
-            blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]]
-        else:
-            blochmatrix = self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]][numpy.ix_(orbitalnrs,orbitalnrs)]   
-            
-        return blochmatrix     
+                   
+        return self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]]
     
     def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',return_evecs=False):
         """
         Calculates the eigenvalues of the eigenvalue problem with
         Bloch boundary conditions for a given vector k.
+        
+        The function uses a dense matrix eigenvalue solver because it returns all
+        eigenvalues, so don't let the matrices get too big.
         
         usedhoppingcells: If you don't want to use all hopping parameters,
         you can set them here (get the list of available cells with unitcellnumbers() and
@@ -428,10 +450,6 @@ class Hamiltonian:
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
         return_evecs: If True, evecs are also returned as the second return value.
-        """
-        
-        """
-        TODO: make it return evecs too (don't forget sorting)
         """
         
         if usedhoppingcells == 'all':
@@ -442,20 +460,16 @@ class Hamiltonian:
         if basis=='d':
             k=self.__latticevecs.direct_to_cartesian_reciprocal(k)
             
-
         orbitalnrs=range(self.__nrbands)
-
-
+        
         bloch_phases=self.__bloch_phases(k)
+        #I think this needs lil_matrix, coo_matrix didn't work.
         blochmatrix = sparse.lil_matrix((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
         
-
         for i in usedunitcellnrs:
             blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
 
         evals,evecs=linalg.eig(blochmatrix.todense())
-        
-        
         
         if return_evecs==True:
             evals_ordering=self.__sorting_order(evals)
@@ -915,7 +929,7 @@ class Hamiltonian:
             path = [
                     ('M',[-0.5,0,0]),   
                     ('G',[0,0,0]),
-                    ('M',[0.5,0,0])         
+                    ('M',[0.5,0,0])
                     ]                        
         else:
             raise Exception("Bravais lattice name not found!")
@@ -1110,7 +1124,7 @@ class Hamiltonian:
                         except ValueError:
                             unitcellindex=len(unitcellnumbers)
                             unitcellnumbers.append(hopto_scaled)
-                            unitcellmatrixblocks_dryctr.append([])                            
+                            unitcellmatrixblocks_dryctr.append([])
                         
                         #unitcellmatrixblocks[unitcellindex][cellnr*orbitals_per_unitcell:(cellnr+1)*orbitals_per_unitcell,
                         #                                    hopto_nr_index*orbitals_per_unitcell:(hopto_nr_index+1)*orbitals_per_unitcell]=oldblock_selectedorbitals
@@ -1157,19 +1171,21 @@ class Hamiltonian:
 
         #Add onsite potential = electrostatic potential
         if onsite_potential != None:
-            raise NotImplementedError            
-            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=sparse.lil_matrix(numpy.diag(onsite_potential))       
+            #XXX: sparse.lil_matrix(numpy.diag(... is a weird construction
+            #XXX: the conversion to lil_matrix _may_ be a bottleneck
+            #main cell block is converted to lil_matrix!             
+            unitcellmatrixblocks_sparse[unitcellnumbers.index([0,0,0])]=unitcellmatrixblocks_sparse[unitcellnumbers.index([0,0,0])].tolil()+sparse.lil_matrix(numpy.diag(onsite_potential))   
                         
         #Shift diagonal elements of main cell hopping block
-        if energyshift!=None:
-            raise NotImplementedError            
-            unitcellmatrixblocks[unitcellnumbers.index([0,0,0])]+=sparse.lil_matrix(numpy.diag((orbitals_per_unitcell*nr_unitcells_in_supercell)*[energyshift]))
+        if energyshift!=None:        
+            #XXX: sparse.lil_matrix(numpy.diag(... is a weird construction
+            #main cell block is converted to lil_matrix!             
+            unitcellmatrixblocks_sparse[unitcellnumbers.index([0,0,0])]=unitcellmatrixblocks_sparse[unitcellnumbers.index([0,0,0])].tolil()+sparse.lil_matrix(numpy.diag((orbitals_per_unitcell*nr_unitcells_in_supercell)*[energyshift]))
         
     
         #Apply magnetic field
         #distances_in_unit_cell=numpy.array([[x-y for x in numpy.array(orbitalpositions)] for y in numpy.array(orbitalpositions)])
-        if magnetic_B!=None:
-            raise NotImplementedError            
+        if magnetic_B!=None:        
             Tesla_conversion_factor=1.602176487/1.0545717*1e-5
             #print Tesla_conversion_factor
             for i,number in enumerate(unitcellnumbers):
@@ -1183,9 +1199,8 @@ class Hamiltonian:
                     phasematrix=numpy.exp(1j*magnetic_B*Tesla_conversion_factor*numpy.array([[0.5*(other[1]-main[1])*(other[0]+main[0]) for other in othercell_orbitalpositions] for main in numpy.array(orbitalpositions)]))
                 if gauge_B=='symmetric':
                     phasematrix=numpy.exp(1j*magnetic_B*Tesla_conversion_factor*numpy.array([[0.5*((other[1]-main[1])*(other[0]+main[0])-(other[0]-main[0])*(other[1]+main[1])) for other in othercell_orbitalpositions] for main in numpy.array(orbitalpositions)]))
-                
-                unitcellmatrixblocks[i]*=phasematrix  
-          
+                #XXX: matrices are implicitly converted to numpy arrays. Make phasematrix a sparse matrix.
+                unitcellmatrixblocks_sparse[i]=sparse.coo_matrix(unitcellmatrixblocks_sparse[i].multiply(phasematrix))
         if energyshift != None and self.__fermi_energy != None:
             newfermi_energy=self.__fermi_energy+energyshift
         else:
