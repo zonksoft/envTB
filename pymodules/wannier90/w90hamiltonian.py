@@ -1135,6 +1135,7 @@ class Hamiltonian:
                 unitcellmatrixblocks_sparse_template[i][j]=oldblocks_selectedorbitals[block]
             unitcellmatrixblocks_sparse.append(sparse.bmat(unitcellmatrixblocks_sparse_template))
            
+           
         #Mix in matrix elements from other hamiltonian
         if mixin_ham!=None:
             raise NotImplementedError
