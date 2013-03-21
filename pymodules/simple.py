@@ -245,8 +245,8 @@ def plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,leng
     path = ham4.point_path([[-0.5,0,0],[0.5,0,0]],100)
     ham4.plot_bandstructure(path,output,'d')
     ham5=ham4.create_supercell_hamiltonian([[i,0,0] for i in range(length)],[[length,0,0],[0,1,0],[0,0,1]])
-    data=ham4.bandstructure_data(path, 'd')
-    numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
+    #data=ham4.bandstructure_data(path, 'd')
+    #numpy.savetxt(output+'.dat', numpy.real(data), fmt="%12.6G")
     return ham5
 
 def plot_armchair_graphene_nanoribbon_pz_bandstructure_nn(nnfile,width,output,magnetic_B=None):

@@ -14,6 +14,7 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 import itertools
 from scipy import sparse
+from mpi4py import MPI
 
 class Hamiltonian:
     
@@ -525,14 +526,11 @@ class Hamiltonian:
         
         self.plot_vector(10*numpy.ones(len(self.__orbitalpositions)))
     
-    def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all',parallelmethod=None,parallelthreads=4):
+    def bandstructure_data(self,kpoints,basis='c',usedhoppingcells='all'):
         """
         Calculates the bandstructure for a given kpoint list.
         For direct plotting, use plot_bandstructure(kpoints,filename).
                 
-        A list of eigenvalues for each kpoint is returned. To sort 
-        by band, use data.transpose().
-        
         If kpoints is a string, this string will be interpreted as the
         name of the crystal structure (see standard_paths), and the crystal
         structure's default kpoint path will be used.
@@ -542,23 +540,39 @@ class Hamiltonian:
         strip the list from unwanted cells).        
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
-        parallel: Option to parallelize the band structure over k-points.
-            None: No parallelization (default)
-            'multiprocessor.pool': Parallelization using the multiprocessor.Pool class
-            DOES NOT WORK YET!!!
-        parallelthreads: Set to the number of threads if parallel != None. Default is 4.
+
+        Return:
+        A list of eigenvalues for each kpoint is returned. To sort 
+        by band, use data.transpose().
         """
         
         if isinstance(kpoints,str):
             kpoints=self.standard_paths(kpoints)[2]
             basis='d'
-        if parallelmethod==None:
-            data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells) for kpoint in kpoints])
-        if parallelmethod=='multiprocessor.pool':
-            data=[]
 
-        return data
-        
+
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+
+        if rank == 0:
+	    path_parts = numpy.array_split(kpoints,size)
+        else:
+	    path_parts = None
+
+        path=comm.scatter(path_parts,root=0)
+        data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells)
+                          for kpoint in path])
+
+        allbsdata=None
+        allbsdata=comm.gather(data,root=0)
+        #XXX: gathering the data to only the root process is a BAD idea. improve, also change plot_bandstructure.
+        if rank==0:
+            return numpy.concatenate(allbsdata)
+#        allbsdata=numpy.empty((len(kpoints),self.__nrbands))
+#        comm.Allgather([data,MPI.DOUBLE],[allbsdata,MPI.DOUBLE])
+
+        return None
     
     def point_path(self,corner_points,nrpointspersegment):
         """
@@ -639,34 +653,41 @@ class Hamiltonian:
         fermi_energy_line: The fermi energy mark Line2D object.
         lattice_point_lines: The lattice point marks Line2D object.
         """
-        
+        #XXX: because bandstructure_data only returns to rank==0, this is stupid. improve.
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
 
-            
         data=self.bandstructure_data(kpoints,basis,usedhoppingcells)
-        bplot=BandstructurePlot()
+
+        if rank == 0:
+            
+            bplot=BandstructurePlot()
         
-        if isinstance(kpoints,str):
-            reclattice_points,reclattice_names,kpoints=self.standard_paths(kpoints)
-            basis='d'
+            if isinstance(kpoints,str):
+                reclattice_points,reclattice_names,kpoints=self.standard_paths(kpoints)
+                basis='d'
             
-        lattice_point_lines=None
-        fermi_energy_line=None
+            lattice_point_lines=None
+            fermi_energy_line=None
             
-        lines=bplot.plot(kpoints, data)
-        if not isinstance(mark_fermi_energy,bool):
-            fermi_energy_line=bplot.plot_fermi_energy(mark_fermi_energy)
-        elif mark_fermi_energy:
-            fermi_energy_line=bplot.plot_fermi_energy(self.fermi_energy())
+            lines=bplot.plot(kpoints, data)
+            if not isinstance(mark_fermi_energy,bool):
+                fermi_energy_line=bplot.plot_fermi_energy(mark_fermi_energy)
+            elif mark_fermi_energy:
+                fermi_energy_line=bplot.plot_fermi_energy(self.fermi_energy())
             
-        if mark_reclattice_points != False:
-            if mark_reclattice_points == True:
-                lattice_point_lines=bplot.plot_lattice_point_vlines(reclattice_points, reclattice_names)
-            else:
-                pass
-        if filename!=None:
-            pyplot.savefig(filename)
+            if mark_reclattice_points != False:
+                if mark_reclattice_points == True:
+                    lattice_point_lines=bplot.plot_lattice_point_vlines(reclattice_points, reclattice_names)
+                else:
+                    pass
+            if filename!=None:
+                pyplot.savefig(filename)
             
-        return lines,fermi_energy_line,lattice_point_lines
+            return lines,fermi_energy_line,lattice_point_lines
+
+        return
         
     def drawunitcells(self,unitcellnumbers='all'):
         """
