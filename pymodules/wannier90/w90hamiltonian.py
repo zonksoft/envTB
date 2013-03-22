@@ -58,8 +58,9 @@ class Hamiltonian:
         
         See the documentation of those methods.
         """   
-        
-        pass 
+        self.mpi_comm = MPI.COMM_WORLD
+        self.mpi_size = self.mpi_comm.Get_size()
+        self.mpi_rank = self.mpi_comm.Get_rank()
         
         #TODO: wannier90filename should be the id of the wannier90 calculation, and specific
         #filenames derived from that ('bla' -> bla.win, bla.wout, bla_hr.dat etc.). Then,
@@ -544,6 +545,9 @@ class Hamiltonian:
         Return:
         A list of eigenvalues for each kpoint is returned. To sort 
         by band, use data.transpose().
+
+        If MPI is used, ONLY THE ROOT PROCESS returns the data, the others
+        return None.
         """
         
         if isinstance(kpoints,str):
@@ -551,23 +555,23 @@ class Hamiltonian:
             basis='d'
 
 
-        comm = MPI.COMM_WORLD
-        size = comm.Get_size()
-        rank = comm.Get_rank()
+        #comm = MPI.COMM_WORLD
+        #size = comm.Get_size()
+        #rank = comm.Get_rank()
 
-        if rank == 0:
-	    path_parts = numpy.array_split(kpoints,size)
+        if self.mpi_rank == 0:
+	    path_parts = numpy.array_split(kpoints,self.mpi_size)
         else:
 	    path_parts = None
 
-        path=comm.scatter(path_parts,root=0)
+        path=self.mpi_comm.scatter(path_parts,root=0)
         data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells)
                           for kpoint in path])
 
         allbsdata=None
-        allbsdata=comm.gather(data,root=0)
-        #XXX: gathering the data to only the root process is a BAD idea. improve, also change plot_bandstructure.
-        if rank==0:
+        allbsdata=self.mpi_comm.gather(data,root=0)
+        
+        if self.mpi_rank==0:
             return numpy.concatenate(allbsdata)
 #        allbsdata=numpy.empty((len(kpoints),self.__nrbands))
 #        comm.Allgather([data,MPI.DOUBLE],[allbsdata,MPI.DOUBLE])
@@ -645,6 +649,9 @@ class Hamiltonian:
         drawn. If True, the Fermi energy will be taken from fermi_energy().
         Default is False.
         
+        If MPI is used, ONLY THE ROOT PROCESS plots. This coincides with bandstructure_data,
+        where also only the root process returns all the bandstructure data.
+        
         Return:
         lines: List of matplotlib.lines.Line2D objects that were drawn. You
         can change the style, color etc., like:
@@ -653,14 +660,10 @@ class Hamiltonian:
         fermi_energy_line: The fermi energy mark Line2D object.
         lattice_point_lines: The lattice point marks Line2D object.
         """
-        #XXX: because bandstructure_data only returns to rank==0, this is stupid. improve.
-        comm = MPI.COMM_WORLD
-        size = comm.Get_size()
-        rank = comm.Get_rank()
 
         data=self.bandstructure_data(kpoints,basis,usedhoppingcells)
 
-        if rank == 0:
+        if self.mpi_rank == 0:
             
             bplot=BandstructurePlot()
         
