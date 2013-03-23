@@ -38,8 +38,10 @@ For the optional packages, run::
 
 To optimize the calculation speed, you need to manually install BLAS and
 LAPACK and link Numpy appropriately. Popular packages for optimized
-BLAS/LAPACK are Intel MKL (download, Python installation guide) and ATLAS
-(download, Python installation guide).
+BLAS/LAPACK are Intel MKL (`download <http://software.intel.com/en-us/non-commercial-software-development>`_, 
+`Numpy installation guide 1 <http://www.scipy.org/Installing_SciPy/Linux>`_, 
+`Numpy installation guide 2 <http://software.intel.com/en-us/articles/numpyscipy-with-intel-mkl>`_) and ATLAS
+(`download <http://math-atlas.sourceforge.net/>`_, `Numpy installation guide <http://www.scipy.org/Installing_SciPy/Linux>`_).
 
 After that, run the commands from *Simple installation* with omitted
 ``libblas-dev``, ``liblapack-dev`` and ``python-numpy``.
