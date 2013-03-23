@@ -3,11 +3,11 @@ Alle Funktionen durchtesten!!!! Sparse matrix Umstellung hat vl noch
 Spuren hinterlassen
 """
 
-import general
+from envtb import general
 import numpy
 import math
 import cmath
-from vasp import poscar
+from envtb.vasp import poscar
 from scipy import linalg
 from matplotlib import pyplot
 from matplotlib.path import Path

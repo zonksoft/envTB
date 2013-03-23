@@ -1,5 +1,5 @@
-from quantumcapacitance import electrostatics,quantumcapacitance
-from quantumcapacitance.common import Constants
+from envtb.quantumcapacitance import electrostatics,quantumcapacitance
+from envtb.quantumcapacitance.common import Constants
 import numpy
 
 def PeriodicGraphenePatchWithGrapheneSidegatesSiO2Rectangle(breite,hoehe,temperature,graphenepos,graphenebreite=None,sidegatebreite=None):

@@ -1,8 +1,8 @@
-from vasp import eigenval
-from vasp import procar
-from wannier90 import w90hamiltonian
+from envtb.vasp import eigenval
+from envtb.vasp import procar
+from envtb.wannier90 import w90hamiltonian
 import numpy
-from quantumcapacitance import electrostatics,quantumcapacitance
+from envtb.quantumcapacitance import electrostatics,quantumcapacitance
 from matplotlib import pyplot
 """
 This file contains functions for often used procedures.
