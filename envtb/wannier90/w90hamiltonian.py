@@ -14,7 +14,6 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 import itertools
 from scipy import sparse
-from mpi4py import MPI
 
 class Hamiltonian:
     
@@ -57,11 +56,18 @@ class Hamiltonian:
         3) Hamiltonian.from_nth_nn_list(nnfile,customhopping):
         
         See the documentation of those methods.
-        """   
-        self.mpi_comm = MPI.COMM_WORLD
-        self.mpi_size = self.mpi_comm.Get_size()
-        self.mpi_rank = self.mpi_comm.Get_rank()
-        
+        """
+
+        try:
+            from mpi4py import MPI
+            self.mpi_comm = MPI.COMM_WORLD
+            self.mpi_size = self.mpi_comm.Get_size()
+            self.mpi_rank = self.mpi_comm.Get_rank()
+        except ImportError:
+            self.mpi_comm = None
+            self.mpi_size = 0
+            self.mpi_rank = 0
+                
         #TODO: wannier90filename should be the id of the wannier90 calculation, and specific
         #filenames derived from that ('bla' -> bla.win, bla.wout, bla_hr.dat etc.). Then,
         #kick out all filename method arguments
@@ -555,28 +561,31 @@ class Hamiltonian:
             basis='d'
 
 
-        #comm = MPI.COMM_WORLD
-        #size = comm.Get_size()
-        #rank = comm.Get_rank()
+        if self.mpi_comm:
+            if self.mpi_rank == 0:
+                path_parts = numpy.array_split(kpoints,self.mpi_size)
+            else:
+                path_parts = None
 
-        if self.mpi_rank == 0:
-	    path_parts = numpy.array_split(kpoints,self.mpi_size)
+            path=self.mpi_comm.scatter(path_parts,root=0)
         else:
-	    path_parts = None
+            path=kpoints
 
-        path=self.mpi_comm.scatter(path_parts,root=0)
         data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells)
                           for kpoint in path])
 
-        allbsdata=None
-        allbsdata=self.mpi_comm.gather(data,root=0)
+        if self.mpi_comm:
+            allbsdata=None
+            allbsdata=self.mpi_comm.gather(data,root=0)
         
-        if self.mpi_rank==0:
-            return numpy.concatenate(allbsdata)
+            if self.mpi_rank==0:
+                return numpy.concatenate(allbsdata)
 #        allbsdata=numpy.empty((len(kpoints),self.__nrbands))
 #        comm.Allgather([data,MPI.DOUBLE],[allbsdata,MPI.DOUBLE])
-
-        return None
+            else:
+                return None
+        else:
+            return data
     
     def point_path(self,corner_points,nrpointspersegment):
         """
