@@ -36,9 +36,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="physics.html" title="Physics"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
@@ -54,64 +51,13 @@
 <h1>Utility classes and functions<a class="headerlink" href="#utility-classes-and-functions" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="trilinear-interpolation">
 <h2>Trilinear interpolation<a class="headerlink" href="#trilinear-interpolation" title="Permalink to this headline">¶</a></h2>
-<p>The class <a class="reference internal" href="#quantumcapacitance.utilities.LinearInterpolationNOGrid" title="quantumcapacitance.utilities.LinearInterpolationNOGrid"><tt class="xref py py-class docutils literal"><span class="pre">LinearInterpolationNOGrid</span></tt></a> supports linear, bilinear
+<p>The class <tt class="xref py py-class docutils literal"><span class="pre">LinearInterpolationNOGrid</span></tt> supports linear, bilinear
 and trilinear interpolation for data on an even grid in 1D, 2D or 3D, with
 orthogonal or non-orthogonal lattice vectors. Please see the code reference
 for documentation.</p>
 </div>
-<div class="section" id="module-quantumcapacitance.utilities">
-<span id="code-reference"></span><h2>Code reference<a class="headerlink" href="#module-quantumcapacitance.utilities" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="quantumcapacitance.utilities.LinearInterpolationNOGrid">
-<em class="property">class </em><tt class="descclassname">quantumcapacitance.utilities.</tt><tt class="descname">LinearInterpolationNOGrid</tt><big>(</big><em>func</em>, <em>grid=1</em>, <em>start=None</em>, <em>default=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/utilities.html#LinearInterpolationNOGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.utilities.LinearInterpolationNOGrid" title="Permalink to this definition">¶</a></dt>
-<dd><p>The class takes a function on a uniform, rectangular grid (with orthogonal or 
-non-orthogonal lattice vectors) and calculates the function at any point
-using linear interpolation. It can be a 1D, 2D or 3D grid.</p>
-<p>See <a class="reference external" href="http://en.wikipedia.org/wiki/Trilinear_interpolation">http://en.wikipedia.org/wiki/Trilinear_interpolation</a> for the math.</p>
-<p>Usage:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">func</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]]</span>
-<span class="n">start</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">latticevecs</span><span class="o">=</span><span class="p">[[</span><span class="mf">1e-3</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mf">1e-3</span><span class="p">]]</span>
-<span class="n">interp</span><span class="o">=</span><span class="n">LinearInterpolationNOGrid</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="n">latticevecs</span><span class="p">)</span>
-
-<span class="n">f</span><span class="o">=</span><span class="n">interp</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span><span class="mf">0.6</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Note: the gridpoints on the upper boundary in each direction 
-are not accessible by the interpolation function.
-TODO: fix that.</p>
-<p>Also note: Pay attention to the ordering of the <tt class="docutils literal"><span class="pre">func</span></tt> array.</p>
-<dl class="docutils">
-<dt>func: multi-dimensional array containing the function</dt>
-<dd>values (list or numpy.array) in a right-handed coordinate system
-(e.g. x to the left, y up), with the indices in the same order 
-as the grid sizes/lattice vectors (i.e. if the lattice vectors
-point in x,y and z direction, func will be called like 
-func[x,y,z])</dd>
-<dt>start: the start point of the coordinate system given by latticevecs</dt>
-<dd>(list or numpy.array). Default is None, which means that
-the grid is starting at the coordinate origin.</dd>
-<dt>grid: either 1) Lattice vectors (list or numpy.array)</dt>
-<dd>or 2) a number, which is the gridsize.
-Default is 1.</dd>
-<dt>default: The function value of points outside the area.</dt>
-<dd>Default is None.</dd>
-</dl>
-<dl class="method">
-<dt id="quantumcapacitance.utilities.LinearInterpolationNOGrid.dim">
-<tt class="descname">dim</tt><big>(</big><big>)</big><a class="reference internal" href="modules/quantumcapacitance/utilities.html#LinearInterpolationNOGrid.dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.utilities.LinearInterpolationNOGrid.dim" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the dimension of the interpolation function.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="quantumcapacitance.utilities.LinearInterpolationNOGrid.map_function_to_points">
-<tt class="descname">map_function_to_points</tt><big>(</big><em>points</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/utilities.html#LinearInterpolationNOGrid.map_function_to_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.utilities.LinearInterpolationNOGrid.map_function_to_points" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return list of function values at given points.</p>
-<p>points: list of points</p>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="code-reference">
+<h2>Code reference<a class="headerlink" href="#code-reference" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="matplotlib-tips">
 <h2>Matplotlib tips<a class="headerlink" href="#matplotlib-tips" title="Permalink to this headline">¶</a></h2>
@@ -173,7 +119,7 @@ belong to the figure or the subplot (=axes).</li>
   <ul>
 <li><a class="reference internal" href="#">Utility classes and functions</a><ul>
 <li><a class="reference internal" href="#trilinear-interpolation">Trilinear interpolation</a></li>
-<li><a class="reference internal" href="#module-quantumcapacitance.utilities">Code reference</a></li>
+<li><a class="reference internal" href="#code-reference">Code reference</a></li>
 <li><a class="reference internal" href="#matplotlib-tips">Matplotlib tips</a></li>
 <li><a class="reference internal" href="#workflow-recommendation">Workflow recommendation</a></li>
 </ul>
@@ -211,9 +157,6 @@ belong to the figure or the subplot (=axes).</li>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="physics.html" title="Physics"
              >previous</a> |</li>

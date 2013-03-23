@@ -37,9 +37,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="simple.html" title="Code examples"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -64,15 +61,15 @@ temperature-dependent.</p>
 <ol class="arabic simple">
 <li>The function D(E,T) describes the density of states at a given energy E
 as a function of the temperature T. This is implemented for
-<a class="reference internal" href="#quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene" title="quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene"><tt class="xref py py-class docutils literal"><span class="pre">graphene</span> <span class="pre">at</span> <span class="pre">0K</span></tt></a>
-(no temperature dependency, obviously) and <a class="reference internal" href="#quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature" title="quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature"><tt class="xref py py-class docutils literal"><span class="pre">graphene</span> <span class="pre">at</span> <span class="pre">finite</span>
-<span class="pre">temperatures</span></tt></a>.</li>
-<li>The class <a class="reference internal" href="#quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver" title="quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver"><tt class="xref py py-class docutils literal"><span class="pre">QuantumCapacitanceSolver</span></tt></a> finds the electrostatic
+<tt class="xref py py-class docutils literal"><span class="pre">graphene</span> <span class="pre">at</span> <span class="pre">0K</span></tt>
+(no temperature dependency, obviously) and <tt class="xref py py-class docutils literal"><span class="pre">graphene</span> <span class="pre">at</span> <span class="pre">finite</span>
+<span class="pre">temperatures</span></tt>.</li>
+<li>The class <tt class="xref py py-class docutils literal"><span class="pre">QuantumCapacitanceSolver</span></tt> finds the electrostatic
 configuration that fulfils the constraints given by D(E,T).</li>
 </ol>
 <p>The default usage is like this:</p>
 <ol class="arabic simple">
-<li>Create <a class="reference internal" href="#quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver" title="quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver"><tt class="xref py py-class docutils literal"><span class="pre">QuantumCapacitanceSolver</span></tt></a> object:
+<li>Create <tt class="xref py py-class docutils literal"><span class="pre">QuantumCapacitanceSolver</span></tt> object:
 <tt class="docutils literal"><span class="pre">qcsolver=QuantumCapacitanceSolver(container,solver,elements,operator)</span></tt></li>
 <li>Calculate classical dependency of charge on every possible potential
 configuration of elements: <tt class="docutils literal"><span class="pre">qcsolver.refresh_basisvecs()</span></tt></li>
@@ -89,7 +86,7 @@ equation option of the constructor lets you choose the equation. If you don&#821
 know what this is about, just use the default value.</p>
 <div class="section" id="example">
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
-<p>The function <a class="reference internal" href="simple.html#simple.GrapheneQuantumCapacitance" title="simple.GrapheneQuantumCapacitance"><tt class="xref py py-func docutils literal"><span class="pre">simple.GrapheneQuantumCapacitance()</span></tt></a> illustrates
+<p>The function <tt class="xref py py-func docutils literal"><span class="pre">simple.GrapheneQuantumCapacitance()</span></tt> illustrates
 the usage of the quantum capacitance solver:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">GrapheneQuantumCapacitance</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -198,73 +195,6 @@ the usage of the quantum capacitance solver:</p>
 </div>
 <div class="section" id="code-reference">
 <h2>Code reference<a class="headerlink" href="#code-reference" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature">
-<em class="property">class </em><tt class="descclassname">quantumcapacitance.quantumcapacitance.</tt><tt class="descname">BulkGrapheneWithTemperature</tt><big>(</big><em>T</em>, <em>grid_height</em>, <em>interpolation=True</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/quantumcapacitance.html#BulkGrapheneWithTemperature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature" title="Permalink to this definition">¶</a></dt>
-<dd><p>How the Fermi energy of graphene (Dirac cone) depends on the charge density at finite temperatures.</p>
-<p>The algorithm includes a function inversion, which can either be done with interpolation (Ef_interp()) or
-with a root search (Ef()). The interpolation is strongly suggested for higher speed.</p>
-<p>If you use Q() often, you should probably also implement an interpolation
-to improve speed.</p>
-<p>The variables minEf, max Ef, Eftol, dEf are the parameters for the interpolation/root search. minEf and maxEf
-have to span the relevant energy window around the equilibrium Fermi energy = 0. If steps occur, decrease Eftol/dEf.</p>
-<p>Check Ef() if it&#8217;s still working properly!!!</p>
-<p>You will probably use Q() as charge_fermi_energy_dependence and 
-Ef() or Ef_interp() as fermi_energy_charge_dependence.</p>
-<p>If you don&#8217;t want to use Ef_interp(), you can set
-interpolation=False.</p>
-</dd></dl>
-
-<dl class="staticmethod">
-<dt id="quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene">
-<em class="property">static </em><tt class="descclassname">FermiEnergyChargeDependence.</tt><tt class="descname">bulk_graphene</tt><big>(</big><em>charge</em>, <em>grid_height=1e-09</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/quantumcapacitance.html#FermiEnergyChargeDependence.bulk_graphene"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene" title="Permalink to this definition">¶</a></dt>
-<dd><p>How the Fermi energy of graphene depends on the charge density at 0K.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver">
-<em class="property">class </em><tt class="descclassname">quantumcapacitance.quantumcapacitance.</tt><tt class="descname">QuantumCapacitanceSolver</tt><big>(</big><em>container</em>, <em>solver</em>, <em>elements</em>, <em>charge_operator</em>, <em>equation='potential'</em>, <em>nonlocal_charge_potential_function=None</em><big>)</big><a class="reference internal" href="modules/quantumcapacitance/quantumcapacitance.html#QuantumCapacitanceSolver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates the quantum capacitance of a system with a density of states
-D(E). D(E,x) should work too (with equation=&#8217;charge_nonlocal), but hasn&#8217;t
-been tested yet.</p>
-<p>Note: QuantumCapacitanceSolver changes the potential property of the
-participating elements. The constant property is fermi_energy (i.e.
-if you connect an external voltage of 5V, set fermi_energy=5).</p>
-<p>Usage:</p>
-<ol class="arabic simple">
-<li>Create object: qcsolver=QuantumCapacitanceSolver(container,solver,
-elements,operator)</li>
-<li>Calculate classical dependency of charge on every possible potential 
-configuration of elements: qcsolver.refresh_basisvecs()</li>
-<li>Set potential/fermi_energy as you like (e.g. backgate, sidegates...).</li>
-<li>Refresh the contribution of the new configuration:         
-qcsolver.refresh_environment_contrib()</li>
-<li>Solve:
-qcsolution=qcsolver.solve()</li>
-<li>go to 3) until you are through with all voltages you want to look at.</li>
-</ol>
-<p>container: the container which describes the system.
-solver: the solution of the system, e.g. generated by 
-my_container.lu_solver().
-elements: the elements (from the system described by container) that 
-participate in the calculation. The property 
-fermi_energy_charge_dependence needs to be set.
-charge_operator: The operator which gives the charge (without 
-epsilon_0).
-equation: there are three formulations of the problem: &#8216;charge&#8217;,&#8217;potential&#8217; and &#8216;charge_nonlocal&#8217;.</p>
-<blockquote>
-<div>Default is &#8216;potential&#8217;.
-For &#8216;charge&#8217;, the element&#8217;s charge_fermi_energy_dependence property is used.
-For &#8216;potential&#8217;, the element&#8217;s fermi_energy_charge_dependence property is used.
-You don&#8217;t have to set the property that you don&#8217;t use.
-For &#8216;charge_nonlocal&#8217;, you only have to provide the nonlocal_charge_potential_function</div></blockquote>
-<dl class="docutils">
-<dt>nonlocal_charge_potential_function: use together with equation=&#8217;charge_nonlocal&#8217;.</dt>
-<dd>Mind to calculate the volume charge density, not the area charge density!
-The argument will be the difference vector Fermi_energy(x)-potential(x).</dd>
-</dl>
-</dd></dl>
-
 </div>
 </div>
 
@@ -317,9 +247,6 @@ The argument will be the difference vector Fermi_energy(x)-potential(x).</dd>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="simple.html" title="Code examples"
              >next</a> |</li>

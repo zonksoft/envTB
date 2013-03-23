@@ -27,7 +27,7 @@ We also suggest the following (optional) packages:
 If you are using Ubuntu or Debian (or an other Debian-based distribution),
 run on the command line::
 
-  sudo apt-get install libblas-dev liblapack-dev python python-numpy python-scipy python-sympy python-matplotlib
+  sudo apt-get install libblas-dev liblapack-dev python python-numpy python-scipy python-sympy python-matplotlib python-setuptools
 
 For the optional packages, run::
 
