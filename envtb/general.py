@@ -1,6 +1,6 @@
 def read_file_as_table(filename):
     """
-    Read in file as table, with lines as the first list index 
+    Read in file as table, with lines as the first list index
     and columns (separated by whitespaces) as the second.
     """
     filetoread = open(filename, 'r')
@@ -8,25 +8,26 @@ def read_file_as_table(filename):
     filetoread.close()
     return data
 
-def split_by_empty_lines(data,ignorecomments=False):
+
+def split_by_empty_lines(data, ignorecomments=False):
     """
     Splits a list of lines by empty lines [].
 
     data: The list of lines, probably read from a file.
     ignorecomments: If True, all lines starting with a # will be removed.
     """
-    
-    blocks=[]
-    
-    blank_line_found=True
+
+    blocks = []
+
+    blank_line_found = True
     for line in data:
-        if line!=[] and blank_line_found==True:
-            blank_line_found=False
+        if line != [] and blank_line_found is True:
+            blank_line_found = False
             blocks.append([])
-        if line==[]:
-            blank_line_found=True
+        if line == []:
+            blank_line_found = True
         else:
-            if line[0][0]!='#' or not ignorecomments:
+            if line[0][0] != '#' or not ignorecomments:
                 blocks[-1].append(line)
-                
+
     return blocks
