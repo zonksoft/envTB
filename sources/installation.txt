@@ -78,3 +78,62 @@ directory where you downloaded it, add::
   export PYTHONPATH=/where/you/downloaded/envTB/envTB-master/envtb:$PYTHONPATH
 
 to the ``.bashrc`` file in your home directory.
+
+Usage
+-----
+
+There are several ways how you can use envTB to do your calculations.
+
+**Use the Python command line interpreter**
+
+Run ``python`` from the command line. This starts the interactive
+python interpreter where you can type in all the commands you find
+in the documentation.
+
+**Use IPython**
+
+Run ``ipython`` from the command line. It basically works like
+the Python interpreter, but has some neat features like
+autocompletion, built-in documentation and a history.
+
+**Use the IPython web frontend**
+
+Run ``ipython notebook --pylab=inline`` and go to the URL
+printed on the terminal. It is a convenient, Mathematica-like
+user interface which you can also access from other
+computers.
+
+**Run a .py file from the command line**
+
+If you have a complete calculation saved in a .py file, run::
+
+  python myfile.py
+
+
+**Access the built-in documentation**
+
+Besides this documentation, envTB has a built in documentation.
+You can access it using the ``pydoc`` command, e.g.::
+
+  pydoc envtb.simple
+
+If you are using IPython, you can see the documentation of a class
+or a function by appending a ? behind the class or function name
+and executing the command.
+
+Parallelization
+---------------
+
+If you use a function which supports MPI parallelization and installed OpenMPI and mpi4py,
+you can enable the parallelization by running::
+
+  mpirun -np 4 python myfile.py
+
+``-np 4`` means that you start 4 parallel processes on your computer.
+If you want to parallelize over computers, please consult your cluster
+administrator.
+
+Functions which support parallelization:
+
+* Hamiltonian.plot_bandstructure
+* Hamiltonian.bandstructure_data

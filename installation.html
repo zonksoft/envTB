@@ -120,6 +120,50 @@ directory where you downloaded it, add:</p>
 </div>
 <p>to the <tt class="docutils literal"><span class="pre">.bashrc</span></tt> file in your home directory.</p>
 </div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>There are several ways how you can use envTB to do your calculations.</p>
+<p><strong>Use the Python command line interpreter</strong></p>
+<p>Run <tt class="docutils literal"><span class="pre">python</span></tt> from the command line. This starts the interactive
+python interpreter where you can type in all the commands you find
+in the documentation.</p>
+<p><strong>Use IPython</strong></p>
+<p>Run <tt class="docutils literal"><span class="pre">ipython</span></tt> from the command line. It basically works like
+the Python interpreter, but has some neat features like
+autocompletion, built-in documentation and a history.</p>
+<p><strong>Use the IPython web frontend</strong></p>
+<p>Run <tt class="docutils literal"><span class="pre">ipython</span> <span class="pre">notebook</span> <span class="pre">--pylab=inline</span></tt> and go to the URL
+printed on the terminal. It is a convenient, Mathematica-like
+user interface which you can also access from other
+computers.</p>
+<p><strong>Run a .py file from the command line</strong></p>
+<p>If you have a complete calculation saved in a .py file, run:</p>
+<div class="highlight-python"><pre>python myfile.py</pre>
+</div>
+<p><strong>Access the built-in documentation</strong></p>
+<p>Besides this documentation, envTB has a built in documentation.
+You can access it using the <tt class="docutils literal"><span class="pre">pydoc</span></tt> command, e.g.:</p>
+<div class="highlight-python"><pre>pydoc envtb.simple</pre>
+</div>
+<p>If you are using IPython, you can see the documentation of a class
+or a function by appending a ? behind the class or function name
+and executing the command.</p>
+</div>
+<div class="section" id="parallelization">
+<h2>Parallelization<a class="headerlink" href="#parallelization" title="Permalink to this headline">¶</a></h2>
+<p>If you use a function which supports MPI parallelization and installed OpenMPI and mpi4py,
+you can enable the parallelization by running:</p>
+<div class="highlight-python"><pre>mpirun -np 4 python myfile.py</pre>
+</div>
+<p><tt class="docutils literal"><span class="pre">-np</span> <span class="pre">4</span></tt> means that you start 4 parallel processes on your computer.
+If you want to parallelize over computers, please consult your cluster
+administrator.</p>
+<p>Functions which support parallelization:</p>
+<ul class="simple">
+<li>Hamiltonian.plot_bandstructure</li>
+<li>Hamiltonian.bandstructure_data</li>
+</ul>
+</div>
 </div>
 
 
@@ -133,6 +177,8 @@ directory where you downloaded it, add:</p>
 <li><a class="reference internal" href="#">Installation</a><ul>
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#setup">Setup</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#parallelization">Parallelization</a></li>
 </ul>
 </li>
 </ul>
