@@ -147,6 +147,9 @@ QuantumCapacitanceSolver.</p>
 <li>bottom: backgate capacitor plate</li>
 </ul>
 <p>Please read the code comments for further documentation.</p>
+<p>Return:</p>
+<p>voltages: The voltages where the capacitance is calculated (x values)
+capacitance: the quantum capacitance (y(x) values)</p>
 </dd></dl>
 
 <dl class="function">
@@ -252,18 +255,20 @@ The default value is &#8216;all&#8217;.</p>
 
 <dl class="function">
 <dt id="simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn">
-<tt class="descclassname">simple.</tt><tt class="descname">plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn</tt><big>(</big><em>nnfile</em>, <em>width</em>, <em>output</em>, <em>magnetic_B=0</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">simple.</tt><tt class="descname">plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn</tt><big>(</big><em>nnfile</em>, <em>width</em>, <em>output</em>, <em>length</em>, <em>magnetic_B=None</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the pi bandstructure of a zigzag graphene nanoribbon based on a n-th nearest neighbour parameterization of
 bulk graphene. 
 A .dat file with the bandstructure data is also saved as output.dat (each line representing one k-point).</p>
 <p>nnfile: path to the nearest-neighbour input file (see example files)
 width: width of the ribbon (number of rings).
-output: path to the output image file.</p>
+output: path to the output image file.
+length: length in x-direction of the returned (not the bandstructure plot!) unit cell (in rings)</p>
+<p>Return: Hamiltonian of the unit cell with given length</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn">
-<tt class="descclassname">simple.</tt><tt class="descname">plot_armchair_graphene_nanoribbon_pz_bandstructure_nn</tt><big>(</big><em>nnfile</em>, <em>width</em>, <em>output</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_armchair_graphene_nanoribbon_pz_bandstructure_nn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">simple.</tt><tt class="descname">plot_armchair_graphene_nanoribbon_pz_bandstructure_nn</tt><big>(</big><em>nnfile</em>, <em>width</em>, <em>output</em>, <em>magnetic_B=None</em><big>)</big><a class="reference internal" href="modules/simple.html#plot_armchair_graphene_nanoribbon_pz_bandstructure_nn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the pi bandstructure of an armchair graphene nanoribbon based on a n-th nearest neighbour parameterization of
 bulk graphene. 
 In this example function, width is the number of rings in transversal direction. A .dat file with the bandstructure

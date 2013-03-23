@@ -1,0 +1,80 @@
+Installation
+============
+
+Prerequisites
+-------------
+
+You need to install the following (mandatory) packages:
+
+* Python
+* Numpy
+* Scipy
+* Sympy
+* BLAS
+* LAPACK
+* Matplotlib
+
+We also suggest the following (optional) packages:
+
+* IPython
+* OpenMPI (necessary for parallel calculations on several CPUs or computers)
+* Pip
+* Git
+* mpi4py (also necessary for parallel calculations)
+
+**Simple installation**
+
+If you are using Ubuntu or Debian (or an other Debian-based distribution),
+run on the command line::
+
+  sudo apt-get install libblas-dev liblapack-dev python python-numpy python-scipy python-sympy python-matplotlib
+
+For the optional packages, run::
+
+  sudo apt-get install ipython ipython-notebook openmpi-bin openmpi-doc libopenmpi-dev git python-pip
+  sudo pip install mpi4py
+
+**Optimized installation**
+
+To optimize the calculation speed, you need to manually install BLAS and
+LAPACK and link Numpy appropriately. Popular packages for optimized
+BLAS/LAPACK are Intel MKL (download, Python installation guide) and ATLAS
+(download, Python installation guide).
+
+After that, run the commands from *Simple installation* with omitted
+``libblas-dev``, ``liblapack-dev`` and ``python-numpy``.
+
+**Installation on a cluster**
+
+All mandatory packages are standard packages and are probably already
+installed (as well as the MPI related packages). The program will tell 
+you at the first start if something is missing - please consult your 
+cluster administrator.
+
+Setup
+-----
+
+The git repository is located at https://github.com/zonksoft/envTB.
+On the command line, change to a directory where you want to save the
+envTB sources and run::
+
+  wget https://github.com/zonksoft/envTB/archive/master.tar.gz
+  tar xzvf master.tar.gz
+  cd envTB-master
+  sudo python setup.py install
+
+If you don't have sudo rights, run::
+
+  python setup.py install --user
+
+instead of the last command.
+
+If you change the code in the directory where you downloaded envTB,
+you have to reissue the installation command.
+
+If you don't want to install envTB, but rather just use it from the
+directory where you downloaded it, add::
+
+  export PYTHONPATH=/where/you/downloaded/envTB/envTB-master/envtb:$PYTHONPATH
+
+to the ``.bashrc`` file in your home directory.

@@ -26,25 +26,13 @@ define **all necessary parameters in a *.py file**, and you can easily **use and
 export any data** that occurs during the calculation, because the data is saved 
 in local variables that you can plot, export and reuse.
 
-Setup
------
-
-Get the software at https://github.com/zonksoft/envTB.
-
-For requirements and setup, see 
-`here <https://github.com/zonksoft/envTB/blob/master/README.md>`_.
-
-To write your scripts and test your calculations, I strongly suggest to get
-IPython and use the IPython web interface::
-
-  ipython notebook --pylab=inline
-
 Contents
 --------
 
 .. toctree::
    :maxdepth: 2
 
+   installation
    electrostatics
    quantumcapacitance
    simple

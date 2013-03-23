@@ -278,6 +278,8 @@ so that the new Fermi energy is at 0.</li>
 </div>
 <div class="section" id="module-wannier90.w90hamiltonian">
 <span id="code-reference"></span><h2>Code reference<a class="headerlink" href="#module-wannier90.w90hamiltonian" title="Permalink to this headline">¶</a></h2>
+<p>Alle Funktionen durchtesten!!!! Sparse matrix Umstellung hat vl noch
+Spuren hinterlassen</p>
 <dl class="class">
 <dt id="wannier90.w90hamiltonian.BandstructurePlot">
 <em class="property">class </em><tt class="descclassname">wannier90.w90hamiltonian.</tt><tt class="descname">BandstructurePlot</tt><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#BandstructurePlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.BandstructurePlot" title="Permalink to this definition">¶</a></dt>
@@ -336,11 +338,9 @@ interpolation, the y and z/z coordinate are not used.</p>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.bandstructure_data">
-<tt class="descname">bandstructure_data</tt><big>(</big><em>kpoints</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>parallelmethod=None</em>, <em>parallelthreads=4</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.bandstructure_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.bandstructure_data" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">bandstructure_data</tt><big>(</big><em>kpoints</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.bandstructure_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.bandstructure_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the bandstructure for a given kpoint list.
 For direct plotting, use plot_bandstructure(kpoints,filename).</p>
-<p>A list of eigenvalues for each kpoint is returned. To sort 
-by band, use data.transpose().</p>
 <p>If kpoints is a string, this string will be interpreted as the
 name of the crystal structure (see standard_paths), and the crystal
 structure&#8217;s default kpoint path will be used.</p>
@@ -348,35 +348,32 @@ structure&#8217;s default kpoint path will be used.</p>
 you can set them here (get the list of available cells with unitcellnumbers() and
 strip the list from unwanted cells).        
 basis: &#8216;c&#8217; or &#8216;d&#8217;. Determines if the kpoints are given in cartesian
-reciprocal coordinates or direct reciprocal coordinates.
-usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
-sense if the selected orbitals don&#8217;t interact with other orbitals.
-parallel: Option to parallelize the band structure over k-points.</p>
-<blockquote>
-<div>None: No parallelization (default)
-&#8216;multiprocessor.pool&#8217;: Parallelization using the multiprocessor.Pool class
-DOES NOT WORK YET!!!</div></blockquote>
-<p>parallelthreads: Set to the number of threads if parallel != None. Default is 4.</p>
+reciprocal coordinates or direct reciprocal coordinates.</p>
+<p>Return:
+A list of eigenvalues for each kpoint is returned. To sort 
+by band, use data.transpose().</p>
+<p>If MPI is used, ONLY THE ROOT PROCESS returns the data, the others
+return None.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues">
-<tt class="descname">bloch_eigenvalues</tt><big>(</big><em>k</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>return_evecs=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.bloch_eigenvalues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">bloch_eigenvalues</tt><big>(</big><em>k</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>return_evecs=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.bloch_eigenvalues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the eigenvalues of the eigenvalue problem with
 Bloch boundary conditions for a given vector k.</p>
+<p>The function uses a dense matrix eigenvalue solver because it returns all
+eigenvalues, so don&#8217;t let the matrices get too big.</p>
 <p>usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
 you can set them here (get the list of available cells with unitcellnumbers() and
 strip the list from unwanted cells).
 basis: &#8216;c&#8217; or &#8216;d&#8217;. Determines if the kpoints are given in cartesian
 reciprocal coordinates or direct reciprocal coordinates.
-usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
-sense if the selected orbitals don&#8217;t interact with other orbitals.
 return_evecs: If True, evecs are also returned as the second return value.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian">
-<tt class="descname">create_modified_hamiltonian</tt><big>(</big><em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>energyshift=0</em>, <em>magnetic_B=None</em>, <em>gauge_B='landau_x'</em>, <em>mixin_ham=None</em>, <em>mixin_hoppings=None</em>, <em>mixin_cells=None</em>, <em>mixin_assoc=None</em>, <em>onsite_potential=None</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.create_modified_hamiltonian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">create_modified_hamiltonian</tt><big>(</big><em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>energyshift=None</em>, <em>magnetic_B=None</em>, <em>gauge_B='landau_x'</em>, <em>mixin_ham=None</em>, <em>mixin_hoppings=None</em>, <em>mixin_cells=None</em>, <em>mixin_assoc=None</em>, <em>onsite_potential=None</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.create_modified_hamiltonian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a Hamiltonian with dropped orbitals or hopping cells. This is just a wrapper for 
 create_supercell_hamiltonian().</p>
 </dd></dl>
@@ -397,7 +394,7 @@ include_spread: Include the spread of the orbital. Default is False.</p>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian">
-<tt class="descname">create_supercell_hamiltonian</tt><big>(</big><em>cellcoordinates</em>, <em>latticevecs</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>energyshift=None</em>, <em>magnetic_B=None</em>, <em>gauge_B='landau_x'</em>, <em>mixin_ham=None</em>, <em>mixin_hoppings=None</em>, <em>mixin_cells=None</em>, <em>mixin_assoc=None</em>, <em>onsite_potential=None</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.create_supercell_hamiltonian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">create_supercell_hamiltonian</tt><big>(</big><em>cellcoordinates</em>, <em>latticevecs</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>energyshift=None</em>, <em>magnetic_B=None</em>, <em>gauge_B='landau_x'</em>, <em>mixin_ham=None</em>, <em>mixin_hoppings=None</em>, <em>mixin_cells=None</em>, <em>mixin_assoc=None</em>, <em>onsite_potential=None</em>, <em>output_maincell_only=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.create_supercell_hamiltonian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates the matrix elements for a supercell containing several unit cells, e.g. a volume
 with one unit cell missing in the middle or one slice of a nanoribbon.</p>
 <p>cellcoordinates: unit cells contained in the supercell [[0,0,0],[1,0,0],...]. Use integergrid3d()
@@ -453,6 +450,9 @@ Example:    Main Hamiltonian     Mixin Hamiltonian</p>
 <p>onsite_potential: List of numbers. The values will be added to the 
 diagonal (=onsite) matrix elements of the main cell. This approximates
 an electrostatic potential in the system. Default is None.</p>
+<p>output_maincell_only: If True, only the main cell matrix block will be
+calculated. This makes sense for a big system of which you want to
+calculate the eigenvalues, not the bandstructure. Default is false</p>
 <p>Return:
 New Hamiltonian with the new properties.</p>
 </dd></dl>
@@ -548,10 +548,31 @@ cells which are identical due to symmetry.</p>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues">
-<tt class="descname">maincell_eigenvalues</tt><big>(</big><em>usedorbitals='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.maincell_eigenvalues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">maincell_eigenvalues</tt><big>(</big><em>solver='dense'</em>, <em>return_evecs=False</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.maincell_eigenvalues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates the eigenvalues of the main cell (no hopping to adjacent unit cells).</p>
-<p>usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
-sense if the selected orbitals don&#8217;t interact with other orbitals.</p>
+<dl class="docutils">
+<dt>solver: eigenvalue solver. There are:</dt>
+<dd>&#8216;dense&#8217;: Assuming a dense matrix; returns all eigenvalues. Uses
+scipy.linalg.eig. E.g.
+&gt;&gt;&gt; evals=ham.maincell_eigenvalues()
+&#8216;scipy_arpack&#8217;: find a given number of eigenvalues and eigenvectors of
+a BIG, SPARSE matrix (including shift-invert). It can never give you
+all eigenvalues. Uses ARPACK through scipy.sparse.linalg.eigsh.
+You have to supply additional parameters for eigsh using <a href="#id5"><span class="problematic" id="id6">**</span></a>kwargs, e.g.
+&gt;&gt;&gt; ham.maincell_eigenvalues(&#8216;arpack&#8217;,k=10,sigma=0.0,ncv=100)
+See <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html">http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html</a>
+for the available parameters. You will probably need k,sigma, and maybe nvc, which.
+Consider using which=&#8217;SM&#8217; if E_F=0.</dd>
+</dl>
+<p>return_evecs: Also return eigenvectors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="wannier90.w90hamiltonian.Hamiltonian.maincell_hamiltonian_matrix">
+<tt class="descname">maincell_hamiltonian_matrix</tt><big>(</big><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.maincell_hamiltonian_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.maincell_hamiltonian_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Hamiltonian matrix for the main cell, without hopping
+parameters to other cells. This is the matrix whose eigenvalues
+you can calculate using maincell_eigenvalues().</p>
 </dd></dl>
 
 <dl class="method">
@@ -574,7 +595,7 @@ sense if the selected orbitals don&#8217;t interact with other orbitals.</p>
 
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure">
-<tt class="descname">plot_bandstructure</tt><big>(</big><em>kpoints</em>, <em>filename=None</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em>, <em>mark_reclattice_points=False</em>, <em>mark_fermi_energy=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.plot_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">plot_bandstructure</tt><big>(</big><em>kpoints</em>, <em>filename=None</em>, <em>basis='c'</em>, <em>usedhoppingcells='all'</em>, <em>mark_reclattice_points=False</em>, <em>mark_fermi_energy=False</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.plot_bandstructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the bandstructure at the points kpoints (given in 
 cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)
 if you want to use direct coordinates) and save the plot
@@ -589,8 +610,6 @@ you can set them here (get the list of available cells with unitcellnumbers() an
 strip the list from unwanted cells).  
 basis: &#8216;c&#8217; or &#8216;d&#8217;. Determines if the kpoints are given in cartesian
 reciprocal coordinates or direct reciprocal coordinates.
-usedorbitals: a list of used orbitals to use. Default is &#8216;all&#8217;. Note: this only makes
-sense if the selected orbitals don&#8217;t interact with other orbitals.  
 mark_reclattice_points: You can mark important reciprocal lattice points, like
 Gamma or K. This variable can be (i) True if you use a string for kpoints
 (ii) a list which contains the names of the points and the points:
@@ -599,6 +618,19 @@ cartesian coordinates. Default is False.
 mark_fermi_energy: If you supply the Fermi energy here, a line will be
 drawn. If True, the Fermi energy will be taken from fermi_energy().
 Default is False.</p>
+<p>If MPI is used, ONLY THE ROOT PROCESS plots. This coincides with bandstructure_data,
+where also only the root process returns all the bandstructure data.</p>
+<p>Return:
+lines: List of matplotlib.lines.Line2D objects that were drawn. You
+can change the style, color etc., like:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>for line in lines:</dt>
+<dd>line.set_color(&#8216;red&#8217;)</dd>
+</dl>
+</div></blockquote>
+<p>fermi_energy_line: The fermi energy mark Line2D object.
+lattice_point_lines: The lattice point marks Line2D object.</p>
 </dd></dl>
 
 <dl class="method">
@@ -707,7 +739,7 @@ unitcells_within_zone((2,2,2),&#8217;d&#8217;)</p>
 <dl class="method">
 <dt id="wannier90.w90hamiltonian.Hamiltonian.write_matrix_elements">
 <tt class="descname">write_matrix_elements</tt><big>(</big><em>outputfile</em>, <em>usedhoppingcells='all'</em>, <em>usedorbitals='all'</em><big>)</big><a class="reference internal" href="modules/wannier90/w90hamiltonian.html#Hamiltonian.write_matrix_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#wannier90.w90hamiltonian.Hamiltonian.write_matrix_elements" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write the wannier90 matrix elements to a file (<a href="#id5"><span class="problematic" id="id6">*</span></a>.wetb) readable by Florian&#8217;s code.
+<dd><p>Write the wannier90 matrix elements to a file (<a href="#id7"><span class="problematic" id="id8">*</span></a>.wetb) readable by Florian&#8217;s code.
 Information contained in the file:
 - lattice vectors
 - orbital positions
@@ -726,7 +758,7 @@ Third block: Matrix elements.</p>
 Column 4: Orbital number in main unit cell
 Column 5: Orbital number in other unit cell (the one the electron &#8220;hops&#8221; to)
 Column 6&amp;7: Real &amp; imaginary part of the matrix element</div></blockquote>
-<p>outputfile: Name of the output file (<a href="#id7"><span class="problematic" id="id8">*</span></a>.wetb - Wannier90-Environmental-dependent-Tight-Binding)
+<p>outputfile: Name of the output file (<a href="#id9"><span class="problematic" id="id10">*</span></a>.wetb - Wannier90-Environmental-dependent-Tight-Binding)
 usedhoppingcells: If you don&#8217;t want to use all hopping parameters,
 you can set them here (get the list of available cells with unitcellnumbers() and
 strip the list from unwanted cells).

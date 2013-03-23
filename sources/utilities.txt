@@ -14,6 +14,44 @@ Code reference
 
 .. automodule:: quantumcapacitance.utilities
    :members:
+   
+Matplotlib tips
+---------------
+http://www.packtpub.com/article/advanced-matplotlib-part1
+
+::
+
+    fig1 = pyplot.figure()
+    fig2 = pyplot.figure()
+    ax1 = fig1.add_subplot(2,1,1)
+    ax2 = fig1.add_subplot(2,1,2)
+    l, = ax2.plot(x, y)
+    m, = ax1.plot(x, y)
+    w, = ax1.plot(x, y+3)
+    t = ax2.set_title('random numbers')
+    l.set_color('red')
+    m.set_color('blue')
+    ax3=fig2.add_subplot(1,1,1)
+    n, = ax3.plot(x, y)
+    w.set_color('red')
+    fig1.legend([m,w], ["line 2", "line 1"])
+    ax2.legend([l],["line 3"])
+    
+The pyplot.someFunction() commands are equivalent to::
+    ax=pyplot.gca()
+    ax.someFunction()
+i.e. they are applied to the current axes.
+
+The standard procedure would be:
+
+* Set up the plot "window" using figure() and subplot()
+* Execute the plot function (e.g. plot_bandstructure())
+* If the function returns lists of lines, you can style them.
+* The axes have a lines property which is a list of all the lines. You
+  can style them here too.
+* Set other properties, like x and y limits, legend, other texts that
+  belong to the figure or the subplot (=axes).
+
 
 Workflow recommendation
 -----------------------

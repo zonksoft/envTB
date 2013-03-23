@@ -1,0 +1,191 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &mdash; EnvTB 1 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="EnvTB 1 documentation" href="index.html" />
+    <link rel="next" title="Electrostatics" href="electrostatics.html" />
+    <link rel="prev" title="Welcome to EnvTB’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="electrostatics.html" title="Electrostatics"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to EnvTB’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>You need to install the following (mandatory) packages:</p>
+<ul class="simple">
+<li>Python</li>
+<li>Numpy</li>
+<li>Scipy</li>
+<li>Sympy</li>
+<li>BLAS</li>
+<li>LAPACK</li>
+<li>Matplotlib</li>
+</ul>
+<p>We also suggest the following (optional) packages:</p>
+<ul class="simple">
+<li>IPython</li>
+<li>OpenMPI (necessary for parallel calculations on several CPUs or computers)</li>
+<li>Pip</li>
+<li>Git</li>
+<li>mpi4py (also necessary for parallel calculations)</li>
+</ul>
+<p><strong>Simple installation</strong></p>
+<p>If you are using Ubuntu or Debian (or an other Debian-based distribution),
+run on the command line:</p>
+<div class="highlight-python"><pre>sudo apt-get install libblas-dev liblapack-dev python python-numpy python-scipy python-sympy python-matplotlib</pre>
+</div>
+<p>For the optional packages, run:</p>
+<div class="highlight-python"><pre>sudo apt-get install ipython ipython-notebook openmpi-bin openmpi-doc libopenmpi-dev git python-pip
+sudo pip install mpi4py</pre>
+</div>
+<p><strong>Optimized installation</strong></p>
+<p>To optimize the calculation speed, you need to manually install BLAS and
+LAPACK and link Numpy appropriately. Popular packages for optimized
+BLAS/LAPACK are Intel MKL (download, Python installation guide) and ATLAS
+(download, Python installation guide).</p>
+<p>After that, run the commands from <em>Simple installation</em> with omitted
+<tt class="docutils literal"><span class="pre">libblas-dev</span></tt>, <tt class="docutils literal"><span class="pre">liblapack-dev</span></tt> and <tt class="docutils literal"><span class="pre">python-numpy</span></tt>.</p>
+<p><strong>Installation on a cluster</strong></p>
+<p>All mandatory packages are standard packages and are probably already
+installed (as well as the MPI related packages). The program will tell
+you at the first start if something is missing - please consult your
+cluster administrator.</p>
+</div>
+<div class="section" id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
+<p>The git repository is located at <a class="reference external" href="https://github.com/zonksoft/envTB">https://github.com/zonksoft/envTB</a>.
+On the command line, change to a directory where you want to save the
+envTB sources and run:</p>
+<div class="highlight-python"><pre>wget https://github.com/zonksoft/envTB/archive/master.tar.gz
+tar xzvf master.tar.gz
+cd envTB-master
+sudo python setup.py install</pre>
+</div>
+<p>If you don&#8217;t have sudo rights, run:</p>
+<div class="highlight-python"><pre>python setup.py install --user</pre>
+</div>
+<p>instead of the last command.</p>
+<p>If you change the code in the directory where you downloaded envTB,
+you have to reissue the installation command.</p>
+<p>If you don&#8217;t want to install envTB, but rather just use it from the
+directory where you downloaded it, add:</p>
+<div class="highlight-python"><pre>export PYTHONPATH=/where/you/downloaded/envTB/envTB-master/envtb:$PYTHONPATH</pre>
+</div>
+<p>to the <tt class="docutils literal"><span class="pre">.bashrc</span></tt> file in your home directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#setup">Setup</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to EnvTB&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="electrostatics.html"
+                        title="next chapter">Electrostatics</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="electrostatics.html" title="Electrostatics"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to EnvTB’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">EnvTB 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Rafael Reiter.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

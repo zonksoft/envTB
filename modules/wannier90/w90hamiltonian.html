@@ -49,6 +49,11 @@
           <div class="body">
             
   <h1>Source code for wannier90.w90hamiltonian</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Alle Funktionen durchtesten!!!! Sparse matrix Umstellung hat vl noch</span>
+<span class="sd">Spuren hinterlassen</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">import</span> <span class="nn">general</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">import</span> <span class="nn">math</span>
@@ -59,6 +64,7 @@
 <span class="kn">from</span> <span class="nn">matplotlib.path</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="kn">as</span> <span class="nn">patches</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
 
 <div class="viewcode-block" id="Hamiltonian"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian">[docs]</a><span class="k">class</span> <span class="nc">Hamiltonian</span><span class="p">:</span>
     
@@ -101,10 +107,18 @@
 <span class="sd">        3) Hamiltonian.from_nth_nn_list(nnfile,customhopping):</span>
 <span class="sd">        </span>
 <span class="sd">        See the documentation of those methods.</span>
-<span class="sd">        &quot;&quot;&quot;</span>   
-        
-        <span class="k">pass</span> 
-        
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_rank</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_size</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mpi_rank</span> <span class="o">=</span> <span class="mi">0</span>
+                
         <span class="c">#TODO: wannier90filename should be the id of the wannier90 calculation, and specific</span>
         <span class="c">#filenames derived from that (&#39;bla&#39; -&gt; bla.win, bla.wout, bla_hr.dat etc.). Then,</span>
         <span class="c">#kick out all filename method arguments</span>
@@ -178,7 +192,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellnumbers</span> <span class="o">=</span> <span class="n">unitcellnumbers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span> <span class="o">=</span> <span class="n">unitcellmatrixblocks</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__latticevecs</span> <span class="o">=</span> <span class="n">poscar</span><span class="o">.</span><span class="n">LatticeVectors</span><span class="p">(</span><span class="n">latticevecs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span> <span class="o">=</span> <span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__orbitalspreads</span><span class="o">=</span><span class="n">orbitalspreads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__orbitalpositions</span><span class="o">=</span><span class="n">orbitalpositions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span><span class="o">=</span><span class="n">fermi_energy</span>
@@ -264,10 +278,10 @@
         <span class="n">unitcellmatrixblocks</span> <span class="o">=</span> <span class="p">[]</span>
         
         <span class="k">for</span> <span class="n">unitcell</span> <span class="ow">in</span> <span class="n">unitcells</span><span class="p">:</span>
-            <span class="n">block</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nrbands</span><span class="p">,</span><span class="n">nrbands</span><span class="p">))</span>
+            <span class="n">block</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">nrbands</span><span class="p">,</span><span class="n">nrbands</span><span class="p">))</span>
             <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">unitcell</span><span class="p">:</span>
-                <span class="n">block</span><span class="p">[</span><span class="n">element</span><span class="p">[</span><span class="mi">3</span><span class="p">]][</span><span class="n">element</span><span class="p">[</span><span class="mi">4</span><span class="p">]]</span><span class="o">=</span><span class="n">hopping</span><span class="p">[</span><span class="n">element</span><span class="p">[</span><span class="mi">5</span><span class="p">]]</span>
-            <span class="n">unitcellmatrixblocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+                <span class="n">block</span><span class="p">[</span><span class="n">element</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">element</span><span class="p">[</span><span class="mi">4</span><span class="p">]]</span><span class="o">=</span><span class="n">hopping</span><span class="p">[</span><span class="n">element</span><span class="p">[</span><span class="mi">5</span><span class="p">]]</span>
+            <span class="n">unitcellmatrixblocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">tocsr</span><span class="p">())</span>
                 
         <span class="k">return</span> <span class="n">unitcellmatrixblocks</span><span class="p">,</span><span class="n">unitcellnumbers</span>
         
@@ -341,6 +355,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sorts a list by the given column sortcolumn and returns the order. </span>
 <span class="sd">        If key==None (default), all columns are sorted, with the last column running fastest.</span>
+<span class="sd">        E.g. for sorting by the second column, set key=lambda w: w[1]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">key</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
@@ -425,43 +440,75 @@
         
         <span class="n">output</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>    
     </div>
-<div class="viewcode-block" id="Hamiltonian.maincell_eigenvalues"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues">[docs]</a>    <span class="k">def</span> <span class="nf">maincell_eigenvalues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.maincell_eigenvalues"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.maincell_eigenvalues">[docs]</a>    <span class="k">def</span> <span class="nf">maincell_eigenvalues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">solver</span><span class="o">=</span><span class="s">&#39;dense&#39;</span><span class="p">,</span><span class="n">return_evecs</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculates the eigenvalues of the main cell (no hopping to adjacent unit cells).</span>
 <span class="sd">        </span>
-<span class="sd">        usedorbitals: a list of used orbitals to use. Default is &#39;all&#39;. Note: this only makes</span>
-<span class="sd">        sense if the selected orbitals don&#39;t interact with other orbitals.</span>
+<span class="sd">        solver: eigenvalue solver. There are:</span>
+<span class="sd">            &#39;dense&#39;: Assuming a dense matrix; returns all eigenvalues. Uses</span>
+<span class="sd">            scipy.linalg.eig. E.g.</span>
+<span class="sd">            &gt;&gt;&gt; evals=ham.maincell_eigenvalues()</span>
+<span class="sd">            &#39;scipy_arpack&#39;: find a given number of eigenvalues and eigenvectors of</span>
+<span class="sd">            a BIG, SPARSE matrix (including shift-invert). It can never give you</span>
+<span class="sd">            all eigenvalues. Uses ARPACK through scipy.sparse.linalg.eigsh.</span>
+<span class="sd">            You have to supply additional parameters for eigsh using **kwargs, e.g.</span>
+<span class="sd">            &gt;&gt;&gt; ham.maincell_eigenvalues(&#39;arpack&#39;,k=10,sigma=0.0,ncv=100)</span>
+<span class="sd">            See http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html</span>
+<span class="sd">            for the available parameters. You will probably need k,sigma, and maybe nvc, which.</span>
+<span class="sd">            Consider using which=&#39;SM&#39; if E_F=0.</span>
+<span class="sd">        return_evecs: Also return eigenvectors.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
-        <span class="k">if</span> <span class="n">usedorbitals</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
-            <span class="n">orbitalnrs</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">orbitalnrs</span><span class="o">=</span><span class="n">usedorbitals</span>
-        <span class="k">if</span> <span class="n">usedorbitals</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
-            <span class="n">blochmatrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__unitcellcoordinates_to_nrs</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">blochmatrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__unitcellcoordinates_to_nrs</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]][</span><span class="n">numpy</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">orbitalnrs</span><span class="p">,</span><span class="n">orbitalnrs</span><span class="p">)]</span>
+        <span class="c">#XXX: Make solver an abstract class</span>
+        <span class="n">blochmatrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__unitcellcoordinates_to_nrs</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]]</span>
         
-        <span class="n">evals</span><span class="p">,</span><span class="n">evecs</span><span class="o">=</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">blochmatrix</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">evals</span><span class="o">.</span><span class="n">real</span><span class="p">)</span>            
+        <span class="n">evals</span><span class="o">=</span><span class="bp">None</span>
+        <span class="n">evecs</span><span class="o">=</span><span class="bp">None</span>
+        
+        <span class="k">if</span> <span class="n">return_evecs</span> <span class="ow">and</span> <span class="n">solver</span><span class="o">==</span><span class="s">&#39;scipy_arpack&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        
+        <span class="k">if</span> <span class="n">solver</span><span class="o">==</span><span class="s">&#39;scipy_arpack&#39;</span><span class="p">:</span>
+            <span class="c">#http://docs.scipy.org/doc/scipy/reference/tutorial/arpack.html</span>
+            <span class="c">#XXX: inverter superlu works best with csc matrices. Can one do something about that?</span>
+            <span class="c">#XXX: k=10 --&gt; vectors have length 10? WRONG!!!</span>
+            <span class="n">evals</span><span class="p">,</span><span class="n">evecs</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigsh</span><span class="p">(</span><span class="n">blochmatrix</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="c">#return numpy.sort(evals.real)</span>
+        <span class="k">elif</span> <span class="n">solver</span><span class="o">==</span><span class="s">&#39;dense&#39;</span><span class="p">:</span>
+            <span class="n">evals</span><span class="p">,</span><span class="n">evecs</span><span class="o">=</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">blochmatrix</span><span class="o">.</span><span class="n">todense</span><span class="p">())</span>
+            <span class="c">#return numpy.sort(evals.real)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Supplied solver not found&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">return_evecs</span><span class="p">:</span>
+            <span class="n">evals_ordering</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__sorting_order</span><span class="p">(</span><span class="n">evals</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__apply_order</span><span class="p">(</span><span class="n">evals</span><span class="p">,</span><span class="n">evals_ordering</span><span class="p">)),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__apply_order</span><span class="p">(</span><span class="n">evecs</span><span class="p">,</span><span class="n">evals_ordering</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">evals</span><span class="o">.</span><span class="n">real</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="Hamiltonian.maincell_hamiltonian_matrix"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.maincell_hamiltonian_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">maincell_hamiltonian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the Hamiltonian matrix for the main cell, without hopping</span>
+<span class="sd">        parameters to other cells. This is the matrix whose eigenvalues</span>
+<span class="sd">        you can calculate using maincell_eigenvalues().      </span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+                   
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__unitcellcoordinates_to_nrs</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])[</span><span class="mi">0</span><span class="p">]]</span>
     </div>
-<div class="viewcode-block" id="Hamiltonian.bloch_eigenvalues"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues">[docs]</a>    <span class="k">def</span> <span class="nf">bloch_eigenvalues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">return_evecs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.bloch_eigenvalues"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.bloch_eigenvalues">[docs]</a>    <span class="k">def</span> <span class="nf">bloch_eigenvalues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">return_evecs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculates the eigenvalues of the eigenvalue problem with</span>
 <span class="sd">        Bloch boundary conditions for a given vector k.</span>
+<span class="sd">        </span>
+<span class="sd">        The function uses a dense matrix eigenvalue solver because it returns all</span>
+<span class="sd">        eigenvalues, so don&#39;t let the matrices get too big.</span>
 <span class="sd">        </span>
 <span class="sd">        usedhoppingcells: If you don&#39;t want to use all hopping parameters,</span>
 <span class="sd">        you can set them here (get the list of available cells with unitcellnumbers() and</span>
 <span class="sd">        strip the list from unwanted cells).</span>
 <span class="sd">        basis: &#39;c&#39; or &#39;d&#39;. Determines if the kpoints are given in cartesian</span>
 <span class="sd">        reciprocal coordinates or direct reciprocal coordinates.</span>
-<span class="sd">        usedorbitals: a list of used orbitals to use. Default is &#39;all&#39;. Note: this only makes</span>
-<span class="sd">        sense if the selected orbitals don&#39;t interact with other orbitals.</span>
 <span class="sd">        return_evecs: If True, evecs are also returned as the second return value.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        TODO: make it return evecs too (don&#39;t forget sorting)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
         <span class="k">if</span> <span class="n">usedhoppingcells</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
@@ -472,27 +519,16 @@
         <span class="k">if</span> <span class="n">basis</span><span class="o">==</span><span class="s">&#39;d&#39;</span><span class="p">:</span>
             <span class="n">k</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__latticevecs</span><span class="o">.</span><span class="n">direct_to_cartesian_reciprocal</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
             
-        <span class="k">if</span> <span class="n">usedorbitals</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
-            <span class="n">orbitalnrs</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">orbitalnrs</span><span class="o">=</span><span class="n">usedorbitals</span>
-
+        <span class="n">orbitalnrs</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__nrbands</span><span class="p">)</span>
+        
         <span class="n">bloch_phases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__bloch_phases</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
-        <span class="n">blochmatrix</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">orbitalnrs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">orbitalnrs</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+        <span class="c">#I think this needs lil_matrix, coo_matrix didn&#39;t work.</span>
+        <span class="n">blochmatrix</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">orbitalnrs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">orbitalnrs</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
         
-        <span class="k">if</span> <span class="n">usedorbitals</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">usedunitcellnrs</span><span class="p">:</span>
-                <span class="n">blochmatrix</span> <span class="o">+=</span> <span class="n">bloch_phases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">usedunitcellnrs</span><span class="p">:</span>
-                <span class="c"># the same thing, but it saves memory not to use [numpy.ix_(orbitalnrs,orbitalnrs)] if it&#39;s not</span>
-                <span class="c"># necessary</span>
-                <span class="c">#http://stackoverflow.com/questions/4257394/slicing-of-a-numpy-2d-array-or-how-do-i-extract-an-mxm-submatrix-from-an-nxn-ar/4258079#4258079</span>
-                <span class="n">blochmatrix</span> <span class="o">+=</span> <span class="n">bloch_phases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">numpy</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">orbitalnrs</span><span class="p">,</span><span class="n">orbitalnrs</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">usedunitcellnrs</span><span class="p">:</span>
+            <span class="n">blochmatrix</span> <span class="o">+=</span> <span class="n">bloch_phases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
-        <span class="n">evals</span><span class="p">,</span><span class="n">evecs</span><span class="o">=</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">blochmatrix</span><span class="p">)</span>
-        
-        
+        <span class="n">evals</span><span class="p">,</span><span class="n">evecs</span><span class="o">=</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">blochmatrix</span><span class="o">.</span><span class="n">todense</span><span class="p">())</span>
         
         <span class="k">if</span> <span class="n">return_evecs</span><span class="o">==</span><span class="bp">True</span><span class="p">:</span>
             <span class="n">evals_ordering</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__sorting_order</span><span class="p">(</span><span class="n">evals</span><span class="p">)</span>
@@ -548,14 +584,11 @@
         
         <span class="bp">self</span><span class="o">.</span><span class="n">plot_vector</span><span class="p">(</span><span class="mi">10</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__orbitalpositions</span><span class="p">)))</span>
     </div>
-<div class="viewcode-block" id="Hamiltonian.bandstructure_data"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.bandstructure_data">[docs]</a>    <span class="k">def</span> <span class="nf">bandstructure_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">parallelmethod</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">parallelthreads</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.bandstructure_data"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.bandstructure_data">[docs]</a>    <span class="k">def</span> <span class="nf">bandstructure_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculates the bandstructure for a given kpoint list.</span>
 <span class="sd">        For direct plotting, use plot_bandstructure(kpoints,filename).</span>
 <span class="sd">                </span>
-<span class="sd">        A list of eigenvalues for each kpoint is returned. To sort </span>
-<span class="sd">        by band, use data.transpose().</span>
-<span class="sd">        </span>
 <span class="sd">        If kpoints is a string, this string will be interpreted as the</span>
 <span class="sd">        name of the crystal structure (see standard_paths), and the crystal</span>
 <span class="sd">        structure&#39;s default kpoint path will be used.</span>
@@ -565,25 +598,45 @@
 <span class="sd">        strip the list from unwanted cells).        </span>
 <span class="sd">        basis: &#39;c&#39; or &#39;d&#39;. Determines if the kpoints are given in cartesian</span>
 <span class="sd">        reciprocal coordinates or direct reciprocal coordinates.</span>
-<span class="sd">        usedorbitals: a list of used orbitals to use. Default is &#39;all&#39;. Note: this only makes</span>
-<span class="sd">        sense if the selected orbitals don&#39;t interact with other orbitals.</span>
-<span class="sd">        parallel: Option to parallelize the band structure over k-points.</span>
-<span class="sd">            None: No parallelization (default)</span>
-<span class="sd">            &#39;multiprocessor.pool&#39;: Parallelization using the multiprocessor.Pool class</span>
-<span class="sd">            DOES NOT WORK YET!!!</span>
-<span class="sd">        parallelthreads: Set to the number of threads if parallel != None. Default is 4.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">        A list of eigenvalues for each kpoint is returned. To sort </span>
+<span class="sd">        by band, use data.transpose().</span>
+
+<span class="sd">        If MPI is used, ONLY THE ROOT PROCESS returns the data, the others</span>
+<span class="sd">        return None.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
             <span class="n">kpoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">standard_paths</span><span class="p">(</span><span class="n">kpoints</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
             <span class="n">basis</span><span class="o">=</span><span class="s">&#39;d&#39;</span>
-        <span class="k">if</span> <span class="n">parallelmethod</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">bloch_eigenvalues</span><span class="p">(</span><span class="n">kpoint</span><span class="p">,</span><span class="n">basis</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="p">,</span><span class="n">usedorbitals</span><span class="p">)</span> <span class="k">for</span> <span class="n">kpoint</span> <span class="ow">in</span> <span class="n">kpoints</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">parallelmethod</span><span class="o">==</span><span class="s">&#39;multiprocessor.pool&#39;</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">=</span><span class="p">[]</span>
 
-        <span class="k">return</span> <span class="n">data</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">path_parts</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">mpi_size</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">path_parts</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">path_parts</span><span class="p">,</span><span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">kpoints</span>
+
+        <span class="n">data</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">bloch_eigenvalues</span><span class="p">(</span><span class="n">kpoint</span><span class="p">,</span><span class="n">basis</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">kpoint</span> <span class="ow">in</span> <span class="n">path</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="p">:</span>
+            <span class="n">allbsdata</span><span class="o">=</span><span class="bp">None</span>
+            <span class="n">allbsdata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mpi_comm</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_rank</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">allbsdata</span><span class="p">)</span>
+<span class="c">#        allbsdata=numpy.empty((len(kpoints),self.__nrbands))</span>
+<span class="c">#        comm.Allgather([data,MPI.DOUBLE],[allbsdata,MPI.DOUBLE])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span>
     </div>
 <div class="viewcode-block" id="Hamiltonian.point_path"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.point_path">[docs]</a>    <span class="k">def</span> <span class="nf">point_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">corner_points</span><span class="p">,</span><span class="n">nrpointspersegment</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -629,7 +682,7 @@
         <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">v1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> \
                 <span class="n">v2</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">nrpoints</span><span class="p">,</span><span class="n">endpoint</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dimension</span><span class="p">)])</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         
-<div class="viewcode-block" id="Hamiltonian.plot_bandstructure"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure">[docs]</a>    <span class="k">def</span> <span class="nf">plot_bandstructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">mark_reclattice_points</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">mark_fermi_energy</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.plot_bandstructure"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.plot_bandstructure">[docs]</a>    <span class="k">def</span> <span class="nf">plot_bandstructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kpoints</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">basis</span><span class="o">=</span><span class="s">&#39;c&#39;</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">mark_reclattice_points</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">mark_fermi_energy</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate the bandstructure at the points kpoints (given in </span>
 <span class="sd">        cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)</span>
@@ -647,8 +700,6 @@
 <span class="sd">        strip the list from unwanted cells).  </span>
 <span class="sd">        basis: &#39;c&#39; or &#39;d&#39;. Determines if the kpoints are given in cartesian</span>
 <span class="sd">        reciprocal coordinates or direct reciprocal coordinates.</span>
-<span class="sd">        usedorbitals: a list of used orbitals to use. Default is &#39;all&#39;. Note: this only makes</span>
-<span class="sd">        sense if the selected orbitals don&#39;t interact with other orbitals.  </span>
 <span class="sd">        mark_reclattice_points: You can mark important reciprocal lattice points, like</span>
 <span class="sd">        \Gamma or K. This variable can be (i) True if you use a string for kpoints</span>
 <span class="sd">        (ii) a list which contains the names of the points and the points:</span>
@@ -657,31 +708,49 @@
 <span class="sd">        mark_fermi_energy: If you supply the Fermi energy here, a line will be</span>
 <span class="sd">        drawn. If True, the Fermi energy will be taken from fermi_energy().</span>
 <span class="sd">        Default is False.</span>
+<span class="sd">        </span>
+<span class="sd">        If MPI is used, ONLY THE ROOT PROCESS plots. This coincides with bandstructure_data,</span>
+<span class="sd">        where also only the root process returns all the bandstructure data.</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">        lines: List of matplotlib.lines.Line2D objects that were drawn. You</span>
+<span class="sd">        can change the style, color etc., like:</span>
+<span class="sd">            for line in lines:</span>
+<span class="sd">                line.set_color(&#39;red&#39;)</span>
+<span class="sd">        fermi_energy_line: The fermi energy mark Line2D object.</span>
+<span class="sd">        lattice_point_lines: The lattice point marks Line2D object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        
 
+        <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bandstructure_data</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="n">basis</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpi_rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             
-        <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bandstructure_data</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="n">basis</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="p">,</span><span class="n">usedorbitals</span><span class="p">)</span>
-        <span class="n">bplot</span><span class="o">=</span><span class="n">BandstructurePlot</span><span class="p">()</span>
+            <span class="n">bplot</span><span class="o">=</span><span class="n">BandstructurePlot</span><span class="p">()</span>
         
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
-            <span class="n">reclattice_points</span><span class="p">,</span><span class="n">reclattice_names</span><span class="p">,</span><span class="n">kpoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">standard_paths</span><span class="p">(</span><span class="n">kpoints</span><span class="p">)</span>
-            <span class="n">basis</span><span class="o">=</span><span class="s">&#39;d&#39;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                <span class="n">reclattice_points</span><span class="p">,</span><span class="n">reclattice_names</span><span class="p">,</span><span class="n">kpoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">standard_paths</span><span class="p">(</span><span class="n">kpoints</span><span class="p">)</span>
+                <span class="n">basis</span><span class="o">=</span><span class="s">&#39;d&#39;</span>
             
-        <span class="n">bplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mark_fermi_energy</span><span class="p">,</span><span class="nb">bool</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;&quot;This doesn&#39;t work properly&quot;&quot;&quot;</span>
-            <span class="n">bplot</span><span class="o">.</span><span class="n">plot_fermi_energy</span><span class="p">(</span><span class="n">mark_fermi_energy</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">mark_fermi_energy</span><span class="p">:</span>
-            <span class="n">bplot</span><span class="o">.</span><span class="n">plot_fermi_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fermi_energy</span><span class="p">())</span>
+            <span class="n">lattice_point_lines</span><span class="o">=</span><span class="bp">None</span>
+            <span class="n">fermi_energy_line</span><span class="o">=</span><span class="bp">None</span>
             
-        <span class="k">if</span> <span class="n">mark_reclattice_points</span> <span class="o">!=</span> <span class="bp">False</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">mark_reclattice_points</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
-                <span class="n">bplot</span><span class="o">.</span><span class="n">plot_lattice_point_vlines</span><span class="p">(</span><span class="n">reclattice_points</span><span class="p">,</span> <span class="n">reclattice_names</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">pass</span>
-        <span class="k">if</span> <span class="n">filename</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
-            <span class="n">pyplot</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="n">lines</span><span class="o">=</span><span class="n">bplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mark_fermi_energy</span><span class="p">,</span><span class="nb">bool</span><span class="p">):</span>
+                <span class="n">fermi_energy_line</span><span class="o">=</span><span class="n">bplot</span><span class="o">.</span><span class="n">plot_fermi_energy</span><span class="p">(</span><span class="n">mark_fermi_energy</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">mark_fermi_energy</span><span class="p">:</span>
+                <span class="n">fermi_energy_line</span><span class="o">=</span><span class="n">bplot</span><span class="o">.</span><span class="n">plot_fermi_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fermi_energy</span><span class="p">())</span>
+            
+            <span class="k">if</span> <span class="n">mark_reclattice_points</span> <span class="o">!=</span> <span class="bp">False</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">mark_reclattice_points</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                    <span class="n">lattice_point_lines</span><span class="o">=</span><span class="n">bplot</span><span class="o">.</span><span class="n">plot_lattice_point_vlines</span><span class="p">(</span><span class="n">reclattice_points</span><span class="p">,</span> <span class="n">reclattice_names</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="k">if</span> <span class="n">filename</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">pyplot</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="n">lines</span><span class="p">,</span><span class="n">fermi_energy_line</span><span class="p">,</span><span class="n">lattice_point_lines</span>
+
+        <span class="k">return</span>
         </div>
 <div class="viewcode-block" id="Hamiltonian.drawunitcells"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.drawunitcells">[docs]</a>    <span class="k">def</span> <span class="nf">drawunitcells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">unitcellnumbers</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -944,7 +1013,7 @@
             <span class="n">path</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">,[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span>   
                     <span class="p">(</span><span class="s">&#39;G&#39;</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span>
-                    <span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">,[</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>         
+                    <span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">,[</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
                     <span class="p">]</span>                        
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Bravais lattice name not found!&quot;</span><span class="p">)</span>
@@ -1005,7 +1074,7 @@
                 <span class="n">checked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">checked</span>        
     
-<div class="viewcode-block" id="Hamiltonian.create_supercell_hamiltonian"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian">[docs]</a>    <span class="k">def</span> <span class="nf">create_supercell_hamiltonian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cellcoordinates</span><span class="p">,</span><span class="n">latticevecs</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">energyshift</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">magnetic_B</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">gauge_B</span><span class="o">=</span><span class="s">&#39;landau_x&#39;</span><span class="p">,</span><span class="n">mixin_ham</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_hoppings</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_cells</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_assoc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">onsite_potential</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.create_supercell_hamiltonian"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.create_supercell_hamiltonian">[docs]</a>    <span class="k">def</span> <span class="nf">create_supercell_hamiltonian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cellcoordinates</span><span class="p">,</span><span class="n">latticevecs</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">energyshift</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">magnetic_B</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">gauge_B</span><span class="o">=</span><span class="s">&#39;landau_x&#39;</span><span class="p">,</span><span class="n">mixin_ham</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_hoppings</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_cells</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_assoc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">onsite_potential</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">output_maincell_only</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates the matrix elements for a supercell containing several unit cells, e.g. a volume</span>
 <span class="sd">        with one unit cell missing in the middle or one slice of a nanoribbon.</span>
@@ -1059,13 +1128,14 @@
 <span class="sd">        diagonal (=onsite) matrix elements of the main cell. This approximates</span>
 <span class="sd">        an electrostatic potential in the system. Default is None.                         </span>
 <span class="sd">        </span>
-<span class="sd">        </span>
+<span class="sd">        output_maincell_only: If True, only the main cell matrix block will be</span>
+<span class="sd">        calculated. This makes sense for a big system of which you want to</span>
+<span class="sd">        calculate the eigenvalues, not the bandstructure. Default is false</span>
 <span class="sd">        </span>
 <span class="sd">        Return:</span>
 <span class="sd">        New Hamiltonian with the new properties.</span>
-<span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        
+                
         <span class="c">#TODO: Naming (numbers,positions,coordinates) is ambiguous</span>
         
         <span class="n">oldunitcellmatrixblocks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__unitcellmatrixblocks</span>
@@ -1079,9 +1149,13 @@
             <span class="n">usedunitcellnrs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__unitcellcoordinates_to_nrs</span><span class="p">(</span><span class="n">usedhoppingcells</span><span class="p">)</span>
         
         
-        <span class="n">nr_unitcells_in_supercell</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cellcoordinates</span><span class="p">)</span>     
+        <span class="n">nr_unitcells_in_supercell</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cellcoordinates</span><span class="p">)</span>   
         
-        <span class="n">unitcellmatrixblocks</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">cellcoordinates_reverse_dict</span><span class="o">=</span><span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">coord</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cellcoordinates</span><span class="p">):</span>
+            <span class="n">cellcoordinates_reverse_dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">coord</span><span class="p">)]</span><span class="o">=</span><span class="n">i</span>
+        
+        <span class="n">unitcellmatrixblocks_dryctr</span><span class="o">=</span><span class="p">[]</span>
         <span class="n">unitcellnumbers</span><span class="o">=</span><span class="p">[]</span>
         
         <span class="k">if</span> <span class="n">usedorbitals</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
@@ -1099,54 +1173,70 @@
         <span class="n">orbitalpositions</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">oldorbitalpositions</span><span class="p">[</span><span class="n">orb</span><span class="p">]</span><span class="o">+</span><span class="n">cell</span><span class="p">)</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">oldunitcellcoordinates</span> <span class="k">for</span> <span class="n">orb</span> <span class="ow">in</span> <span class="n">orbitalnrs</span><span class="p">]</span>
         
         <span class="n">metric_numerator</span><span class="p">,</span><span class="n">metric_denominator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__metric</span><span class="p">(</span><span class="n">latticevecs</span><span class="p">)</span>
-        
+        <span class="n">latticevecs_dot_metric_numerator</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">latticevecs</span><span class="p">,</span><span class="n">metric_numerator</span><span class="p">)</span>
         <span class="c">#Loop over cells in supercell</span>
+        
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Besser: zuerst alle indizes/positionen aufstellen, dann mit sparse.bmat die matrix zusammenbauen.</span>
+<span class="sd">        Andere fkten auch aktualisieren!!</span>
+<span class="sd">        </span>
+<span class="sd">        ...und auch mal mixins und connections zw. bauteilen (kleben) verbessern. vl wie elektrostatik-kleben?</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">cellnr</span><span class="p">,</span><span class="n">cell</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cellcoordinates</span><span class="p">)):</span>
             <span class="c">#Loop over old blocks</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">oldnumber</span><span class="p">,</span><span class="n">oldblock</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">oldunitcellmatrixblocks</span><span class="p">)),</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">oldunitcellnumbers</span><span class="p">),</span><span class="n">oldunitcellmatrixblocks</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">usedunitcellnrs</span><span class="p">:</span>
-                    <span class="n">oldblock_selectedorbitals</span><span class="o">=</span><span class="n">oldblock</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">orbitalnrs</span><span class="p">,</span><span class="n">orbitalnrs</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">oldnumber</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">oldunitcellmatrixblocks</span><span class="p">)),</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">oldunitcellnumbers</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">usedunitcellnrs</span><span class="p">:</span>                        
                     <span class="n">hopto</span><span class="o">=</span><span class="n">cell</span><span class="o">+</span><span class="n">oldnumber</span>
                     
-                    <span class="n">hopto_scaled_times_metric_denominator</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">latticevecs</span><span class="p">,</span><span class="n">metric_numerator</span><span class="p">),</span><span class="n">hopto</span><span class="p">);</span>
+                    <span class="n">hopto_scaled_times_metric_denominator</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">latticevecs_dot_metric_numerator</span><span class="p">,</span><span class="n">hopto</span><span class="p">)</span>
                     <span class="n">hopto_scaled</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">hopto_scaled_times_metric_denominator</span><span class="o">/</span><span class="n">metric_denominator</span><span class="p">)</span>
                     <span class="n">hopto_rest_times_metric_denominator</span><span class="o">=</span><span class="n">hopto_scaled_times_metric_denominator</span><span class="o">%</span><span class="n">metric_denominator</span>
-                    <span class="n">hopto_nr</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hopto_rest_times_metric_denominator</span><span class="p">,</span><span class="n">latticevecs</span><span class="p">)</span><span class="o">/</span><span class="n">metric_denominator</span><span class="p">)</span>
+                    <span class="n">hopto_nr</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hopto_rest_times_metric_denominator</span><span class="p">,</span><span class="n">latticevecs</span><span class="p">)</span><span class="o">/</span><span class="n">metric_denominator</span><span class="p">)</span>
                     
                     <span class="k">try</span><span class="p">:</span>
                         <span class="n">skip_block</span><span class="o">=</span><span class="bp">False</span>
-                        <span class="n">hopto_nr_index</span><span class="o">=</span><span class="n">cellcoordinates</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">hopto_nr</span><span class="p">)</span> 
+                        <span class="n">hopto_nr_index</span><span class="o">=</span><span class="n">cellcoordinates_reverse_dict</span><span class="p">[</span><span class="n">hopto_nr</span><span class="p">]</span><span class="c">#cellcoordinates.index(hopto_nr) </span>
                     <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                         <span class="n">skip_block</span><span class="o">=</span><span class="bp">True</span> <span class="c">#if the cell to hop to is not in the cellcoordinates list, the block is skipped</span>
-                    
-                    <span class="k">if</span> <span class="n">skip_block</span><span class="o">==</span><span class="bp">False</span><span class="p">:</span>
-                        <span class="c">#print hopto,hopto_scaled,hopto_nr,hopto_nr_index</span>
-    
-                        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">                        #hopto_scaled=[x/y for x,y in zip(hopto,scaling)]</span>
-<span class="sd">                        hopto_nr=[x%y for x,y in zip(hopto,scaling)]</span>
-<span class="sd">                        hopto_nr_index=cellcoordinates.index(hopto_nr) #if the cell to hop to is not in the cellcoordinates list, this will fail -&gt; then the block has to be skipped -&gt; implement!!</span>
-<span class="sd">                        &quot;&quot;&quot;</span>
-                        <span class="c">#print hopfrom,oldnumber,hopto,hopto_scaled,hopto_nr,hopto_nr_index</span>
                         
+                    <span class="k">if</span> <span class="n">output_maincell_only</span> <span class="ow">and</span> <span class="n">hopto_scaled</span><span class="o">!=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]:</span>
+                        <span class="n">skip_block</span><span class="o">=</span><span class="bp">True</span>
+                    
+                    <span class="k">if</span> <span class="n">skip_block</span><span class="o">==</span><span class="bp">False</span><span class="p">:</span>                        
                         <span class="k">try</span><span class="p">:</span>
                             <span class="n">unitcellindex</span><span class="o">=</span><span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">hopto_scaled</span><span class="p">)</span>
                         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                             <span class="n">unitcellindex</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">unitcellnumbers</span><span class="p">)</span>
                             <span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hopto_scaled</span><span class="p">)</span>
-                            <span class="n">unitcellmatrixblocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">orbitals_per_unitcell</span><span class="o">*</span><span class="n">nr_unitcells_in_supercell</span><span class="p">,</span>
-                                                                    <span class="n">orbitals_per_unitcell</span><span class="o">*</span><span class="n">nr_unitcells_in_supercell</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">))</span>
+                            <span class="n">unitcellmatrixblocks_dryctr</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
                         
-                        <span class="c">#print unitcellindex    </span>
-                        <span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="n">unitcellindex</span><span class="p">][</span><span class="n">cellnr</span><span class="o">*</span><span class="n">orbitals_per_unitcell</span><span class="p">:(</span><span class="n">cellnr</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">orbitals_per_unitcell</span><span class="p">,</span>
-                                                            <span class="n">hopto_nr_index</span><span class="o">*</span><span class="n">orbitals_per_unitcell</span><span class="p">:(</span><span class="n">hopto_nr_index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">orbitals_per_unitcell</span><span class="p">]</span><span class="o">=</span><span class="n">oldblock_selectedorbitals</span>
-                
+                        <span class="c">#unitcellmatrixblocks[unitcellindex][cellnr*orbitals_per_unitcell:(cellnr+1)*orbitals_per_unitcell,</span>
+                        <span class="c">#                                    hopto_nr_index*orbitals_per_unitcell:(hopto_nr_index+1)*orbitals_per_unitcell]=oldblock_selectedorbitals</span>
+                        <span class="n">unitcellmatrixblocks_dryctr</span><span class="p">[</span><span class="n">unitcellindex</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">i</span><span class="p">,</span><span class="n">cellnr</span><span class="p">,</span><span class="n">hopto_nr_index</span><span class="p">])</span>
         
         <span class="n">oldlatticevecs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__latticevecs</span><span class="o">.</span><span class="n">latticevecs</span><span class="p">()</span>
         <span class="n">newlatticevecs</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">latticevecs</span><span class="p">),</span><span class="n">oldlatticevecs</span><span class="p">)</span> <span class="c"># (A.B)&#39;=B&#39;.A&#39; - new latticevectors in real coordinates</span>
+                        
         
+        <span class="k">if</span> <span class="n">usedorbitals</span><span class="o">==</span><span class="s">&#39;all&#39;</span><span class="p">:</span>
+            <span class="n">oldblocks_selectedorbitals</span><span class="o">=</span><span class="n">oldunitcellmatrixblocks</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c">#the conversion to csr is annoying, but necessary</span>
+            <span class="c">#oldblocks_selectedorbitals=[block.tocsr()[numpy.array(orbitalnrs)[:,numpy.newaxis],numpy.array(orbitalnrs)] for block in oldunitcellmatrixblocks]</span>
+            <span class="n">oldblocks_selectedorbitals</span><span class="o">=</span><span class="p">[</span><span class="n">block</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()[</span><span class="n">orbitalnrs</span><span class="p">,:][:,</span><span class="n">orbitalnrs</span><span class="p">]</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">oldunitcellmatrixblocks</span><span class="p">]</span>
+        
+        <span class="n">unitcellmatrixblocks_sparse</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">emptyblock</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">orbitals_per_unitcell</span><span class="p">,</span><span class="n">orbitals_per_unitcell</span><span class="p">))</span> <span class="c">#placeholder for empty blocks; coo is much faster than lil. Better understanding may lead to improvements</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">cell</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unitcellmatrixblocks_dryctr</span><span class="p">):</span>
+            <span class="n">unitcellmatrixblocks_sparse_template</span><span class="o">=</span> <span class="p">[</span> <span class="p">[</span> <span class="n">emptyblock</span> <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="n">j</span> <span class="k">else</span> <span class="bp">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_unitcells_in_supercell</span><span class="p">)</span> <span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_unitcells_in_supercell</span><span class="p">)</span> <span class="p">]</span>
+            <span class="k">for</span> <span class="n">block</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="n">cell</span><span class="p">:</span>
+                <span class="n">unitcellmatrixblocks_sparse_template</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">oldblocks_selectedorbitals</span><span class="p">[</span><span class="n">block</span><span class="p">]</span>
+            <span class="n">unitcellmatrixblocks_sparse</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sparse</span><span class="o">.</span><span class="n">bmat</span><span class="p">(</span><span class="n">unitcellmatrixblocks_sparse_template</span><span class="p">))</span>
+           
+           
         <span class="c">#Mix in matrix elements from other hamiltonian</span>
         <span class="k">if</span> <span class="n">mixin_ham</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
             <span class="n">othermatrixblocks</span><span class="o">=</span><span class="n">mixin_ham</span><span class="o">.</span><span class="n">_Hamiltonian__unitcellmatrixblocks</span>
             <span class="n">otherunitcellnumbers</span><span class="o">=</span><span class="n">mixin_ham</span><span class="o">.</span><span class="n">unitcellnumbers</span><span class="p">()</span>
             
@@ -1165,16 +1255,21 @@
 
         <span class="c">#Add onsite potential = electrostatic potential</span>
         <span class="k">if</span> <span class="n">onsite_potential</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">index</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span><span class="o">+=</span><span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">onsite_potential</span><span class="p">)</span>       
+            <span class="c">#XXX: sparse.lil_matrix(numpy.diag(... is a weird construction</span>
+            <span class="c">#XXX: the conversion to lil_matrix _may_ be a bottleneck</span>
+            <span class="c">#main cell block is converted to lil_matrix!             </span>
+            <span class="n">unitcellmatrixblocks_sparse</span><span class="p">[</span><span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">index</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span><span class="o">=</span><span class="n">unitcellmatrixblocks_sparse</span><span class="p">[</span><span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">index</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span><span class="o">.</span><span class="n">tolil</span><span class="p">()</span><span class="o">+</span><span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">onsite_potential</span><span class="p">))</span>   
                         
         <span class="c">#Shift diagonal elements of main cell hopping block</span>
-        <span class="k">if</span> <span class="n">energyshift</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
-            <span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">index</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span><span class="o">+=</span><span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">((</span><span class="n">orbitals_per_unitcell</span><span class="o">*</span><span class="n">nr_unitcells_in_supercell</span><span class="p">)</span><span class="o">*</span><span class="p">[</span><span class="n">energyshift</span><span class="p">])</span>       
+        <span class="k">if</span> <span class="n">energyshift</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>        
+            <span class="c">#XXX: sparse.lil_matrix(numpy.diag(... is a weird construction</span>
+            <span class="c">#main cell block is converted to lil_matrix!             </span>
+            <span class="n">unitcellmatrixblocks_sparse</span><span class="p">[</span><span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">index</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span><span class="o">=</span><span class="n">unitcellmatrixblocks_sparse</span><span class="p">[</span><span class="n">unitcellnumbers</span><span class="o">.</span><span class="n">index</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])]</span><span class="o">.</span><span class="n">tolil</span><span class="p">()</span><span class="o">+</span><span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">((</span><span class="n">orbitals_per_unitcell</span><span class="o">*</span><span class="n">nr_unitcells_in_supercell</span><span class="p">)</span><span class="o">*</span><span class="p">[</span><span class="n">energyshift</span><span class="p">]))</span>
         
     
         <span class="c">#Apply magnetic field</span>
         <span class="c">#distances_in_unit_cell=numpy.array([[x-y for x in numpy.array(orbitalpositions)] for y in numpy.array(orbitalpositions)])</span>
-        <span class="k">if</span> <span class="n">magnetic_B</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">magnetic_B</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>        
             <span class="n">Tesla_conversion_factor</span><span class="o">=</span><span class="mf">1.602176487</span><span class="o">/</span><span class="mf">1.0545717</span><span class="o">*</span><span class="mf">1e-5</span>
             <span class="c">#print Tesla_conversion_factor</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">number</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unitcellnumbers</span><span class="p">):</span>
@@ -1188,15 +1283,17 @@
                     <span class="n">phasematrix</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">magnetic_B</span><span class="o">*</span><span class="n">Tesla_conversion_factor</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">main</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">main</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">othercell_orbitalpositions</span><span class="p">]</span> <span class="k">for</span> <span class="n">main</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">orbitalpositions</span><span class="p">)]))</span>
                 <span class="k">if</span> <span class="n">gauge_B</span><span class="o">==</span><span class="s">&#39;symmetric&#39;</span><span class="p">:</span>
                     <span class="n">phasematrix</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">magnetic_B</span><span class="o">*</span><span class="n">Tesla_conversion_factor</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">other</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">main</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">main</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">main</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">main</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">othercell_orbitalpositions</span><span class="p">]</span> <span class="k">for</span> <span class="n">main</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">orbitalpositions</span><span class="p">)]))</span>
-                
-                <span class="n">unitcellmatrixblocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*=</span><span class="n">phasematrix</span>  
-                
+                <span class="c">#XXX: matrices are implicitly converted to numpy arrays. Make phasematrix a sparse matrix.</span>
+                <span class="n">unitcellmatrixblocks_sparse</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span><span class="n">unitcellmatrixblocks_sparse</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">phasematrix</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">energyshift</span> <span class="o">!=</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">newfermi_energy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span><span class="o">+</span><span class="n">energyshift</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">newfermi_energy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__fermi_energy</span>
-                
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_raw_data</span><span class="p">(</span><span class="n">unitcellmatrixblocks</span><span class="p">,</span> <span class="n">unitcellnumbers</span><span class="p">,</span> <span class="n">newlatticevecs</span><span class="p">,</span><span class="n">orbitalspreads</span><span class="p">,</span><span class="n">orbitalpositions</span><span class="p">,</span><span class="n">newfermi_energy</span><span class="p">)</span>
+            
+        <span class="c">#unitcellmatrixblocks_csr=[block.tocsr() for block in unitcellmatrixblocks_sparse]</span>
+      
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_raw_data</span><span class="p">(</span><span class="n">unitcellmatrixblocks_sparse</span><span class="p">,</span> <span class="n">unitcellnumbers</span><span class="p">,</span> <span class="n">newlatticevecs</span><span class="p">,</span><span class="n">orbitalspreads</span><span class="p">,</span><span class="n">orbitalpositions</span><span class="p">,</span><span class="n">newfermi_energy</span><span class="p">)</span>
+        <span class="c">#return unitcellmatrixblocks</span>
     </div>
     <span class="k">def</span> <span class="nf">__metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">basis</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1254,7 +1351,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span> 
     
-<div class="viewcode-block" id="Hamiltonian.create_modified_hamiltonian"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian">[docs]</a>    <span class="k">def</span> <span class="nf">create_modified_hamiltonian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">energyshift</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">magnetic_B</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">gauge_B</span><span class="o">=</span><span class="s">&#39;landau_x&#39;</span><span class="p">,</span><span class="n">mixin_ham</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_hoppings</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_cells</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_assoc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">onsite_potential</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Hamiltonian.create_modified_hamiltonian"><a class="viewcode-back" href="../../wannier90.html#wannier90.w90hamiltonian.Hamiltonian.create_modified_hamiltonian">[docs]</a>    <span class="k">def</span> <span class="nf">create_modified_hamiltonian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">usedhoppingcells</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">usedorbitals</span><span class="o">=</span><span class="s">&#39;all&#39;</span><span class="p">,</span><span class="n">energyshift</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">magnetic_B</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">gauge_B</span><span class="o">=</span><span class="s">&#39;landau_x&#39;</span><span class="p">,</span><span class="n">mixin_ham</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_hoppings</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_cells</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">mixin_assoc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">onsite_potential</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a Hamiltonian with dropped orbitals or hopping cells. This is just a wrapper for </span>
 <span class="sd">        create_supercell_hamiltonian().</span>
@@ -1371,19 +1468,18 @@
 <span class="c">#            stylestring=style</span>
             
 <span class="c">#        self.__plotcounter+=1</span>
-        <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">():</span>
-            <span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pathlength</span><span class="p">,</span><span class="n">band</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pathlength</span><span class="p">,</span><span class="n">band</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">()]</span>
             </div>
     <span class="k">def</span> <span class="nf">plot_fermi_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fermi_energy</span><span class="p">):</span>
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__myplot</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> 
-        <span class="n">pyplot</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">fermi_energy</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">fermi_energy</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
         
     <span class="k">def</span> <span class="nf">plot_lattice_point_vlines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">reclatticepoints</span><span class="p">,</span><span class="n">reclatticenames</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="n">positions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__kpoints_to_pathlength</span><span class="p">(</span><span class="n">reclatticepoints</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
-            <span class="n">pyplot</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;#AAAAAA&#39;</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">reclatticenames</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
             <span class="n">pyplot</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span> <span class="n">positions</span><span class="p">,</span> <span class="n">reclatticenames</span> <span class="p">)</span>
+            
+        <span class="k">return</span> <span class="p">[</span><span class="n">pyplot</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;#AAAAAA&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">]</span>
             
     
 <span class="c">#    def save(self,filename):</span>
