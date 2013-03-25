@@ -12,9 +12,9 @@ The code consists of two parts:
 1. The function D(E,T) describes the density of states at a given energy E
    as a function of the temperature T. This is implemented for 
    :class:`graphene at 0K
-   <quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene>` 
+   <envtb.quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene>` 
    (no temperature dependency, obviously) and :class:`graphene at finite 
-   temperatures <quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature>`.
+   temperatures <envtb.quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature>`.
 2. The class :py:class:`.QuantumCapacitanceSolver` finds the electrostatic
    configuration that fulfils the constraints given by D(E,T).
 
@@ -150,6 +150,6 @@ The result:
 Code reference
 --------------
 
-.. autoclass:: quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature
-.. automethod:: quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene
-.. autoclass:: quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver
+.. autoclass:: envtb.quantumcapacitance.quantumcapacitance.BulkGrapheneWithTemperature
+.. automethod:: envtb.quantumcapacitance.quantumcapacitance.FermiEnergyChargeDependence.bulk_graphene
+.. autoclass:: envtb.quantumcapacitance.quantumcapacitance.QuantumCapacitanceSolver

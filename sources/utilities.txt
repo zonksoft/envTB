@@ -12,7 +12,7 @@ for documentation.
 Code reference
 --------------
 
-.. automodule:: quantumcapacitance.utilities
+.. automodule:: envtb.quantumcapacitance.utilities
    :members:
    
 Matplotlib tips

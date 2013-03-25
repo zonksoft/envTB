@@ -248,5 +248,5 @@ There are how-to examples in the :doc:`Simple <simple>` module - see :doc:`simpl
 Code reference
 --------------
 
-.. automodule:: quantumcapacitance.electrostatics
+.. automodule:: envtb.quantumcapacitance.electrostatics
    :members:

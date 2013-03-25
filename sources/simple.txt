@@ -4,7 +4,7 @@ Code examples
 The easiest way to start out is to look at examples.
 You can find them in the ``simple`` module. Run them by including it::
 
-  import simple
+  from envtb import simple
   simple.NameOfExample()
 
 Example input files
@@ -50,22 +50,22 @@ you can use up to 10th-NN with the supplied neighbor lists.
 Electrostatics
 --------------
 
-.. autofunction:: simple.SimpleElectrostaticProblem
-.. autofunction:: simple.PotentialOfSimpleConductor2D
-.. autofunction:: simple.PotentialOfGluedRectangles2D
+.. autofunction:: envtb.simple.SimpleElectrostaticProblem
+.. autofunction:: envtb.simple.PotentialOfSimpleConductor2D
+.. autofunction:: envtb.simple.PotentialOfGluedRectangles2D
 
 Quantum capacitance
 -------------------
 
-.. autofunction:: simple.GrapheneQuantumCapacitance
-.. autofunction:: calculations.graphenequantumcapacitance.LoopQuantumCapacitanceWithSidegatesFixedSystem
+.. autofunction:: envtb.simple.GrapheneQuantumCapacitance
+.. autofunction:: envtb.calculations.graphenequantumcapacitance.LoopQuantumCapacitanceWithSidegatesFixedSystem
 
 Tight-Binding
 -------------
 
-.. autofunction:: simple.PlotGraphenenthNNBandstructure
-.. autofunction:: simple.PlotGrapheneWannierBandstructure
-.. autofunction:: simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure
-.. autofunction:: simple.plot_armchair_graphene_nanoribbon_pz_bandstructure
-.. autofunction:: simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn
-.. autofunction:: simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn
+.. autofunction:: envtb.simple.PlotGraphenenthNNBandstructure
+.. autofunction:: envtb.simple.PlotGrapheneWannierBandstructure
+.. autofunction:: envtb.simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure
+.. autofunction:: envtb.simple.plot_armchair_graphene_nanoribbon_pz_bandstructure
+.. autofunction:: envtb.simple.plot_zigzag_graphene_nanoribbon_pz_bandstructure_nn
+.. autofunction:: envtb.simple.plot_armchair_graphene_nanoribbon_pz_bandstructure_nn

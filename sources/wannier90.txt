@@ -246,5 +246,5 @@ You can find more documentation about the methods when you click on their names.
 Code reference
 ------------------
 
-.. automodule:: wannier90.w90hamiltonian
+.. automodule:: envtb.wannier90.w90hamiltonian
    :members:
