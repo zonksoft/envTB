@@ -32,7 +32,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   installation
+   installation-linux
+   installation-windows
    electrostatics
    quantumcapacitance
    simple
