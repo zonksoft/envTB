@@ -27,11 +27,11 @@ Whenever you want to use envTB, you can use one of the methods mentioned in the 
 
   python myfile.py
 
-or 
+or::
 
   ipython 
 
-or 
+or::
 
   ipython notebook --pylab=inline
 
