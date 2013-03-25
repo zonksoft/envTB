@@ -56,15 +56,32 @@
             
   <div class="section" id="installation-windows">
 <h1>Installation (Windows)<a class="headerlink" href="#installation-windows" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
 <p>Download the Enthought Python Distribution (EPD) <a class="reference external" href="https://www.enthought.com/products/epd_free.php">here</a>
 (scroll down, click the &#8220;Download&#8221; button and choose the Windows version. Install it.</p>
+<p>You have to install sympy half-manually. Open a terminal (e.g. click <em>Start -&gt; Run</em>, type &#8220;cmd&#8221; and press OK), run:</p>
+<div class="highlight-python"><pre>enpkg sympy</pre>
+</div>
+<p>and press Enter.</p>
+</div>
+<div class="section" id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
 <p>Download the envTB package <a class="reference external" href="https://github.com/zonksoft/envTB/archive/master.zip">here</a> and unpack it to a directory of your choice.</p>
 <p>Now, you have to tell Python where to look for the package. Right-click on <em>Computer -&gt; Properties -&gt; Advanced -&gt; Environment Variables</em>. Click on one of the &#8220;New&#8221; buttons. Enter &#8220;PYTHONPATH&#8221; as variable name and the path were you extracted the envTB package (e.g. C:UsersYourUsernameDesktopenvTB-master) as variable value.</p>
-<p>You have to install sympy half-manually. Open a terminal (e.g. click <em>Start -&gt; Run</em>, type &#8220;cmd&#8221; and press OK), type &#8220;enpkg sympy&#8221; and press Enter.</p>
-<p>That&#8217;s it!</p>
+</div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
-<p>Whenever you want to use envTB, you can use one of the methods mentioned in the Linux/Usage section. Just start a terminal and type the command (e.g. &#8220;python myfile.py&#8221;, &#8220;ipython&#8221; or &#8220;ipython notebook &#8211;pylab=inline&#8221; - I personally prefer the first for bigger calculations and the last one for development).</p>
+<p>Whenever you want to use envTB, you can use one of the methods mentioned in the Linux/Usage section. Just start a terminal and type the command, e.g.:</p>
+<div class="highlight-python"><pre>python myfile.py</pre>
+</div>
+<p>or</p>
+<blockquote>
+<div>ipython</div></blockquote>
+<p>or</p>
+<blockquote>
+<div>ipython notebook &#8211;pylab=inline</div></blockquote>
+<p>I personally prefer the first for bigger calculations and the last one for development).</p>
 <p>You can also start Python and IPython from the Start menu.</p>
 <p>For convenient use, you can add a shortcut to your Desktop by right-clicking on it -&gt; New -&gt; Shortcut, then enter &#8220;ipython notebook &#8211;pylab=inline&#8221;, which will open a browser window with an IPython session right away.</p>
 </div>
@@ -79,6 +96,8 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Installation (Windows)</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#setup">Setup</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 </ul>
 </li>

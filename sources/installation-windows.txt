@@ -1,21 +1,41 @@
 Installation (Windows)
 ======================
 
+Prerequisites
+-------------
+
 Download the Enthought Python Distribution (EPD) `here <https://www.enthought.com/products/epd_free.php>`_ 
 (scroll down, click the "Download" button and choose the Windows version. Install it.
+
+You have to install sympy half-manually. Open a terminal (e.g. click *Start -> Run*, type "cmd" and press OK), run::
+
+    enpkg sympy
+
+and press Enter.
+
+Setup
+-----
 
 Download the envTB package `here <https://github.com/zonksoft/envTB/archive/master.zip>`_ and unpack it to a directory of your choice.
 
 Now, you have to tell Python where to look for the package. Right-click on *Computer -> Properties -> Advanced -> Environment Variables*. Click on one of the "New" buttons. Enter "PYTHONPATH" as variable name and the path were you extracted the envTB package (e.g. C:\Users\YourUsername\Desktop\envTB-master) as variable value.
 
-You have to install sympy half-manually. Open a terminal (e.g. click *Start -> Run*, type "cmd" and press OK), type "enpkg sympy" and press Enter.
-
-That's it!
-
 Usage
 -----
 
-Whenever you want to use envTB, you can use one of the methods mentioned in the Linux/Usage section. Just start a terminal and type the command (e.g. "python myfile.py", "ipython" or "ipython notebook --pylab=inline" - I personally prefer the first for bigger calculations and the last one for development).
+Whenever you want to use envTB, you can use one of the methods mentioned in the Linux/Usage section. Just start a terminal and type the command, e.g.::
+
+  python myfile.py
+
+or 
+
+  ipython 
+
+or 
+
+  ipython notebook --pylab=inline
+
+I personally prefer the first for bigger calculations and the last one for development).
 
 You can also start Python and IPython from the Start menu.
 
