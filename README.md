@@ -11,6 +11,7 @@ envTB is a Python package for **env** ironment-dependent **T** ight- **B** indin
 * Calculate energy spectrum, bandstructures and density of states of crystal cells and supercells (e.g. defects, quantum dots, nanoribbons)
 * Mix parameters from different DFT calculations to increase accuracy (e.g. use special parameters around a vacancy or at an edge)
 
+
 A main advantage is that the package is easily **scriptable** (which lies in the nature of Python). This means that you don’t need input files, because you define **all necessary parameters in a .py file**, and you can easily **use and export any data** that occurs during the calculation, because the data is saved in local variables that you can plot, export and reuse.
 
 For install instructions and documentation, please see http://zonksoft.github.com/envTB.
