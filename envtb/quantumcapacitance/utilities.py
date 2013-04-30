@@ -23,6 +23,11 @@ class LinearInterpolationNOGrid:
     TODO: fix that.
     
     Also note: Pay attention to the ordering of the ``func`` array.
+    
+    Also note: Due to the possibility of negative indexing of numpy arrays, copies of
+    the data will appear "behind" (=in negative direction) 
+    the domain of definition. I kept this feature/bug because it is nice
+    for orbitals which sit at the box edge.
     """
     
     #for higher performance, implement bilinear and linear 
@@ -31,7 +36,7 @@ class LinearInterpolationNOGrid:
     __dim=None
     __func=None
     __start=None
-    __latticevecs=None
+    __basisvecs=None
     __transformation_matrix=None
     __default=None
     
@@ -67,6 +72,9 @@ class LinearInterpolationNOGrid:
             basisvecs=grid*numpy.eye(self.__dim)
         else:
             basisvecs=numpy.array(grid,copy=False)
+            
+        
+        self.__basisvecs=basisvecs
             
         self.__transformation_matrix=self.__calc_transformation_matrix(basisvecs)
     
@@ -115,6 +123,41 @@ class LinearInterpolationNOGrid:
                                                   x, y, z) 
         except IndexError:
             return self.__default
+
+    def domain_of_definition_box(self):
+        """
+        Box that includes the domain of definition (which itself is a
+        parallelepiped) in the form (corner1,corner2).
+        """
+
+        corner1=self.__start
+        corner2=corner1+numpy.dot(self.__func.shape,self.__basisvecs)
+
+        return corner1,corner2
+        
+    def __point_in_domain_of_definition(self,point):
+        """
+        Check if a point is within the domain of definition.
+
+        Note: the gridpoints on the upper boundary in each direction 
+        are not accessible by the interpolation function.
+        TODO: fix that.
+        """
+        shape = numpy.shape(self.__func)
+        grid_element, _ = self.__find_position_in_no_grid(point)
+        
+        for shape_coord, point_coord in zip(shape, grid_element):
+            if point_coord < 0 or point_coord >= shape_coord-1:
+                return False
+        return True
+        
+    def filter_points_in_domain_of_definition(self, points):
+        """
+        Select points from a given list which are within the
+        domain of definition.
+        """
+        return [point for point in points 
+                if self.__point_in_domain_of_definition(point) is True]
         
     def __find_position_in_no_grid(self,point):
         """

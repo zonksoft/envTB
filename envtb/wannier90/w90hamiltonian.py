@@ -15,6 +15,12 @@ import matplotlib.patches as patches
 import itertools
 from scipy import sparse
 
+import glob
+import os.path
+import numpy.linalg
+import re
+import envtb.quantumcapacitance.utilities as utilities
+
 class Hamiltonian:
     
     
@@ -37,6 +43,8 @@ class Hamiltonian:
     TODO; die reihenfolge in create_supercell ist komisch, zB beruecksichtigt energy_shift schon die vergroesserung
           der zelle
     TODO: apply_electrostatic_potential fuer alle fkten mit 1,2,3 argumenten
+    TODO: remove pyplot dependencies: always take axes and return lines (or
+          something similar pragmatic)
     """
     
     __unitcellmatrixblocks=[]
@@ -631,7 +639,7 @@ class Hamiltonian:
         return numpy.transpose([numpy.linspace(v1[j], \
                 v2[j],nrpoints,endpoint=False) for j in range(dimension)]).tolist()
         
-    def plot_bandstructure(self,kpoints,filename=None,basis='c',usedhoppingcells='all',mark_reclattice_points=False,mark_fermi_energy=False):
+    def plot_bandstructure(self,kpoints,filename=None,basis='c',usedhoppingcells='all',mark_reclattice_points=False,mark_fermi_energy=False,axes=None):
         """
         Calculate the bandstructure at the points kpoints (given in 
         cartesian reciprocal coordinates - use direct_to_cartesian_reciprocal(k)
@@ -657,6 +665,7 @@ class Hamiltonian:
         mark_fermi_energy: If you supply the Fermi energy here, a line will be
         drawn. If True, the Fermi energy will be taken from fermi_energy().
         Default is False.
+        axes: axes to draw into. If None, a new plot will be created.
         
         If MPI is used, ONLY THE ROOT PROCESS plots. This coincides with bandstructure_data,
         where also only the root process returns all the bandstructure data.
@@ -672,9 +681,13 @@ class Hamiltonian:
 
         data=self.bandstructure_data(kpoints,basis,usedhoppingcells)
 
+        if axes is None:
+            fig=pyplot.figure()
+            axes=fig.add_subplot(111)
+
         if self.mpi_rank == 0:
-            
-            bplot=BandstructurePlot()
+
+            bplot=BandstructurePlot(axes)
         
             if isinstance(kpoints,str):
                 reclattice_points,reclattice_names,kpoints=self.standard_paths(kpoints)
@@ -939,29 +952,29 @@ class Hamiltonian:
         """
         if name=='hexagonal':
             path = [
-                    ('G',[0,0,0]),
+                    ('$\Gamma$',[0,0,0]),
                     ('K',[1./3,-1./3,0]),
                     ('M',[0.5,0,0]),
-                    ('G',[0,0,0])
+                    ('$\Gamma$',[0,0,0])
                     ]
         elif name=='fcc':
             path = [
-                    ('G',[0,0,0]),
+                    ('$\Gamma$',[0,0,0]),
                     ('X',[1./2,1./2,0]),
                     ('W',[3./4,1./2,1./4]),
                     ('L',[1./2,1./2,1./2]),
-                    ('G',[0,0,0]),
+                    ('$\Gamma$',[0,0,0]),
                     ('K',[3./4,3./8,3./8])
                     ]
         elif name=='1D':
             path = [
-                    ('G',[0,0,0]),
+                    ('$\Gamma$',[0,0,0]),
                     ('M',[0.5,0,0])         
                     ]            
         elif name=='1D-symmetric':
             path = [
                     ('M',[-0.5,0,0]),   
-                    ('G',[0,0,0]),
+                    ('$\Gamma$',[0,0,0]),
                     ('M',[0.5,0,0])
                     ]                        
         else:
@@ -1356,8 +1369,8 @@ class BandstructurePlot:
 #    __stylelist=['b-','g-','r-','c-','m-','y-','k-']
 #    __plotcounter=0
 
-    def __init__(self):
-        pass    
+    def __init__(self,ax):
+        self.ax = ax
         
     def __kpoints_to_pathlength(self,points):       
         """
@@ -1417,7 +1430,7 @@ class BandstructurePlot:
 #            stylestring=style
             
 #        self.__plotcounter+=1
-        return [pyplot.plot(pathlength,band)[0] for band in data.transpose()]
+        return [self.ax.plot(pathlength,band)[0] for band in data.transpose()]
             
     def plot_fermi_energy(self,fermi_energy):
         return pyplot.axhline(y=fermi_energy,color='r')
@@ -1426,11 +1439,15 @@ class BandstructurePlot:
         positions=self.__kpoints_to_pathlength(reclatticepoints)
 
         if reclatticenames!=None:
-            pyplot.xticks( positions, reclatticenames )
+            self.ax.set_xticks(positions)
+            self.ax.set_xticklabels(reclatticenames)
             
-        return [pyplot.axvline(x=x,dashes=(10,10),color='#AAAAAA') for x in positions]
+        return [self.ax.axvline(x=x,dashes=(10,10),color='#AAAAAA') for x in positions]
             
-    
+    def set_default_axis_labels(self, energy_unit='eV'):
+        self.ax.set_xlabel('k-point path')
+        self.ax.set_ylabel('Energy ['+ energy_unit+']')
+
 #    def save(self,filename):
 #        """
 #        Save the figure to a file. The format is determined
@@ -1447,5 +1464,144 @@ class BandstructurePlot:
 #    def show(self):
 #        pyplot.show()
     
-
     
+# XXX: match the orbital spreads/positions with the real space data
+# in a class or structure
+class WannierRealSpaceOrbitals:
+    """
+    Read wannier90_*.xsf files produced by wannier90. After calling read(),
+    the orbitals are available as LinearInterpolationNOGrid objects in the
+    dictionary orbitals, with the orbital number as key (see example).
+    
+    The path variable given to the constructor can be a directory or a
+    single file.
+    
+    If a *.wout file exists in the given directory/in the same directory
+    as the given single file, the orbital position and spread information
+    will be read from there and made available through the properties spreads and 
+    positions (if it not exists, those will be None).
+    
+    Usage:
+    >>> xsfpath = '/tmp/mycalc'
+    >>> wrso = WannierRealSpaceOrbitals(xsfpath)
+    >>> print wrso.xsffiles
+    >>> wrso.read()
+    >>> for nr,orb in sorted(wrso.orbitals.iteritems()):
+    >>>     points=numpy.array([(0,0,z) for z in numpy.arange(-10,10,0.1)])
+    >>>     points=numpy.array(orb.filter_points_in_domain_of_definition(points))
+    >>>     values=orb.map_function_to_points(points)
+    >>>     plot(points[:,2], values,label=str(nr))
+    >>> legend()
+    """
+    def __init__(self, path):
+        """
+        path: If path points to a directory, all *.xsf files will be read.
+              If it points to a file, only this file will be read.
+        """
+        
+        if os.path.isdir(path):
+            self.directory = path     
+            self.xsffiles=glob.glob(os.path.join(path,'*.xsf'))  
+        else:
+            self.xsffiles = [path]
+            self.directory = os.path.dirname(path)
+            
+        self.orbitals = None
+        
+        self.spreads = None
+        self.positions = None
+        
+    def read(self):
+        """
+        Read the given orbital files and *.wout, if it exists.
+        """
+        self.orbitals = {}
+        for xsffile in self.xsffiles:
+            print '\rread ',xsffile,
+            orbid=int(re.search('wannier90_(.*).xsf',xsffile).groups()[0])
+            self.orbitals[orbid] = self.__read_wannier90_orbital_file(xsffile)
+            
+        woutfiles = glob.glob(os.path.join(self.directory,'*.wout'))
+        
+        if len(woutfiles) > 0:
+            spreads, positions = self.__orbital_spreads_and_positions(woutfiles[0])
+            
+            self.spreads = {}
+            self.positions = {}
+            
+            for i,spread,position in zip(range(1,len(spreads)+1),spreads,positions):
+                if i in self.orbitals.keys():
+                    self.spreads[i] = spread
+                    self.positions[i] = numpy.array(position)
+            
+        return self
+        
+    def __read_wannier90_orbital_file(self,path):
+        """
+        Read *.xsf file generated using wannier90 into a LinearInterpolationNOGrid.
+        """
+        
+        def string_to_number(s):
+            """
+            Convert string to number, if possible (float or integer).
+            """
+            try:
+                return int(s)
+            except ValueError:
+                try:
+                    return float(s)
+                except ValueError:
+                    return s
+            
+        lines = [[string_to_number(element) for element in line.split()] for line in open(path).readlines()]
+        
+        start = lines.index(['BEGIN_BLOCK_DATAGRID_3D'])
+        shape = numpy.array(lines[start+3])
+        nx, ny, nz = shape
+        startpos = lines[start+4]
+        latticevecs = numpy.array(lines[start+5:start+8])
+        
+        orbgrid=numpy.transpose(numpy.reshape(numpy.array(lines[start+8:start+8+int(math.ceil(nx*ny*nz/6))]),(nz,ny,nx)))
+        
+        grid_latticevecs = [vec/ctr for vec,ctr in zip(latticevecs,shape)]
+        
+        return utilities.LinearInterpolationNOGrid(orbgrid, grid_latticevecs,startpos)
+    
+    #Copy from Hamiltonian. XXX Refactor!!    
+    def __orbital_spreads_and_positions(self,wannier90_wout_filename):
+        """
+        Reads the final wannier90 orbital spreads and positions from the
+        wannier90.wout file.
+        
+        wannier90_wout_filename: path to the wannier90.wout file.
+        
+        Return:
+        spreads,positions
+        """
+        
+        #TODO: What about performance? Stuff gets copied pretty often
+        #maybe use this http://stackoverflow.com/a/4944929/1447622
+        
+        f = open(wannier90_wout_filename, 'r')
+        lines = f.readlines()
+        
+        splitspaces = [[x.strip(',') for x in line.split()] for line in lines]
+        #Catastrophe - only a Flatten[] command, but unreadable
+        infile = [list(itertools.chain(*[x.split(',') for x in line])) for line in splitspaces]
+        
+        for nr,line in enumerate(lines):
+            ret = line.find("Number of Wannier Functions")
+            if ret >=0:
+                break
+            
+        nrbands=int(infile[nr][6])
+        
+        start = infile.index(["Final","State"])
+        data = infile[start+1:start+nrbands+1]
+        
+        f.close()
+        
+        spreads = [float(x[10]) for x in data]
+        positions = [[float(x[6][:-1]),float(x[7][:-1]),float(x[8])] for x in data]
+        
+        return spreads,positions        
