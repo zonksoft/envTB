@@ -1,6 +1,7 @@
 import re
 import envtb.general
 import numpy
+import math
 
 #List of Numpy arrays:
 #
@@ -45,17 +46,21 @@ class FileSectionUtilities:
         
 # XXX: info function for each hierarchy step (atom, gaussian, gto set...)
 # XXX: after reading, create one orbital for each angular momentum instead of one total,
-# rewrite concatenate_orbitals and OrbitalList. Make selection for L^2, m, element
+# rewrite concatenate_orbitals and OrbitalList (especially unclean!!) and SimpleMolecularOrbitalPlotter. Make selection for L^2, m, element
+# the plot function should supply this info internally.
 # XXX: merge AtomicOrbitalsGTO/GaussianOrbitalAtomSet and Atom. Create AtomSet.
 # XXX: better names: p = L^2, px = m (at least similar)
 # XXX: make PAH a special case of MolecularOrbitalSet (or similar), add select_pi_system() function
 # for orbital coefficients and implement Factory to select between normal and PAH system from the MoldenFile
 # constructor
+# XXX: MolecularOrbital.normalize() has an unclean copy operation
+# XXX: use orbital type in SimpleMolecularOrbitalPlotter
+# XXX: molecular orb shall remember his number and orb set
 
 class Atom:
     def __init__(self, name, nr, elem, x, y, z):
         self.name, self.nr, self.elem = name, nr, elem
-        self.coord = [x,y,z]
+        self.coordinates = [x,y,z]
         
     @classmethod
     def from_molden_line(cls, line):
@@ -71,8 +76,8 @@ class MolecularOrbital:
             symmetry, energy, spin, occupation, numpy.array(coefficients,copy=False)
             
     def __repr__(self):
-        return '<molecular orbital %s en %e occ %e>'%(self.symmetry,self.energy, 
-                                                      self.occupation)
+        return '<molecular orbital %s en %s occ %s>'%(str(self.symmetry),str(self.energy), 
+                                                      str(self.occupation))
             
     @classmethod
     def from_molden_file(cls, lines):
@@ -83,8 +88,65 @@ class MolecularOrbital:
         
         coefficients = [float(line.split()[1]) for line in lines[4:]]
         
-        return cls(symmetry, energy, spin, occupation, coefficients)    
-    
+        return cls(symmetry, energy, spin, occupation, coefficients)
+        
+    def __add__(self, other):
+        if not isinstance(other, self.__class__):
+            raise NotImplementedError        
+        return self.__class__(None, None, None, None,self.coefficients+other.coefficients)
+        
+    def __sub__(self, other):
+        if not isinstance(other, self.__class__):
+            raise NotImplementedError    
+        return self.__class__(None, None, None, None,self.coefficients-other.coefficients)  
+        
+    def __mul__(self, other):
+        if not (isinstance(other, int) or isinstance(other, float)):
+            raise NotImplementedError
+        return self.__class__(self.symmetry, self.energy, self.spin, self.occupation,self.coefficients*other)
+        
+    def __rmul__(self, other):
+        return self.__mul__(other)
+        
+    def __div__(self, other):
+        if not (isinstance(other, int) or isinstance(other, float)):
+            raise NotImplementedError    
+        return self.__mul__(1./other)
+            
+        
+class SimpleMolecularOrbitalPlotter:
+    def __init__(self, molecule_geometry, atomic_orbitals, scale=500, colors=('blue','red')):
+        self.molecule_geometry = molecule_geometry
+        self.atomic_orbitals = atomic_orbitals
+        self.scale = scale
+        self.colors = colors
+        
+    def plot(self, ax, orbital):
+        atom_coordinates = self.molecule_geometry.coordinates()
+        
+        x = []
+        y = []
+        s = []
+        c = []
+        
+        for orb, coeff in zip(self.atomic_orbitals.concatenate_orbitals().orbital_properties, orbital.coefficients):
+            atom_number = orb[0]
+            orb_type = orb[3]
+            atom_coordinate = atom_coordinates[atom_number - 1]
+            x.append(atom_coordinate[0])
+            y.append(atom_coordinate[1])  
+            s.append(abs(coeff)*self.scale)          
+            if coeff > 0:
+                c.append('red')
+            else:
+                c.append('blue')
+        
+        ax.set_xlabel('x [%s]'%self.molecule_geometry.units)
+        ax.set_ylabel('y [%s]'%self.molecule_geometry.units)
+        return ax.scatter(x, y, s, c, edgecolors='none')
+            
+             
+
 class MolecularOrbitalSet:
     def __init__(self, molecular_orbitals):
         self.molecular_orbitals = molecular_orbitals
@@ -100,17 +162,64 @@ class MolecularOrbitalSet:
             [MolecularOrbital.from_molden_file(block) for block in mo_orbital_blocks]
         
         return cls(molecular_orbitals)
+        
+    def occupations(self):
+        return [orb.occupation for orb in self.molecular_orbitals]
     
     def plot_occupations(self, ax):
-        occupations = [orb.occupation for orb in self.molecular_orbitals]
-        dots = ax.plot(occupations,'.')
-        line = ax.plot(occupations,'-')
+        occupations = self.occupations()
+        line = ax.plot(occupations,marker='.', linestyle='-',markersize=2)
         
         ax.set_xlabel('Orbital number')
         ax.set_ylabel('Occupation')
         
-        return dots, line
+        return line
+        
+    def __getitem__(self, key):
+        return self.molecular_orbitals[key]
+        
+    def overlap(self):
+        """
+        Overlap matrix is S=(V^T)^-1 V^-1
+        V is the transformation matrix with the molecular orbitals as columns.
+        
+        Note that molecular_orbital_matrix() gives V^T.
+        """
+        transformation_matrix = self.molecular_orbital_matrix()
+        return numpy.dot(numpy.linalg.inv(transformation_matrix),numpy.linalg.inv(numpy.transpose(transformation_matrix)))
+        
+    def inner_product(self, orb1, orb2):
+        """
+        orb1 and orb2 can be orbital object or orbital number!
+        """
+        if isinstance(orb1, int):
+           orb1 = self.molecular_orbitals[orb1]
+        if isinstance(orb2, int):
+           orb2 = self.molecular_orbitals[orb2] 
+                     
+        coeff1 = orb1.coefficients
+        coeff2 = orb2.coefficients
+        return numpy.dot(numpy.dot(coeff1, self.overlap()), coeff2)
     
+    def molecular_orbital_matrix(self):
+        #molecular orbitals in rows
+        return numpy.vstack([orb.coefficients for orb in self.molecular_orbitals])
+        
+    def norm(self, orb):
+        return math.sqrt(self.inner_product(orb, orb))
+
+class MoleculeGeometry:
+    def __init__(self, atom_list, units):
+        self.atom_list = atom_list
+        self.units = units
+        
+    def __getitem__(self, key):
+        return self.atom_list[key]
+        
+    def coordinates(self):
+        return [atom.coordinates for atom in self.atom_list]
+            
+        
 class MoldenFile:
     def __load_molden_file(self, fname):
         molden_file = [line.strip() for line in open(fname).readlines()]
@@ -124,9 +233,9 @@ class MoldenFile:
             FileSectionUtilities.get_section(molden_file, sections, '[Atoms]')
         units = atoms_section[0].split()[1]
         
-        atoms = [Atom.from_molden_line(line) for line in atoms_section[1:]]
+        molecule_geometry = MoleculeGeometry([Atom.from_molden_line(line) for line in atoms_section[1:]], units)
     
-        return atoms, units
+        return molecule_geometry
     
     def __get_mo_section(self, molden_file, file_sections):
         return FileSectionUtilities.get_section(molden_file, file_sections, '[MO]')
@@ -137,26 +246,29 @@ class MoldenFile:
     def __parse_molden_file(self,molden_file):
         global gto_section
         file_sections = self.__get_molden_file_sections(molden_file)
-        atoms, length_unit = self.__get_atoms(molden_file, file_sections)
+        molecule_geometry = self.__get_atoms(molden_file, file_sections)
         mo_section = self.__get_mo_section(molden_file, file_sections)
         molecular_orbitals = MolecularOrbitalSet.from_molden_file(mo_section)
         
         gto_section = self.__get_gto_section(molden_file, file_sections)
         atomic_orbitals = AtomicOrbitalsGTO(gto_section)
         
-        return atoms, length_unit, atomic_orbitals, molecular_orbitals 
+        return molecule_geometry, atomic_orbitals, molecular_orbitals 
 
     def __init__(self, fname):
         molden_file = self.__load_molden_file(fname)
         
-        self.atoms, self.length_unit, self.atomic_orbitals, self.molecular_orbitals = \
-            self.__parse_molden_file(molden_file)   
+        self.molecule_geometry, self.atomic_orbitals, self.molecular_orbitals = \
+            self.__parse_molden_file(molden_file)
             
             
 class GaussianOrbitalAtomSet:
     def __init__(self, atom_number, gaussian_orbitals):
         self.gaussian_orbitals = gaussian_orbitals
         self.atom_number = atom_number
+        
+    def __getitem__(self, key):
+        return self.gaussian_orbitals[key]
         
 class GaussianOrbital:
     def __init__(self, orb_type, coefficients):
@@ -203,23 +315,26 @@ class AtomicOrbitalsGTO:
         atom_numbers = [int(x[1].split()[0]) for x in gto_sections_heads]
         self.atom_sets = [self.__parse_orbital_blocks(atom_number, gto_block) for atom_number, gto_block in zip(atom_numbers, gto_blocks)]
         
+    def __getitem__(self, key):
+        return self.atom_sets[key]
+        
     def concatenate_orbitals(self):
-        orbitals = []
+        orbital_properties = []
         for atom in self.atom_sets:
             for gaussian_nr, gaussian_orbital in enumerate(atom.gaussian_orbitals):
                 for angular_momentum_nr, angular_momentum_name in enumerate(gaussian_orbital.angular_momentum_list):
-                    orbitals.append([atom.atom_number, gaussian_nr, gaussian_orbital.orb_type, angular_momentum_name])
-        return OrbitalList(orbitals)
+                    orbital_properties.append([atom.atom_number, gaussian_nr, gaussian_orbital.orb_type, angular_momentum_name])
+        return OrbitalList(orbital_properties)
     
 class OrbitalList:
-    def __init__(self, orbitals):
-        self.orbitals = orbitals
+    def __init__(self, orbital_properties):
+        self.orbital_properties = orbital_properties
         
     def select_angular_momentum(self, angular_momentum, numpy_filter_mode=False):
         #angular momentum acc. to __angular_momentum_list table (s, px, py, pz etc.)
         #use numpy_filter_mode like: orbital_coeffs[selection]
         if numpy_filter_mode:
-            return numpy.array([orbital[3] == angular_momentum for orbital in self.orbitals])
+            return numpy.array([orbital[3] == angular_momentum for orbital in self.orbital_properties])
         else:
-            return [i for i, orbital in enumerate(self.orbitals) if orbital[3] == angular_momentum]
+            return [i for i, orbital in enumerate(self.orbital_properties) if orbital[3] == angular_momentum]
                                  
