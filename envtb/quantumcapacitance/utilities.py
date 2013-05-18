@@ -96,7 +96,7 @@ class LinearInterpolationNOGrid:
         
         f000=f001=f010=f011=f100=f101=f110=f111=0
         x=y=z=0
-        try:
+        if self.__point_in_domain_of_definition(point):
             if(self.__dim==1):
                 f000=self.__func[tuple(grid_element+[0])]
                 f100=self.__func[tuple(grid_element+[1])]   
@@ -121,7 +121,7 @@ class LinearInterpolationNOGrid:
             return self.__trilinear_interpolation(f000, f001, f010, f011, 
                                                   f100, f101, f110, f111, 
                                                   x, y, z) 
-        except IndexError:
+        else:
             return self.__default
 
     def domain_of_definition_box(self):

@@ -20,6 +20,7 @@ import os.path
 import numpy.linalg
 import re
 import envtb.quantumcapacitance.utilities as utilities
+from mayavi import mlab
 
 class Hamiltonian:
     
@@ -269,8 +270,9 @@ class Hamiltonian:
         unitcellnumbers = [[int(x) for x in unitcell[0][0:3]] for unitcell in unitcells]
         unitcellmatrixblocks = []
         for unitcell in unitcells:
-            elementlist = numpy.array([complex(float(line[5]), float(line[6])) for line in unitcell])
-            unitcellmatrixblocks.append(numpy.transpose(elementlist.reshape((self.__nrbands, self.__nrbands)))) #Transpose because first index in wannier90_hr.dat file runs faster than second
+            elementlist = numpy.array([complex(float(line[5]), float(line[6])) for line in unitcell]) 
+            unitcellmatrixblocks.append(sparse.lil_matrix(numpy.transpose(elementlist.reshape((self.__nrbands, self.__nrbands))))) #Transpose because first index in wannier90_hr.dat file runs faster than second
+            #automatically disregards small entries - threshold unknown to me :)
         
         return unitcellmatrixblocks, unitcellnumbers
 
@@ -714,7 +716,7 @@ class Hamiltonian:
 
         return
         
-    def drawunitcells(self,unitcellnumbers='all'):
+    def drawunitcells(self,ax,unitcellnumbers='all'):
         """
         Create a plot of a list of unit cells.
         
@@ -742,9 +744,6 @@ class Hamiltonian:
          Path.LINETO,
          Path.CLOSEPOLY,
          ]
-
-        fig = pyplot.figure()
-        ax = fig.add_subplot(111)
         
         for verts in verticeslist:
             path = Path(verts, codes)
@@ -1099,7 +1098,7 @@ class Hamiltonian:
         """
                 
         #TODO: Naming (numbers,positions,coordinates) is ambiguous
-        
+
         oldunitcellmatrixblocks=self.__unitcellmatrixblocks
         oldunitcellnumbers=self.__unitcellnumbers
         oldorbitalpositions=numpy.array(self.__orbitalpositions,copy=False)
@@ -1341,6 +1340,33 @@ class Hamiltonian:
         points=numpy.array(self.__orbitalpositions)[:,:dim]
         potential=potential.map_function_to_points(points)
         return self.create_modified_hamiltonian(onsite_potential=potential)
+        
+    def matrixelements(self):
+        """
+        The matrix elements defining the system.
+        
+        Do not change unless you know what you are doing!
+        
+        It is a list of sparse matrices. Every list item contains
+        the hopping matrix elements to a specific unit cell, as defined
+        by unitcellnumbers(). The first matrix index is the number
+        of the orbital in the main cell, the second matrix index is the
+        number of the orbital in the other cell.
+        """
+        
+        return self.__unitcellmatrixblocks
+        
+    def hopping_cell_coordinates(self):
+        """
+        List of coordinates of the orbitals in all cells where
+        there are hopping matrix elements. The order of the cells
+        is according to unitcellnumbers().
+        """
+        unitcellcoordinates = numpy.array(self.unitcellcoordinates())
+        orbitalpositions = numpy.array(self.__orbitalpositions)
+        
+        return numpy.array([[orb+cell for orb in orbitalpositions] for cell in unitcellcoordinates])
+        
     
     def shift_fermi_energy_to_zero(self):
         """
@@ -1433,7 +1459,7 @@ class BandstructurePlot:
         return [self.ax.plot(pathlength,band)[0] for band in data.transpose()]
             
     def plot_fermi_energy(self,fermi_energy):
-        return pyplot.axhline(y=fermi_energy,color='r')
+        return self.ax.axhline(y=fermi_energy,color='r')
         
     def plot_lattice_point_vlines(self,reclatticepoints,reclatticenames=None):
         positions=self.__kpoints_to_pathlength(reclatticepoints)
@@ -1464,9 +1490,142 @@ class BandstructurePlot:
 #    def show(self):
 #        pyplot.show()
     
-    
-# XXX: match the orbital spreads/positions with the real space data
-# in a class or structure
+
+class WannierOrbital(utilities.LinearInterpolationNOGrid):
+    def __init__(self, orbgrid, grid_latticevecs, startpos, number=None, position=None, spread=None):
+        utilities.LinearInterpolationNOGrid.__init__(self,orbgrid, grid_latticevecs,startpos)
+        
+        self.position = position
+        self.spread = spread
+        self.number = number
+        
+    def set_position(self, position):
+        self.position = position
+        return self
+        
+    def set_number(self, number):
+        self.number = number
+        return self        
+        
+    def set_spread(self, spread):
+        self.spread = spread
+        return self
+        
+    def plot_orbital_3d(self, box, grid, contours):
+        """
+        Save figure using:
+        
+        >>> from mayavi import mlab
+        >>> mlab.savefig(fname)
+        """
+        default_orb_value = 0
+        def nonetonan(x):
+            if x is None:
+                return default_orb_value
+            else:
+                return x
+            
+        relative_points = numpy.arange(-box,box,grid)
+        points=numpy.array([[[self.position+[x,y,z] 
+                              for z in relative_points] 
+                             for y in relative_points] 
+                            for x in relative_points])
+        values=[[[nonetonan(self(point)) for point in line] for line in plane] for plane in points]
+        
+        xv,yv,zv=numpy.mgrid[-box:box:grid,-box:box:grid,-box:box:grid]
+        
+        mplot=mlab.contour3d(xv,yv,zv,values,contours=contours)
+        
+        return mplot
+        
+    def plot_orbital_2d(self, ax, box, grid, drop_axis,mode='imshow'):
+            
+        default_orb_value = numpy.nan   
+        def nonetonan(x):
+            if x is None:
+                return default_orb_value
+            else:
+                return x
+
+        relative_points = numpy.arange(-box,box,grid)
+        
+        if drop_axis == 'z':
+            points=numpy.array([[self.position+[x,y,0]  
+                                 for y in relative_points] 
+                                for x in relative_points])
+            extent=[self.position[0]-box,
+                    self.position[0]+box,
+                    self.position[1]-box,
+                    self.position[1]+box
+                   ]
+        if drop_axis == 'x':
+            points=numpy.array([[self.position+[0,y,z]  
+                                 for z in relative_points] 
+                                for y in relative_points])
+            extent=[self.position[1]-box,
+                    self.position[1]+box,
+                    self.position[2]-box,
+                    self.position[2]+box
+                   ]                                
+        if drop_axis == 'y':
+            points=numpy.array([[self.position+[x,0,z]  
+                                 for x in relative_points] 
+                                for z in relative_points])  
+            extent=[self.position[2]-box,
+                    self.position[2]+box,
+                    self.position[0]-box,
+                    self.position[0]+box
+                   ]                                                                                              
+                                
+        values=numpy.array([[nonetonan(self(point)) for point in line] for line in points]).transpose()
+        if mode=='imshow':
+            im=ax.imshow(values,origin='lower',interpolation='nearest', extent=extent)
+        if mode=='contour':
+            im=ax.contour(values,[-1,1,2,3,4,5,6,7,8,9,10],extent=extent)
+        #cax = fig.add_axes([0.88, 0.3, 0.03, 0.4])
+       # pyplot.subplots_adjust(wspace=0,hspace=0,left=0.1,right=0.85,bottom=0.1,top=0.95)
+
+        #cb=pyplot.colorbar(im,orientation='vertical',cax=cax)
+        
+        return im,points,values
+        
+    def plot_orbital_1d(self, ax, box, grid, axis):
+        default_orb_value = 0    
+        def nonetonan(x):
+            if x is None:
+                return default_orb_value
+            else:
+                return x
+
+        relative_points = numpy.arange(-box,box,grid)
+        
+        if axis == 'z':
+            points=numpy.array([self.position+[0,0,z]
+                                 for z in relative_points])
+            abscissa=points[:,2]
+        if axis == 'x':
+            points=numpy.array([self.position+[x,0,0]  
+                                 for x in relative_points])
+            abscissa=points[:,0]
+        if axis == 'y':
+            points=numpy.array([self.position+[0,y,0]  
+                                 for y in relative_points])
+            abscissa=points[:,1]
+                                
+        values=[self(point) for point in points]
+
+        
+        pl=ax.plot(abscissa,values, label=str(self.number))
+        #cax = fig.add_axes([0.88, 0.3, 0.03, 0.4])
+       # pyplot.subplots_adjust(wspace=0,hspace=0,left=0.1,right=0.85,bottom=0.1,top=0.95)
+
+        #cb=pyplot.colorbar(im,orientation='vertical',cax=cax)
+        
+        return pl
+
+
+
+
 class WannierRealSpaceOrbitals:
     """
     Read wannier90_*.xsf files produced by wannier90. After calling read(),
@@ -1508,9 +1667,6 @@ class WannierRealSpaceOrbitals:
             
         self.orbitals = None
         
-        self.spreads = None
-        self.positions = None
-        
     def read(self):
         """
         Read the given orbital files and *.wout, if it exists.
@@ -1525,15 +1681,12 @@ class WannierRealSpaceOrbitals:
         
         if len(woutfiles) > 0:
             spreads, positions = self.__orbital_spreads_and_positions(woutfiles[0])
-            
-            self.spreads = {}
-            self.positions = {}
-            
+                        
             for i,spread,position in zip(range(1,len(spreads)+1),spreads,positions):
                 if i in self.orbitals.keys():
-                    self.spreads[i] = spread
-                    self.positions[i] = numpy.array(position)
-            
+                    self.orbitals[i].set_position(numpy.array(position))
+                    self.orbitals[i].set_spread(spread)    
+                    self.orbitals[i].set_number(i)        
         return self
         
     def __read_wannier90_orbital_file(self,path):
@@ -1552,6 +1705,9 @@ class WannierRealSpaceOrbitals:
                     return float(s)
                 except ValueError:
                     return s
+                    
+        def flatten(list2d):
+            return [item for sublist in list2d for item in sublist]                    
             
         lines = [[string_to_number(element) for element in line.split()] for line in open(path).readlines()]
         
@@ -1561,11 +1717,11 @@ class WannierRealSpaceOrbitals:
         startpos = lines[start+4]
         latticevecs = numpy.array(lines[start+5:start+8])
         
-        orbgrid=numpy.transpose(numpy.reshape(numpy.array(lines[start+8:start+8+int(math.ceil(nx*ny*nz/6))]),(nz,ny,nx)))
+        orbgrid=numpy.transpose(numpy.reshape(numpy.array(flatten(lines[start+8:start+8+int(math.ceil(nx*ny*nz/6.))])),(nz,ny,nx)))
         
         grid_latticevecs = [vec/ctr for vec,ctr in zip(latticevecs,shape)]
         
-        return utilities.LinearInterpolationNOGrid(orbgrid, grid_latticevecs,startpos)
+        return WannierOrbital(orbgrid, grid_latticevecs,startpos)
     
     #Copy from Hamiltonian. XXX Refactor!!    
     def __orbital_spreads_and_positions(self,wannier90_wout_filename):
@@ -1604,4 +1760,72 @@ class WannierRealSpaceOrbitals:
         spreads = [float(x[10]) for x in data]
         positions = [[float(x[6][:-1]),float(x[7][:-1]),float(x[8])] for x in data]
         
-        return spreads,positions        
+        return spreads,positions
+        
+    def print_positions_and_spreads(self):
+        for i, orb in self.orbitals.iteritems():
+            x,y,z = orb.position
+            print 'orbital',i,': position',orb.position, 'spread', orb.spread
+            
+    def plot_positions(self):
+        fig=pyplot.figure()
+        ax = fig.add_subplot(1,1,1)
+        for i, orb in gnrorbset.orbitals.iteritems():
+            x,y,z = orb.position
+            ax.text(x,y+0.12,str(i),horizontalalignment='center')
+            ax.plot([x], [y], 'r.', markersize=10.0)
+            
+            
+class Wannier90WoutFile:
+    def __init__(self,wannier90_wout_filename):
+        self.spreads, self.positions = \
+            self.__orbital_spreads_and_positions(wannier90_wout_filename)
+
+    #Copy from Hamiltonian. XXX Refactor!!    
+    def __orbital_spreads_and_positions(self,wannier90_wout_filename):
+        """
+        Reads the final wannier90 orbital spreads and positions from the
+        wannier90.wout file.
+        
+        wannier90_wout_filename: path to the wannier90.wout file.
+        
+        Return:
+        spreads,positions
+        """
+        
+        #TODO: What about performance? Stuff gets copied pretty often
+        #maybe use this http://stackoverflow.com/a/4944929/1447622
+        
+        f = open(wannier90_wout_filename, 'r')
+        lines = f.readlines()
+        
+        splitspaces = [[x.strip(',') for x in line.split()] for line in lines]
+        #Catastrophe - only a Flatten[] command, but unreadable
+        infile = [list(itertools.chain(*[x.split(',') for x in line])) for line in splitspaces]
+        
+        for nr,line in enumerate(lines):
+            ret = line.find("Number of Wannier Functions")
+            if ret >=0:
+                break
+            
+        nrbands=int(infile[nr][6])
+        
+        start = infile.index(["Final","State"])
+        data = infile[start+1:start+nrbands+1]
+        
+        f.close()
+        
+        spreads = [float(x[10]) for x in data]
+        positions = [[float(x[6][:-1]),float(x[7][:-1]),float(x[8])] for x in data]
+        
+        return spreads,positions
+        
+    def print_positions_and_spreads(self):
+        for i in range(len(self.spreads)):
+            print 'orbital',i+1,': position',self.positions[i], 'spread', self.spreads[i]
+            
+    def plot_positions(self, ax):
+        for i in range(len(self.spreads)):
+            x,y,z = self.positions[i]
+            ax.text(x,y+0.12,str(i),horizontalalignment='center')
+            ax.plot([x], [y], 'r.', markersize=10.0)
