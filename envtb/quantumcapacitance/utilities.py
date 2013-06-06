@@ -40,29 +40,6 @@ class LinearInterpolationNOGrid:
     __transformation_matrix=None
     __default=None
     
-    def calculate_on_square_grid(self, gridsize):
-        """
-        The function returns an evenly spaced grid of gridsize and 
-        values of the function on this grid.
-        """
-        corner1, corner2 = self.domain_of_definition_box()
-        
-        grid = [[[[i, j, k] for i in numpy.arange(corner1[0], corner2[0], gridsize)]
-                  for j in numpy.arange(corner1[1], corner2[1])]
-                 for k in numpy.arange(corner1[2], corner2[2])]
-        
-        vals = [[[self.__call__(point) for point in row] 
-                 for row in area] 
-                for area in grid]
-        
-        return grid, vals
-    
-    def data(self):
-        """
-        See __init__ docstring for structure!
-        """
-        return self.__func
-    
     def __init__(self,func,grid=1,start=None,default=None):
         """
         func: multi-dimensional array containing the function
@@ -225,9 +202,6 @@ class LinearInterpolationNOGrid:
         points: list of points
         """
         return [self.__call__(point) for point in points]
-    
-    def latticevecs(self):
-        return self.__basisvecs
     
     def dim(self):
         """
