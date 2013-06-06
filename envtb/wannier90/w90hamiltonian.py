@@ -20,7 +20,8 @@ import os.path
 import numpy.linalg
 import re
 import envtb.quantumcapacitance.utilities as utilities
-from mayavi import mlab
+#from mayavi import mlab
+import envtb.utility.fourier
 
 class Hamiltonian:
     
@@ -1622,7 +1623,20 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid):
         #cb=pyplot.colorbar(im,orientation='vertical',cax=cax)
         
         return pl
-
+    
+    def fourier_transform(self):
+        """
+        With the returned FourierTransform object, you get the
+        Fourier transform data and convenient utility functions.
+        
+        >>> ft = wannier_orbital.fourier_transform()
+        >>> fig = pyplot.figure()
+        >>> ax = fig.add_subplot(111)
+        >>> print ft(kx=0.1, ky=0.1, kz=0.1)
+        >>> ft.plot(ax)
+        """
+        return envtb.utility.fourier.FourierTransform(self.latticevecs(), self.data())
+    
 
 
 
