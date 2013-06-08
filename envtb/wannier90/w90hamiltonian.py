@@ -1492,7 +1492,63 @@ class BandstructurePlot:
 #        pyplot.show()
     
 
-class WannierOrbital(utilities.LinearInterpolationNOGrid):
+class LocalizedOrbital:
+    pass
+
+class LocalizedOrbitalFromFunction(LocalizedOrbital):
+    def __init__(self, fct, latticevecs, startpos, number=None, position=None, spread=None):
+        """
+        fct: function which takes x,y,z
+        """
+        # XXX: orbitals shouldnt know about their latticevecs
+        # also, NOInterpolationLattice has it too
+        self.__fct = fct
+        self.__latticevecs = latticevecs
+        self.__startpos = startpos
+        self.number = number
+        self.position = position
+        self.spread = spread
+    
+    @classmethod
+    def from_xyz_string(cls, fct_string):
+        self = cls()
+        self.fct = lambda x, y, z: eval(fct_string)
+        return self
+    
+    def __call__(self, *args, **kwargs):
+        return self.__fct(*args, **kwargs)
+    
+    def fourier_transform(self, nrpoints_per_direction=50):
+        """
+        With the returned FourierTransform object, you get the
+        Fourier transform data and convenient utility functions.
+        
+        >>> ft = wannier_orbital.fourier_transform()
+        >>> fig = pyplot.figure()
+        >>> ax = fig.add_subplot(111)
+        >>> print ft(kx=0.1, ky=0.1, kz=0.1)
+        >>> ft.plot(ax)
+        """
+        return envtb.utility.fourier.FourierTransform(
+            self.latticevecs(), self.function_on_grid(nrpoints_per_direction=nrpoints_per_direction))
+    
+    def latticevecs(self):
+        return self.__latticevecs
+    
+    def function_on_grid(self, nrpoints_per_direction):
+        """
+        Grid lattice vectors are fractions of the lattice vectors.
+        """
+        
+        fct_on_grid = numpy.array([[[
+                  self.__call__(*(self.__startpos + numpy.dot([i, j, k], self.__latticevecs)))
+                  for k in numpy.arange(0, 1, 1./nrpoints_per_direction)]
+                  for j in numpy.arange(0, 1, 1./nrpoints_per_direction)]
+                  for i in numpy.arange(0, 1, 1./nrpoints_per_direction)])
+        
+        return fct_on_grid
+
+class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
     def __init__(self, orbgrid, grid_latticevecs, startpos, number=None, position=None, spread=None):
         utilities.LinearInterpolationNOGrid.__init__(self,orbgrid, grid_latticevecs,startpos)
         
@@ -1638,9 +1694,15 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid):
         return envtb.utility.fourier.FourierTransform(self.latticevecs(), self.data())
     
 
+class LocalizedOrbitalSet:
+    def __init__(self, orbitals):
+        """
+        orbitals: dict of orbitals
+        """
+        self.orbitals = orbitals
+        
 
-
-class WannierRealSpaceOrbitals:
+class WannierRealSpaceOrbitals(LocalizedOrbitalSet):
     """
     Read wannier90_*.xsf files produced by wannier90. After calling read(),
     the orbitals are available as LinearInterpolationNOGrid objects in the
