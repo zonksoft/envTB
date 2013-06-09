@@ -49,25 +49,42 @@ class RealSpaceWaveFunctionFourierTransform:
 
     # XXX: write function to go from wave function in vector to array
 
-    def fourier_transform(self, latticevecs, wave_function):
+    def fourier_transform(self, latticevecs, wave_functions):
         """
-        Coefficients of the wave function on a nonorthogonal grid (in a
-        multidimensional array), one array per orbital.
+        wave_functions: Coefficients of the wave function on a 
+        nonorthogonal grid (in a multidimensional array),
+        one array per orbital in a dictionary which the
+        orbital number as key.
         latticevecs: grid that spans the unit lattice
         """
-        wave_function = numpy.array(wave_function)
-        transformed_wave_function = numpy.fft.fftn(wave_function)
-        transformed_lattice_vectors = FourierTransform.calculate_fourier_grid(latticevecs, wave_function.shape)
 
         transformed_coefficients = {}
-        for orbnr, orb_transformation in self.fourier_transformations.iteritems():
+        transformed_wave_functions = {}
+        for orbnr, orb_transformation in \
+            self.fourier_transformations.iteritems():
             # XXX: if you transform several wave functions, you can save this
+
+            wave_function = numpy.array(wave_functions[orbnr])
+            transformed_wave_function = numpy.fft.fftn(wave_function)
+            transformed_lattice_vectors, transformed_grid = \
+                FourierTransform.calculate_fourier_grid(
+                    latticevecs, wave_function.shape)
+
             transformed_orb_values_on_grid = numpy.array([[[
-                        orb_transformation(point) for point in row]
-                    for row in slice]
-                for slice in transformed_lattice_vectors])
+                orb_transformation.transformed_data(point) for point in row]
+                for row in slice] for slice in transformed_grid])
+
+            # XXX: not an exact test
+            try:
+                wannier_transformed = transformed_wave_function * transformed_orb_values_on_grid
+            except TypeError:
+                raise TypeError('wf lattice too small for wannier dft')
 
             transformed_coefficients[orbnr] = \
-                transformed_wave_function * transformed_orb_values_on_grid
+                utilities.LinearInterpolationNOGrid(
+                transformed_wave_function * transformed_orb_values_on_grid,
+                transformed_lattice_vectors)
 
-        return transformed_coefficients
+            transformed_wave_functions[orbnr] = transformed_wave_function
+
+        return transformed_coefficients, transformed_wave_functions

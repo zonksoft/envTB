@@ -1513,9 +1513,13 @@ class LocalizedOrbital:
     pass
 
 class LocalizedOrbitalFromFunction(LocalizedOrbital):
-    def __init__(self, fct, latticevecs, startpos, number=None, position=None, spread=None):
+    def __init__(self, fct, latticevecs, startpos, number=None,
+                 position=None, spread=None, gridpoints=10):
         """
         fct: function which takes x,y,z
+        gridpoints: default number of gridpoints per dimension if 
+        function has to be discretized (e.g. for discrete Fourier transform)
+        by function_on_grid().
         """
         # XXX: orbitals shouldnt know about their latticevecs
         # also, NOInterpolationLattice has it too
@@ -1525,7 +1529,8 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
         self.number = number
         self.position = position
         self.spread = spread
-    
+        self.gridpoints = gridpoints
+
     @classmethod
     def from_xyz_string(cls, fct_string):
         self = cls()
@@ -1535,7 +1540,7 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
     def __call__(self, *args, **kwargs):
         return self.__fct(*args, **kwargs)
     
-    def fourier_transform(self, nrpoints_per_direction=50):
+    def fourier_transform(self):
         """
         With the returned FourierTransform object, you get the
         Fourier transform data and convenient utility functions.
@@ -1547,22 +1552,25 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
         >>> ft.plot(ax)
         """
         return envtb.utility.fourier.FourierTransform(
-            self.latticevecs(), self.function_on_grid(nrpoints_per_direction=nrpoints_per_direction))
+            self.latticevecs(), self.function_on_grid())
     
     def latticevecs(self):
         return self.__latticevecs
     
-    def function_on_grid(self, nrpoints_per_direction):
+    def function_on_grid(self, gridpoints=None):
         """
         Grid lattice vectors are fractions of the lattice vectors.
         """
-        
+
+        if gridpoints is None:
+            gridpoints = self.gridpoints
+
         fct_on_grid = numpy.array([[[
                   self.__call__(*(self.__startpos + numpy.dot([i, j, k], self.__latticevecs)))
-                  for k in numpy.arange(0, 1, 1./nrpoints_per_direction)]
-                  for j in numpy.arange(0, 1, 1./nrpoints_per_direction)]
-                  for i in numpy.arange(0, 1, 1./nrpoints_per_direction)])
-        
+                  for k in numpy.arange(0, 1, 1. / gridpoints)]
+                  for j in numpy.arange(0, 1, 1. / gridpoints)]
+                  for i in numpy.arange(0, 1, 1. / gridpoints)])
+
         return fct_on_grid
 
 class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
