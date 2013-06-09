@@ -31,7 +31,7 @@ def split_by_empty_lines(data, ignorecomments=False):
                 blocks[-1].append(line)
 
     return blocks
-    
+
 def string_to_number(s):
     """
     Convert string to number, if possible (float or integer).
