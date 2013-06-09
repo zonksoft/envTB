@@ -1528,9 +1528,9 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
     
     @classmethod
     def from_xyz_string(cls, fct_string):
-        instance = cls()
-        instance.fct = lambda x, y, z: eval(fct_string)
-        return instance
+        self = cls()
+        self.fct = lambda x, y, z: eval(fct_string)
+        return self
     
     def __call__(self, *args, **kwargs):
         return self.__fct(*args, **kwargs)
