@@ -1540,7 +1540,7 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
     def __call__(self, *args, **kwargs):
         return self.__fct(*args, **kwargs)
     
-    def fourier_transform(self):
+    def fourier_transform(self, shape=None, axes=None):
         """
         With the returned FourierTransform object, you get the
         Fourier transform data and convenient utility functions.
@@ -1552,7 +1552,7 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
         >>> ft.plot(ax)
         """
         return envtb.utility.fourier.FourierTransform(
-            self.latticevecs(), self.function_on_grid())
+            self.latticevecs(), self.function_on_grid(), shape, axes)
     
     def latticevecs(self):
         return self.__latticevecs
