@@ -202,11 +202,10 @@ class Hamiltonian:
         for nr,line in enumerate(lines):
             ret = line.find("E-fermi :")
             if ret >=0:
-                break   
+                fermi_energy=float(lines[nr].split()[2])
+                return fermi_energy
                 
-        fermi_energy=float(lines[nr].split()[2])
-        
-        return fermi_energy
+        raise ValueError('Fermi energy not found in OUTCAR file')
         
     def __read_nth_nn_file(self,nnfile):
         latticevecsstr,orbdatastr,defaulthoppingstr,nndatastr=general.split_by_empty_lines(general.read_file_as_table(nnfile),True)
