@@ -1205,7 +1205,7 @@ class Hamiltonian:
            
         #Mix in matrix elements from other hamiltonian
         if mixin_ham!=None:
-            raise NotImplementedError
+            #The unitcellmatrixblocks of the mixin_ham will be partly converted to lil_matrix. Not so nice.
             othermatrixblocks=mixin_ham._Hamiltonian__unitcellmatrixblocks
             otherunitcellnumbers=mixin_ham.unitcellnumbers()
             
@@ -1214,12 +1214,21 @@ class Hamiltonian:
                 otherhoppingelements=myhoppingelements
             else:
                 otherhoppingelements=[(mixin_assoc[i],mixin_assoc[j]) for i,j in myhoppingelements]
-                
+            """    
             for mycellidx,mycellnr in enumerate(unitcellnumbers):
                 if mycellnr in otherunitcellnumbers and (mixin_cells==None or mycellnr in mixin_cells):
                     othercellidx=otherunitcellnumbers.index(mycellnr)
                     for (i,j),(k,l) in zip(myhoppingelements,otherhoppingelements):
                         unitcellmatrixblocks[mycellidx][i,j]=othermatrixblocks[othercellidx][k,l]
+            """            
+            for mycellidx,mycellnr in enumerate(unitcellnumbers):
+                if mycellnr in otherunitcellnumbers and (mixin_cells==None or mycellnr in mixin_cells):
+                    othercellidx=otherunitcellnumbers.index(mycellnr)
+                    unitcellmatrixblocks_sparse[mycellidx] = unitcellmatrixblocks_sparse[mycellidx].tolil() #what if it is already a lil_matrix?
+                    othermatrixblocks[othercellidx] = othermatrixblocks[othercellidx].tolil()
+                    for (i,j),(k,l) in zip(myhoppingelements,otherhoppingelements):
+                        #print 'substitute %i, %i with %i, %i'%(i,j,k,l)
+                        unitcellmatrixblocks_sparse[mycellidx][i,j]=othermatrixblocks[othercellidx][k,l]                        
                         
 
         #Add onsite potential = electrostatic potential
