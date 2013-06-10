@@ -2,10 +2,16 @@ import re
 import envtb.general
 import numpy
 import math
+import envtb.quantumchemistry.gssorb_writer
+from envtb.quantumchemistry import disentanglement
 
 #List of Numpy arrays:
 #
 #Molecular orbital coefficients
+
+#Enumeration:
+#Everything starts at zero, except for the atom numbers read from the molden file, accessible
+#through Atom.nr.
 
 
 #Idee: Spezialfaelle (zB PAH-Molden-file) ableiten und mit extra fkt ausstatten (zB select_pi_system())
@@ -56,6 +62,11 @@ class FileSectionUtilities:
 # XXX: MolecularOrbital.normalize() has an unclean copy operation
 # XXX: use orbital type in SimpleMolecularOrbitalPlotter
 # XXX: molecular orb shall remember his number and orb set
+# XXX: instead of saving orbital nr in MolecularOrbital: save MolecularOrbitalSet (might not work if a MolecularOrbital is used in more than one Set... a list is necessary! phew...) and
+# make function nr() that requests position in list
+# XXX: link orbital geometry and atomic orbitals with MolecularOrbital
+# XXX: encapsulate occupation and energy from MolecularOrbital, because they might change if the orbital is used differently
+# XXX: link norm calculation MolecularOrbitalSet.norm(mo) to MolecularOrbital.norm(). Independent of the set an orbital belongs to, the norm is always the same!
 
 class Atom:
     def __init__(self, name, nr, elem, x, y, z):
@@ -71,16 +82,16 @@ class Atom:
         return '<atom %s %i %s>'%(self.name,self.nr,str(self.coord))
     
 class MolecularOrbital:
-    def __init__(self, symmetry, energy, spin, occupation, coefficients):
-        self.symmetry, self.energy, self.spin, self.occupation, self.coefficients= \
-            symmetry, energy, spin, occupation, numpy.array(coefficients,copy=False)
+    def __init__(self, nr, symmetry, energy, spin, occupation, coefficients):
+        self.nr, self.symmetry, self.energy, self.spin, self.occupation, self.coefficients= \
+            nr, symmetry, energy, spin, occupation, numpy.array(coefficients,copy=False)
             
     def __repr__(self):
-        return '<molecular orbital %s en %s occ %s>'%(str(self.symmetry),str(self.energy), 
-                                                      str(self.occupation))
+        return '<molecular orbital %s en %s occ %s nr %s>'%(str(self.symmetry),str(self.energy), 
+                                                      str(self.occupation),str(self.nr))
             
     @classmethod
-    def from_molden_file(cls, lines):
+    def from_molden_file(cls, nr, lines):
         symmetry = re.match('Sym(?:.*)=(.*)',lines[0]).groups()[0].strip()
         energy = float(re.match('Ene(?:.*)=(.*)',lines[1]).groups()[0].strip())
         spin = re.match('Spin(?:.*)=(.*)',lines[2]).groups()[0].strip()
@@ -88,22 +99,22 @@ class MolecularOrbital:
         
         coefficients = [float(line.split()[1]) for line in lines[4:]]
         
-        return cls(symmetry, energy, spin, occupation, coefficients)
+        return cls(nr, symmetry, energy, spin, occupation, coefficients)
         
     def __add__(self, other):
         if not isinstance(other, self.__class__):
             raise NotImplementedError        
-        return self.__class__(None, None, None, None,self.coefficients+other.coefficients)
+        return self.__class__(None, None, None, None, None,self.coefficients+other.coefficients)
         
     def __sub__(self, other):
         if not isinstance(other, self.__class__):
             raise NotImplementedError    
-        return self.__class__(None, None, None, None,self.coefficients-other.coefficients)  
+        return self.__class__(None, None, None, None, None,self.coefficients-other.coefficients)  
         
     def __mul__(self, other):
         if not (isinstance(other, int) or isinstance(other, float)):
             raise NotImplementedError
-        return self.__class__(self.symmetry, self.energy, self.spin, self.occupation,self.coefficients*other)
+        return self.__class__(self.nr, self.symmetry, self.energy, self.spin, self.occupation,self.coefficients*other)
         
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -112,7 +123,7 @@ class MolecularOrbital:
         if not (isinstance(other, int) or isinstance(other, float)):
             raise NotImplementedError    
         return self.__mul__(1./other)
-            
+                    
         
 class SimpleMolecularOrbitalPlotter:
     def __init__(self, molecule_geometry, atomic_orbitals, scale=500, colors=('blue','red')):
@@ -159,7 +170,7 @@ class MolecularOrbitalSet:
         mo_orbital_blocks = \
             FileSectionUtilities.split_by_sections(mo_section, mo_section_heads)
         molecular_orbitals = \
-            [MolecularOrbital.from_molden_file(block) for block in mo_orbital_blocks]
+            [MolecularOrbital.from_molden_file(nr, block) for nr, block in enumerate(mo_orbital_blocks)]
         
         return cls(molecular_orbitals)
         
@@ -207,6 +218,46 @@ class MolecularOrbitalSet:
         
     def norm(self, orb):
         return math.sqrt(self.inner_product(orb, orb))
+          
+    def save_to_molcas_gssorb_file(self, fname, infostring, add_dummy_energies=False):
+        """
+        fname: *.GssOrb
+
+        add_dummy_energies: Creates dummy energies in steps of 0.1 eV instead of
+        the energies saved in the instance (which are probably zero if you are
+        using this feature)
+        """
+        
+        orbitals_coefficients = [orb.coefficients for orb in self.molecular_orbitals]
+        occupations = [orb.occupation for orb in self.molecular_orbitals]
+        if not add_dummy_energies:
+            one_electron_energies = [orb.energy for orb in self.molecular_orbitals]
+        else:
+            nr_orbitals = len(self.molecular_orbitals)
+            one_electron_energies = numpy.arange(-nr_orbitals/2., nr_orbitals/2.)*0.1
+        envtb.quantumchemistry.gssorb_writer.gssorb_writer(
+            fname, infostring, orbitals_coefficients, occupations, 
+            one_electron_energies)
+            
+    def disentangle(self, orbitals_to_disentangle):
+        """
+        Returns a new instance with disentangled orbitals.
+        """
+        
+        disentangled_orbs, _ = disentanglement.disentangle_mo_set(orbitals_to_disentangle)
+        disentangled_orbs_flat = [orb for orbpair in disentangled_orbs for orb in orbpair] #implicitly sorts the disentangled orbitals. here: a0,b0,+, a0,b0,-, a1,b1,+, ...
+
+        new_mo_list = list(self.molecular_orbitals)
+        
+        for orig, dis in zip(orbitals_to_disentangle, disentangled_orbs_flat):
+            new_mo_list[new_mo_list.index(orig)] = dis
+            
+        return MolecularOrbitalSet(new_mo_list)
+        
+        
+    def print_orbital_list(self):
+        print self.molecular_orbitals
+        
 
 class MoleculeGeometry:
     def __init__(self, atom_list, units):
@@ -229,8 +280,12 @@ class MoldenFile:
         return FileSectionUtilities.get_section_heads_and_positions(molden_file,'^\[')
     
     def __get_atoms(self, molden_file, sections):
-        atoms_section = \
-            FileSectionUtilities.get_section(molden_file, sections, '[Atoms]')
+        try:
+            atoms_section = \
+                FileSectionUtilities.get_section(molden_file, sections, '[Atoms]')
+        except ValueError:
+            atoms_section = \
+                FileSectionUtilities.get_section(molden_file, sections, '[ATOMS]')            
         units = atoms_section[0].split()[1]
         
         molecule_geometry = MoleculeGeometry([Atom.from_molden_line(line) for line in atoms_section[1:]], units)
