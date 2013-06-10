@@ -43,3 +43,13 @@ def string_to_number(s):
             return float(s)
         except ValueError:
             return s
+            
+def subplot_height(width, tiles, idx):
+    """
+    Gives the argument for fig.add_subplot() for a given width and number
+    of tiles.
+    
+    Example:
+    >>> ax = fig.add_subplot(*general.subplot_height(5,20,i))
+    """
+    return width, tiles/width + 1, idx
