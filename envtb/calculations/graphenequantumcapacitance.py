@@ -74,12 +74,35 @@ def QuantumCapacitanceVoltageSweep(
         sol = solver(inhom)
         charges.append(container.charge(sol, charge_operator, charge_elements))
     return numpy.array(charges)
-
-
+    
+def ClassicalCapacitance(container, charge_operator,
+                         solver, voltage_elements, charge_elements):
+        
+        my_gridsize = 1e-9
+        voltage = 1
+        for elem in voltage_elements:
+            elem.potential = voltage
+        inhom = container.createinhomogeneity()
+        sol = solver(inhom)
+        charge1 = container.charge(sol, charge_operator, charge_elements)  
+        
+        voltage = 0
+        for elem in voltage_elements:
+            elem.potential = voltage
+        inhom = container.createinhomogeneity()
+        sol = solver(inhom)
+        charge0 = container.charge(sol, charge_operator, charge_elements) 
+                
+        capacitance = (sum(charge1)-sum(charge0)) / \
+            len(charge_elements)*my_gridsize
+            
+        return capacitance
+        
 def QuantumCapacityOfGraphene2DModelWithSidegates(
         hoehe, breite, graphenepos,
         graphenebreite, vstart, vend, dv, graphenesidegatebreite=None,
-        vsidegate=[(0, 0)], graphenesidegate_behavior='metal'):
+        vsidegate=[(0, 0)], graphenesidegate_behavior='metal',
+        normalize_to_classical_capacitance=False):
     # breite=400
     # hoehe=600
     temperature = 300
@@ -110,6 +133,7 @@ def QuantumCapacityOfGraphene2DModelWithSidegates(
     print "basisvecs"
     qcsolver.refresh_basisvecs()
     capacitance_list = []
+    classical_capacitance_list = []
 
     for vleftsidegate, vrightsidegate in vsidegate:
         for elem in graphenesidegateelementsleft:
@@ -119,6 +143,13 @@ def QuantumCapacityOfGraphene2DModelWithSidegates(
         for elem in graphenesidegateelementsright:
             elem.potential = vrightsidegate
             elem.fermi_energy = vrightsidegate
+            
+        print "calculate classical capacitance"
+
+        classical_capacitance = ClassicalCapacitance(percont, lapl,
+                         solver, backgateelements, grapheneelements)  
+                         
+        print classical_capacitance      
 
         print "loop " + str(vrightsidegate)
         charges = QuantumCapacitanceVoltageSweep(
@@ -129,9 +160,13 @@ def QuantumCapacityOfGraphene2DModelWithSidegates(
         totalcharge = numpy.array([sum(x) for x in charges])
         capacitance2 = (totalcharge[2:]-totalcharge[:-2]) / \
             len(grapheneelements)*my_gridsize/(2*dv)
+            
+        if normalize_to_classical_capacitance:
+            capacitance2 /= classical_capacitance
         capacitance_list.append(capacitance2)
-
-    return voltages[1:-1], capacitance_list
+        classical_capacitance_list.append(classical_capacitance)
+        
+    return voltages[1:-1], capacitance_list, classical_capacitance_list
 
 
 def LoopQuantumCapacitanceWithSidegatesFixedSystem(

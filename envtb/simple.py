@@ -4,6 +4,7 @@ from envtb.wannier90 import w90hamiltonian
 import numpy
 from envtb.quantumcapacitance import electrostatics, quantumcapacitance
 from matplotlib import pyplot
+from calculations.graphenequantumcapacitance import ClassicalCapacitance
 """
 This file contains functions for often used procedures.
 They can also be considered as use cases.
@@ -512,7 +513,7 @@ def GrapheneQuantumCapacitance(equation='potential'):
     lapl = electrostatics.Laplacian2D2ndOrderWithMaterials(gridsize, gridsize)
     # Create Rectangle
     periodicrect = electrostatics.Rectangle(hoehe, breite, 1., lapl)
-
+    
     # Set boundary condition at the top
     for y in range(breite):
         periodicrect[0, y].neumannbc = (0, 'xf')
@@ -548,6 +549,9 @@ def GrapheneQuantumCapacitance(equation='potential'):
 
     # Invert discretization matrix
     solver, inhomogeneity = percont.lu_solver()
+    
+    classical_capacitance = ClassicalCapacitance(percont, lapl,
+        solver, backgateelements, grapheneelements)    
 
     # Create QuantumCapacitanceSolver object.
     # Depending on equation, either fermi_energy_charge_dependence or
@@ -593,4 +597,4 @@ def GrapheneQuantumCapacitance(equation='potential'):
     ax.set_ylabel('GNR capacitance [$10^{-6} F/m^2$]')
     pyplot.plot(voltages[1:-1], 1e6*capacitance)
 
-    return voltages[1:-1], capacitance
+    return voltages[1:-1], capacitance, classical_capacitance
