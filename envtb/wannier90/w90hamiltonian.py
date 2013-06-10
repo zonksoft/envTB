@@ -453,7 +453,7 @@ class Hamiltonian:
                    
         return self.__unitcellmatrixblocks[self.__unitcellcoordinates_to_nrs([[0,0,0]])[0]]
     
-    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',return_evecs=False):
+    def bloch_eigenvalues(self,k,basis='c',usedhoppingcells='all',return_evecs=False, dense_blocks=None):
         """
         Calculates the eigenvalues of the eigenvalue problem with
         Bloch boundary conditions for a given vector k.
@@ -467,6 +467,9 @@ class Hamiltonian:
         basis: 'c' or 'd'. Determines if the kpoints are given in cartesian
         reciprocal coordinates or direct reciprocal coordinates.
         return_evecs: If True, evecs are also returned as the second return value.
+        dense_blocks: if the function is invoked many times, supply the dense matrix blocks to increase
+        speed. Create them with dense_blocks=[block.toarray() for block in self.__unitcellmatrixblocks].
+        
         """
         
         if usedhoppingcells == 'all':
@@ -481,12 +484,17 @@ class Hamiltonian:
         
         bloch_phases=self.__bloch_phases(k)
         #I think this needs lil_matrix, coo_matrix didn't work.
-        blochmatrix = sparse.lil_matrix((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
+        #blochmatrix = sparse.lil_matrix((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
+        blochmatrix = numpy.zeros((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
         
-        for i in usedunitcellnrs:
-            blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
+        if dense_blocks is None:
+            for i in usedunitcellnrs:
+                blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
+        else:
+            for i in usedunitcellnrs:
+                blochmatrix += bloch_phases[i] * dense_blocks[i]        
 
-        evals,evecs=linalg.eig(blochmatrix.todense())
+        evals,evecs=linalg.eig(blochmatrix)
         
         if return_evecs==True:
             evals_ordering=self.__sorting_order(evals)
@@ -580,7 +588,8 @@ class Hamiltonian:
         else:
             path=kpoints
 
-        data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells)
+        dense_blocks=[block.toarray() for block in self.__unitcellmatrixblocks]
+        data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells,dense_blocks=dense_blocks)
                           for kpoint in path])
 
         if self.mpi_comm:
