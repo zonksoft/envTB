@@ -1,7 +1,3 @@
-import numpy as np
-from hamiltonian import *
-
-
 class Potential1D:
     
     def range(self):
@@ -72,3 +68,4 @@ class Potential2DFromFunction(Potential2D):
         docstring
         """
         self.potential = f
+
