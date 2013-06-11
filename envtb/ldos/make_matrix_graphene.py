@@ -11,13 +11,19 @@ dx = np.sqrt(3) * a
 
 def make_H0(n):
    
-    m = (np.diag(e0 * np.ones(n, dtype = float)) + np.diag(g1 * np.ones(n-1, dtype = float), 1) + np.diag(g1 * np.ones(n-1, dtype = float), -1) + np.diag(g2 * np.ones(n-2, dtype = float), 2) + np.diag(g2 * np.ones(n-2, dtype = float), -2) +  + np.diag(g3 * np.ones(n-3, dtype = float), 3) + np.diag(g3 * np.ones(n-3, dtype = float), -3))
+    m = (np.diag(e0 * np.ones(n, dtype = complex)) + 
+         np.diag(g1 * np.ones(n-1, dtype = complex), 1) + 
+         np.diag(g1 * np.ones(n-1, dtype = complex), -1) + 
+         np.diag(g2 * np.ones(n-2, dtype = complex), 2) + 
+         np.diag(g2 * np.ones(n-2, dtype = complex), -2) +  
+         np.diag(g3 * np.ones(n-3, dtype = complex), 3) + 
+         np.diag(g3 * np.ones(n-3, dtype = complex), -3))
    
     return m #sparse.dia_matrix(m)
 
 def make_HI(n):
    
-    m = g2 * np.diag(np.ones(n, dtype = float))
+    m = g2 * np.diag(np.ones(n, dtype = complex))
 
     for i in xrange(0, n-3, 4):
         m[i+1, i] = g1
@@ -35,6 +41,46 @@ def make_HI(n):
 
     return m #sparse.dia_matrix(m)
 
+def make_periodic_H0(n):
+    
+    m = (np.diag(e0 * np.ones(n, dtype = complex)) + 
+         np.diag(g1 * np.ones(n-1, dtype = complex), 1) + 
+         np.diag(g1 * np.ones(n-1, dtype = complex), -1) + 
+         np.diag(g2 * np.ones(n-2, dtype = complex), 2) + 
+         np.diag(g2 * np.ones(n-2, dtype = complex), -2) +  
+         np.diag(g3 * np.ones(n-3, dtype = complex), 3) + 
+         np.diag(g3 * np.ones(n-3, dtype = complex), -3))
+    
+    if n > 4:
+        m0 = np.array([[g2,g1],[g3,g2]])
+        m[:2,-2:] = m0[:,:]
+        m[-2:, :2] = np.transpose(m0)[:,:]
+    
+    return m
+    
+def make_periodic_HI(n):
+   
+    m = g2 * np.diag(np.ones(n, dtype = complex))
+
+    for i in xrange(0, n-3, 4):
+        m[i+1, i] = g1
+        m[i+2, i+3] = g1
+        m[i+2, i+1] = g3
+        m[i+1, i+2] = g3
+        m[i+1, i+3] = g2
+        m[i+2, i] = g2
+   
+    for i in xrange(0, n-5, 4):
+        m[i+5, i+3] = g2
+        m[i+2, i+4] = g2
+        m[i+4, i+3] = g3
+        m[i+3, i+4] = g3
+    
+    m[0, -1] = g3
+    m[-1, 0] = g3
+    
+    return m #sparse.dia_matrix(m)
+
 
 def block_matrix(m, n):
   
@@ -47,11 +93,11 @@ def block_matrix(m, n):
 
 def make_A(H0_, HI_, E):
     n = len(H0_) 
-    m = np.zeros((2*len(H0_), 2*len(H0_)), dtype = float)
+    m = np.zeros((2*len(H0_), 2*len(H0_)), dtype = complex)
 
     H_I_ = np.linalg.inv(np.transpose(HI_))
    
-    mE = E * np.identity(n, dtype = float)
+    mE = E * np.identity(n, dtype = complex)
 
     m[:n, :n] = np.dot(H_I_, mE - H0_)
     m[:n, n:] = np.dot(-H_I_, HI_)

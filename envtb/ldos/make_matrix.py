@@ -8,7 +8,9 @@ JtoEV = 1./1.6 * 10**(19)
 t = hbar**2 / 2./ m/ a**2 * JtoEV
 
 def make_H0(Np, Ec = 0):
-    return ((4 * t + Ec) * np.diag(np.ones(Np, dtype = float))) - ( t * np.diag(np.ones(Np-1, dtype = float), 1)) - (t * np.diag(np.ones(Np-1, dtype = float), -1))
+    return ((4 * t + Ec) * np.diag(np.ones(Np, dtype = complex))) -\
+           (t * np.diag(np.ones(Np-1, dtype = complex), 1)) -\
+           (t * np.diag(np.ones(Np-1, dtype = complex), -1))
 
 
 def make_periodic_H0(n, Ec = 0):
@@ -21,9 +23,8 @@ def make_periodic_H0(n, Ec = 0):
 
 def make_HI(n):
    
-    m = -t * np.identity(n,dtype = float)
+    return -t * np.identity(n,dtype = complex)
 
-    return m
 
 
 def make_H(H0, HI, nx):
