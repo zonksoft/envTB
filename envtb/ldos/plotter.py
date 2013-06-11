@@ -10,7 +10,7 @@ class Plotter:
     def plotting(self):
         f = plt.figure()
         sp = f.add_subplot(111)
-        sp.plot(self.xval, self.yval, 'o-')
+        sp.plot(self.xval, self.yval, 'o-', ms=1.)
         return f
     
     def plot_pcolor(self, X, Y, Z):
@@ -89,7 +89,9 @@ class Plotter:
             minel = np.min(m).real
         if maxel is None:
             maxel = np.max(m).real
-                
+        
+        print np.min(m).real, np.max(m).real
+                              
         for i in xrange(len(m)):
                         
             if maxel != 0.0:
