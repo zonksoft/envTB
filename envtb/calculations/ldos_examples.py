@@ -173,7 +173,8 @@ def define_zigzag_ribbon_w90(nnfile, width, length, magnetic_B=None):
     print ham.maincell_hamiltonian_matrix()
     ham2 = ham.create_supercell_hamiltonian(
         [[0, 0, 0], [1, 0, 0]],
-        [[1, -1, 0], [1, 1, 0], [0, 0, 1]])
+        [[1, -1, 0], [1, 1, 0], [0, 0, 1]],
+        usedorbitals=(0, 1))
     
     ham3 = ham2.create_supercell_hamiltonian(
         [[0, i, 0] for i in range(unitcells)], 
@@ -239,7 +240,7 @@ def run_examples():
     #electron_density_example()
     #electron_density_graphene_example()
     #plot_ldos_graphene_example()
-    plot_ldos_graphene_armchair_example()
+    #plot_ldos_graphene_armchair_example()
     #plot_ldos_example_2Dpot()
 
 run_examples()
