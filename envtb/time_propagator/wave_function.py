@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import ldos.plotter
+import envtb.ldos.plotter
 
 class WaveFunction():
     
@@ -13,7 +13,7 @@ class WaveFunction():
         
     def plot_wave_function(self, maxel=None):
         
-        ldos.plotter.Plotter().plot_density(
+        envtb.ldos.plotter.Plotter().plot_density(
             np.abs(self.wf1d), self.coords, max_el=maxel) 
         plt.axes().set_aspect('equal')
           
