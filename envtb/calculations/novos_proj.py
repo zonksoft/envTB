@@ -62,7 +62,7 @@ def use_w90(Ny=43, Nx=40, magnetic_B=None):
     
     potential = envtb.ldos.potential.Potential2DFromFunction(
         lambda x: 0.1 * np.sin(0.25*(x[1])/2.)**2 +\
-                  0.1 * np.sin(0.25*(x[0]-0.5*x[1])/2.)**2)
+                  0.1 * np.sin(0.25*(x[0])/2.)**2)
     
     ham2 = ham.apply_potential(potential)
     envtb.ldos.plotter.Plotter().plot_potential(ham2, ham)
