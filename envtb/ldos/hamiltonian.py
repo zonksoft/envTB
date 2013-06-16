@@ -176,9 +176,9 @@ class GeneralHamiltonian:
     def plot_bandstructure(self, krange = np.linspace(0.0,2.5,300)):
         w = np.array([self.__get_spec(k) for k in krange])
         [plt.plot(krange, w[:,i]) for i in xrange(len(w[0,:]))]
-        [plt.axhline(y = np.sign(n) * np.sqrt(2. * 1.6 * 10**(-19) * 
-                                              1.05 * 10**(-34) * 0.82**2 * 
-                                              10**12 * 300 * np.abs(n))/1.6*10**(19)) for n in range(-6,7)]
+        #[plt.axhline(y = np.sign(n) * np.sqrt(2. * 1.6 * 10**(-19) * 
+        #                                      1.05 * 10**(-34) * 0.82**2 * 
+        #                                      10**12 * 300 * np.abs(n))/1.6*10**(19)) for n in range(-6,7)]
         plt.ylim(-1.5, 1.5)
         plt.xlabel(r'$k_x$')
         plt.ylabel(r'$E,eV$')
