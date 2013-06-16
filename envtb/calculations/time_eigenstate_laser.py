@@ -11,10 +11,10 @@ import envtb.ldos.plotter
 import envtb.time_propagator.current
 
 directory = '/tmp/'
-dt = 0.01 * 10**(-12)
+dt = 0.004 * 10**(-12)
 NK = 12
 laser_freq = 10**(12)
-laser_amp = 0.2 * 10**(1)
+laser_amp = 0.8 * 10**(-2)
 Nc = 2 #number of laser cycles
 
 def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
@@ -89,7 +89,7 @@ def propagate_graphene_pulse(Nx=30, Ny=30, frame_num=1500):
     anarr = []
     anarr.append([np.dot(np.conjugate(np.transpose(vsort[:,i])), wf_final.wf1d) for i in xrange(len(w))])
     
-    for i in xrange(150):
+    for i in xrange(3500):
         print 'frame %(i)d' % vars()
         time += dt_new
         ham2 = ham.apply_vector_potential(Ax(time))
@@ -101,8 +101,9 @@ def propagate_graphene_pulse(Nx=30, Ny=30, frame_num=1500):
             file_out = directory+'f%03d_2d.png' % i)
         
         #make expansion
-        anarr.append([np.abs(np.dot(np.conjugate(np.transpose(vsort[:,i])), wf_final.wf1d)) for i in xrange(len(w))])
-        tar.append(time)
+        if np.mod(i,10) == 0:
+            anarr.append([np.abs(np.dot(np.conjugate(np.transpose(vsort[:,i])), wf_final.wf1d)) for i in xrange(len(w))])
+            tar.append(time)
         
     plt.subplot(1,2,1)
     Ax.plot_pulse()
