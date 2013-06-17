@@ -14,7 +14,7 @@ directory = '/tmp/'
 dt = 0.004 * 10**(-12)
 NK = 12
 laser_freq = 10**(12)
-laser_amp = 0.8 * 10**(-2)
+laser_amp = 1.0 * 10**(-2)
 Nc = 2 #number of laser cycles
 
 def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
@@ -62,7 +62,7 @@ def propagate_graphene_pulse(Nx=30, Ny=30, frame_num=1500):
     plt.plot(wsort.real, 'o', ms=2)
     plt.show()
     
-    Nstate = 476
+    Nstate = 545
     
     envtb.ldos.plotter.Plotter().plot_density(
         vector=abs(v[:, Nstate]), coords=ham.coords)
@@ -77,17 +77,15 @@ def propagate_graphene_pulse(Nx=30, Ny=30, frame_num=1500):
     plt.show()
     
     #main loop
-    
+    wf_out = open('wave_functions.out','w')
     dt_new = dt
     NK_new = NK
     time = 0.0
     
     wf_final = envtb.time_propagator.wave_function.WaveFunction(vec=v[:, Nstate],coords=ham.coords)
     maxel = max(wf_final.wf1d)
+    wf_out.writelines(`time`+'   '+`wf_final.wf1d.tolist()`+'\n')
     
-    tar = [0.0]
-    anarr = []
-    anarr.append([np.dot(np.conjugate(np.transpose(vsort[:,i])), wf_final.wf1d) for i in xrange(len(w))])
     
     for i in xrange(3500):
         print 'frame %(i)d' % vars()
@@ -102,9 +100,38 @@ def propagate_graphene_pulse(Nx=30, Ny=30, frame_num=1500):
         
         #make expansion
         if np.mod(i,10) == 0:
-            anarr.append([np.abs(np.dot(np.conjugate(np.transpose(vsort[:,i])), wf_final.wf1d)) for i in xrange(len(w))])
-            tar.append(time)
-        
+            
+            #tar.append(time)
+            wf_out.writelines(`time`+'   '+`wf_final.wf1d.tolist()`+'\n')
+           
+    wf_out.close()
+    
+
+def data_analysis(file_name='wave_function.out', Nx=30, Ny=30, Nstate=889):
+    
+    ham = envtb.ldos.hamiltonian.HamiltonianGraphene(Nx,Ny)
+    w, v = ham.eigenvalue_problem()
+    isort = np.argsort(w)
+    
+    wsort = np.sort(w)
+    vsort = np.zeros(v.shape, dtype=complex)
+    for i in xrange(len(isort)):
+        vsort[:,i] = v[:,isort[i]]
+    
+    fin = open(file_name,'r')
+    tar = []
+    wf_arr = []
+    anarr = []
+    for ln in fin:
+        tar.append(float(ln.split()[0]))
+        wf_arr.append(eval(ln.split()[1]))
+    
+    #expansion
+    for j in xrange(len(wf_arr)):
+        anarr.append([np.abs(np.dot(np.conjugate(np.transpose(vsort[:,i])), wf_arr[j])) for i in xrange(len(w))])
+    
+    Ax = envtb.time_propagator.vector_potential.LP_SinSqEnvelopePulse(
+        amplitude_E0 = laser_amp, frequency = laser_freq, Nc = Nc)
     plt.subplot(1,2,1)
     Ax.plot_pulse()
     plt.ylim(0, max(tar))
@@ -114,6 +141,7 @@ def propagate_graphene_pulse(Nx=30, Ny=30, frame_num=1500):
     plt.pcolor(X, Y, anarr)
     plt.colorbar()
     plt.show()
+    
     
         
 propagate_graphene_pulse()
