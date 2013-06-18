@@ -17,7 +17,6 @@ class FourierTransform:
             cell_shape = data_on_grid.shape
         else:
             cell_shape = [x*y for x, y in zip(shape, data_on_grid.shape)]
-
             
         if axes is None:
             axes = (0,1,2)
