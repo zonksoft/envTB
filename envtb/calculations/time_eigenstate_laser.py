@@ -107,8 +107,8 @@ def propagate_graphene_pulse(Nx=30, Ny=30, frame_num=1500):
     wf_out.close()
     
 
-def data_analysis(file_name='wave_function.out', Nx=30, Ny=30, Nstate=889):
-    
+def data_analysis(file_name='/home/larisa/progs/envTB/envtb/calculations/wave_functions.out', Nx=30, Ny=30, Nstate=545):
+    from matplotlib.colors import LogNorm
     ham = envtb.ldos.hamiltonian.HamiltonianGraphene(Nx,Ny)
     w, v = ham.eigenvalue_problem()
     isort = np.argsort(w)
@@ -123,8 +123,8 @@ def data_analysis(file_name='wave_function.out', Nx=30, Ny=30, Nstate=889):
     wf_arr = []
     anarr = []
     for ln in fin:
-        tar.append(float(ln.split()[0]))
-        wf_arr.append(eval(ln.split()[1]))
+        tar.append(float(ln.split('   ')[0]))
+        wf_arr.append(np.array(eval(ln.split('   ')[1])))
     
     #expansion
     for j in xrange(len(wf_arr)):
@@ -138,10 +138,13 @@ def data_analysis(file_name='wave_function.out', Nx=30, Ny=30, Nstate=889):
     
     plt.subplot(1,2,2)
     X,Y = np.meshgrid(wsort, tar)
-    plt.pcolor(X, Y, anarr)
+    plt.pcolor(X, Y, anarr, norm=LogNorm(vmin=1.0e-3, vmax=1.0))
+    plt.xlim(min(wsort), max(wsort))
+    plt.ylim(0.0, max(tar))
     plt.colorbar()
     plt.show()
     
     
         
-propagate_graphene_pulse()
+data_analysis()
+#propagate_graphene_pulse()
