@@ -9,20 +9,21 @@ class FourierTransform:
         the supercell, the original data describes the original cell.
         latticevecs: The grid lattice vectors of data_on_grid.
         data_on_grid: 3D array, data grid.
+        shape: shape of the wave function coefficients.
         """
         self.original_data = data_on_grid
         self.original_latticevecs = latticevecs
         if shape is None:
             cell_shape = data_on_grid.shape
         else:
-            cell_shape = shape
+            cell_shape = [x*y for x, y in zip(shape, data_on_grid.shape)]
             
         if axes is None:
             axes = (0,1,2)
         
-        self.reciprocal_latticevecs, self.transformed_grid = \
-            FourierTransform.calculate_fourier_grid(self.original_latticevecs,
-                                                    cell_shape)
+        #self.reciprocal_latticevecs, self.transformed_grid = \
+        #    FourierTransform.calculate_fourier_grid(self.original_latticevecs,
+        #                                            cell_shape)
         self.transformed_data = self.__calculate_fourier_transform(self.original_data, cell_shape, axes)
         
         
@@ -76,7 +77,16 @@ class RealSpaceWaveFunctionFourierTransform:
 
     # XXX: write function to go from wave function in vector to array
 
-    def fourier_transform(self, latticevecs, wave_functions):
+    def __periodic_matrix(self, matrix, ni, nj, nk):
+        """
+        ni: row multiplicator
+        nj: column multiplicator
+        nk: slice multiplicator
+        """
+
+        return numpy.dstack((numpy.vstack((numpy.hstack((matrix,)*nj),)*ni),)*nk)
+
+    def fourier_transform(self, latticevecs, wave_functions, axes=(0,1,2)):
         """
         wave_functions: Coefficients of the wave function on a 
         nonorthogonal grid (in a multidimensional array),
@@ -88,8 +98,10 @@ class RealSpaceWaveFunctionFourierTransform:
         If wave_functions contains 2D arrays, an xy plane is assumed and
         the z coordinate of the real space orbitals is not transformed.
         """
+
         global transformed_wave_function
         global transformed_orb_values_on_grid
+
         transformed_coefficients = {}
         transformed_wave_functions = {}
         for orbnr, orb in \
@@ -102,14 +114,10 @@ class RealSpaceWaveFunctionFourierTransform:
                 FourierTransform.calculate_fourier_grid(
                     latticevecs, wave_function.shape)
 
-            if len(wave_function.shape) == 2:
-                transformed_orb_values_on_grid = orb.fourier_transform(wave_function.shape[:2], (0, 1))
-                wannier_transformed = numpy.dstack((transformed_wave_function,)*transformed_orb_values_on_grid.shape[2]) * transformed_orb_values_on_grid.transformed_data
-            elif len(wave_function.shape) == 3:
-                transformed_orb_values_on_grid = orb.fourier_transform(wave_function.shape)
-                wannier_transformed = transformed_wave_function * transformed_orb_values_on_grid.transformed_data
-            else:
-                raise ValueError('1D not supported')
+            transformed_orb_values_on_grid = orb.fourier_transform(wave_function.shape, axes)
+            periodicity = [i/j for i,j in zip(transformed_orb_values_on_grid.transformed_data.shape, transformed_wave_function.shape)]
+            print periodicity
+            wannier_transformed = self.__periodic_matrix(transformed_wave_function,*periodicity) * transformed_orb_values_on_grid.transformed_data
 
             transformed_coefficients[orbnr] = wannier_transformed
             transformed_wave_functions[orbnr] = transformed_wave_function
