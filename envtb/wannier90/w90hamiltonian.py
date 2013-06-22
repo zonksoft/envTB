@@ -1510,16 +1510,33 @@ class BandstructurePlot:
     
 
 class LocalizedOrbital:
-    pass
+    """
+    Base class for a localized orbital.
+    """
+    def fourier_transform(self):
+        pass
 
 class LocalizedOrbitalFromFunction(LocalizedOrbital):
     def __init__(self, fct, latticevecs, startpos, number=None,
                  position=None, spread=None, gridpoints=10):
         """
-        fct: function which takes x,y,z
+        Describes a localized orbital, given by a function fct.
+
+        You can evaluate the function by using the call operator ().
+
+        The alternative constructor from_xyz_string() creates a function
+        from a string using eval().
+
+        fct: function which takes x,y,z as arguments
         gridpoints: default number of gridpoints per dimension if 
         function has to be discretized (e.g. for discrete Fourier transform)
         by function_on_grid().
+
+        Usage:
+        >>> a=600
+        >>> localized_orbital_from_function = w90.LocalizedOrbitalFromFunction(
+        ... lambda x, y, z: (numpy.pi/a)**(3./2)*numpy.exp(-a*(x**2+y**2+z**2)),
+        ... numpy.eye(3), [-0.5,-0.5,-0.5], gridpoints=50)
         """
         # XXX: orbitals shouldnt know about their latticevecs
         # also, NOInterpolationLattice has it too
@@ -1533,6 +1550,9 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
 
     @classmethod
     def from_xyz_string(cls, fct_string):
+        """
+        Creates a function from a string using eval().
+        """
         self = cls()
         self.fct = lambda x, y, z: eval(fct_string)
         return self
@@ -1542,14 +1562,9 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
     
     def fourier_transform(self, shape=None, axes=None):
         """
+        Calculate the Fourier transform of the orbital.
         With the returned FourierTransform object, you get the
         Fourier transform data and convenient utility functions.
-        
-        >>> ft = wannier_orbital.fourier_transform()
-        >>> fig = pyplot.figure()
-        >>> ax = fig.add_subplot(111)
-        >>> print ft(kx=0.1, ky=0.1, kz=0.1)
-        >>> ft.plot(ax)
         """
         return envtb.utility.fourier.FourierTransform(
             self.latticevecs(), self.function_on_grid(), shape, axes)
@@ -1559,7 +1574,10 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
     
     def function_on_grid(self, gridpoints=None):
         """
-        Grid lattice vectors are fractions of the lattice vectors.
+        Evaluate the function on a grid.
+
+        gridpoints: Grid points per dimension. If None,
+        the setting from the constructor is used.
         """
 
         if gridpoints is None:
@@ -1575,8 +1593,18 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
 
 class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
     def __init__(self, orbgrid, grid_latticevecs, startpos, number=None, position=None, spread=None):
-        utilities.LinearInterpolationNOGrid.__init__(self,orbgrid, grid_latticevecs,startpos)
+        """
+        Represents a Wannier orbital.
         
+        orbgrid: Orbital data
+        grid_latticevecs: Grid lattice vectors
+        startpos: Starting position of the grid.
+        number: Orbital index
+        position: Center position
+        spread: Orbital spread
+        """
+        utilities.LinearInterpolationNOGrid.__init__(self,orbgrid, grid_latticevecs,startpos)
+
         self.position = position
         self.spread = spread
         self.number = number
@@ -1705,24 +1733,23 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
         
         return pl
     
-    def fourier_transform(self):
+    def fourier_transform(self, shape=None, axes=None):
         """
+        Calculate the Fourier transform of the orbital.
         With the returned FourierTransform object, you get the
         Fourier transform data and convenient utility functions.
-        
-        >>> ft = wannier_orbital.fourier_transform()
-        >>> fig = pyplot.figure()
-        >>> ax = fig.add_subplot(111)
-        >>> print ft(kx=0.1, ky=0.1, kz=0.1)
-        >>> ft.plot(ax)
         """
-        return envtb.utility.fourier.FourierTransform(self.latticevecs(), self.data())
+        return envtb.utility.fourier.FourierTransform(
+            self.latticevecs(), self.data(), shape, axes)
     
 
 class LocalizedOrbitalSet:
     def __init__(self, orbitals):
         """
-        orbitals: dict of orbitals
+        Base class for basis orbital sets. You can also use the base class
+        to arrange your own set.
+        
+        orbitals: dict of orbitals (instance of LocalizedOrbital)
         """
         self.orbitals = orbitals
         
