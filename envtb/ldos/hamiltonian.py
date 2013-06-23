@@ -5,7 +5,6 @@ import make_matrix_graphene_armchair_5nn as mmg_a
 import potential
 import copy
 import matplotlib.pylab as plt
-import envtb.time_propagator.vector_potential
 #from scipy.sparse import linalg
 #from scipy import sparse
 
@@ -62,17 +61,6 @@ class GeneralHamiltonian:
                                 for i in xrange(self.Ntot)])
  
         return self.copy_ins(mt) 
-    
-    def dipole_approximation(self, A, t):
-        
-        if not isinstance(A, envtb.time_propagator.vector_potential.VectorPotential):
-            raise TypeError("A has to be instance of VectorPotential")
-        
-        E_field = A.get_electric_field(t)
-        dip_pot = np.diag(np.array([ E_field[0] * (self.coords[i][0] - self.coords[467][0]) for i in xrange(self.Ntot)]))
-        
-        return self.copy_ins(self.mtot + dip_pot)
-        
     
     def apply_vector_potential(self, A):
         """
