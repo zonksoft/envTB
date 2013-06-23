@@ -82,7 +82,7 @@ def plot_ldos_example(Nx=20, Ny=30):
     return None
 # end def plot_ldos_example
 
-def plot_ldos_graphene_example(Nx=2, Ny=100, magnetic_B=150.0):
+def plot_ldos_graphene_example(Nx=2, Ny=300, magnetic_B=150.0):
     
     ham_nm = envtb.ldos.hamiltonian.HamiltonianGraphene(Ny, Nx)
     ham = ham_nm.apply_magnetic_field(magnetic_B)
@@ -92,7 +92,7 @@ def plot_ldos_graphene_example(Nx=2, Ny=100, magnetic_B=150.0):
     local_dos = envtb.ldos.local_density.LocalDensityOfStates(ham)
     
     ham.plot_bandstructure()
-               
+
     plt.subplot(2,2,1)
     envtb.ldos.plotter.Plotter().plot_density(local_dos(0.0), ham.coords)
     plt.title(r'$E = 0.0$')
@@ -115,7 +115,7 @@ def plot_ldos_graphene_armchair_example(Nx=2, Ny=200, magnetic_B=150.0):
     ham = ham_nm.apply_magnetic_field(magnetic_B, gauge='landau_y')
     local_dos = envtb.ldos.local_density.LocalDensityOfStates(ham)
     
-    ham.plot_bandstructure()          
+    ham.plot_bandstructure()
     
     plt.subplot(2,2,1)
     envtb.ldos.plotter.Plotter().plot_density(local_dos(0.0), ham.coords)
@@ -239,7 +239,7 @@ def run_examples():
     #plot_ldos_example()
     #electron_density_example()
     #electron_density_graphene_example()
-    #plot_ldos_graphene_example()
+    plot_ldos_graphene_example()
     #plot_ldos_graphene_armchair_example()
     #plot_ldos_example_2Dpot()
 
