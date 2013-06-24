@@ -262,5 +262,7 @@ class ZigzagGNRHelper:
         splitvecs=[numpy.append(splitvec,[0]*self.paddingy) for splitvec in splitvecs]
         return numpy.concatenate((numpy.array(splitvecs).flatten(),numpy.zeros((self.paddingy+self.height)*self.paddingx)))
 
-    def vector_to_grid(self, vec):
-        return numpy.reshape(vec,(-1,self.height*4))
+    def vector_to_grid(self, vec, height=None):
+        if height is None:
+            height = self.height*4
+        return numpy.reshape(vec,(-1,height))
