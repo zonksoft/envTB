@@ -23,7 +23,7 @@ class Plotter:
         return None 
    
     def plot_density(self, vector, coords, max_el=None):
-        
+       
         if max_el == None:
             maxel = np.max(vector)
         else:
@@ -84,8 +84,8 @@ class Plotter:
         ymin = 0.0
         ymax = 0.0
         
-        print ham_mit_pot.mtot
-        m = np.array(ham_mit_pot.mtot.diagonal() - ham_bare.mtot.diagonal())[0]
+        
+        m = np.array(ham_mit_pot.mtot.diagonal() - ham_bare.mtot.diagonal())
         
         if minel is None:
             minel = np.min(m).real

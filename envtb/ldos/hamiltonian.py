@@ -54,15 +54,22 @@ class GeneralHamiltonian:
         
         if isinstance(U, potential.Potential1D):
             
-            mt[:,:] += np.diag([U(self.coords[i][1])
-                                for i in xrange(self.Ntot)])
-                   
+            #mt[:,:] += np.diag([U(self.coords[i][1])
+            #                    for i in xrange(self.Ntot)])
+            mdia = scipy.sparse.dia_matrix((np.array([U(self.coords[i][1])
+                                for i in xrange(self.Ntot)]), np.array([0])),
+                                           shape=(self.Ntot,self.Ntot))
+            mt = mt + mdia.tocsr()
+            
         elif isinstance(U, potential.Potential2D):
            
-            mt[:,:] += np.diag([U([self.coords[i][0], self.coords[i][1]])
-                                for i in xrange(self.Ntot)])
- 
-        return self.copy_ins(mt) 
+            #mt[:,:] += np.diag([U([self.coords[i][0], self.coords[i][1]])
+            #                    for i in xrange(self.Ntot)])
+            mdia = scipy.sparse.dia_matrix((np.array([U(self.coords[i][1])
+                                for i in xrange(self.Ntot)]), np.array([0])),
+                                           shape=(self.Ntot,self.Ntot))
+            mt = mt + mdia.tocsr()
+        return self.copy_ins(mt)
     
     def apply_vector_potential(self, A):
         """

@@ -32,23 +32,26 @@ def make_HI(n):
 def make_H(H0, HI, nx):
    
     ny = H0.shape[0]
+    print ny
     #print H0
     #H = np.zeros((nx*ny,nx*ny), dtype = complex)
     H = scipy.sparse.lil_matrix((nx*ny,nx*ny), dtype=complex)
     
     for i in xrange(nx):
-        j = i * ny 
+        j = i * ny
      
         H[j:j+ny,j:j+ny] = H0[:,:]
      
         try:
             H[j:j+ny,j+ny:j+2*ny] = HI[:,:]
         except:
+            print "Oops! make_matrix, 47", j, i
             None
         try:
             H[j+ny:j+2*ny,j:j+ny] = np.conjugate(np.transpose(HI[:,:]))
      
         except:
+            print "Oops! make_matrix, 53", j, i
             continue
     
     return H.tocsr()
