@@ -187,7 +187,7 @@ class ZigzagGNRHelper:
         
     def __create_hamiltonian(self, nnfile, height, length):
     
-        unitcells=self.height/2
+        unitcells=self.height*2
         ham = Hamiltonian.from_nth_nn_list(nnfile)
         
         ham2 = ham.create_supercell_hamiltonian(
