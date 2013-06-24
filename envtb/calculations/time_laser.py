@@ -14,7 +14,7 @@ directory = '/tmp/'
 dt = 0.1 * 10**(-15)
 NK = 12
 laser_freq = 10**(12)
-laser_amp = 0.0 * 10**(-2)
+laser_amp = 10.0 * 10**(-2)
 Nc = 2
 
 def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
@@ -65,7 +65,7 @@ def wf_init_gaussian_wave_packet(coords, ic, p0=[0.0, 0.0], sigma=5.):
     
     return wf0
 
-def propagate_graphene_flatpulse(Nx=20, Ny=60, frame_num=1500):
+def propagate_graphene_flatpulse(Nx=50, Ny=50, frame_num=1500):
     
     """
     Since in lanczos in the exponent exp(E*t/hbar) we are using E in eV    
@@ -100,8 +100,12 @@ def propagate_graphene_flatpulse(Nx=20, Ny=60, frame_num=1500):
     for i in xrange(100):
         print 'frame %(i)d' % vars()
         time += dt_new
+        import time
+        st = time.time()
         ham2 = ham.apply_vector_potential(Ax(time))
-      
+        print time.time()-st
+        #print ham2.mtot
+        
         wf_init = wf_final
         wf_final, dt_new, NK_new = propagate_wave_function(
             wf_init, ham2, NK=NK_new, dt=dt_new, 

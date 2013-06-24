@@ -84,7 +84,9 @@ class Plotter:
         ymin = 0.0
         ymax = 0.0
         
-        m = np.diag(ham_mit_pot.mtot) - np.diag(ham_bare.mtot) 
+        print ham_mit_pot.mtot
+        m = np.array(ham_mit_pot.mtot.diagonal() - ham_bare.mtot.diagonal())[0]
+        
         if minel is None:
             minel = np.min(m).real
         if maxel is None:

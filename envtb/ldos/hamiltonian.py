@@ -5,6 +5,8 @@ import make_matrix_graphene_armchair_5nn as mmg_a
 import potential
 import copy
 import matplotlib.pylab as plt
+import scipy.sparse
+from scipy.sparse import linalg
 #from scipy.sparse import linalg
 #from scipy import sparse
 
@@ -13,7 +15,7 @@ def FermiFunction(x, mu, kT):
 
 
 class GeneralHamiltonian:  
- 
+
     def __init__(self, mtot=None, Nx=None, Ny=None, coords=None):
      
         self.mtot = mtot
@@ -48,7 +50,7 @@ class GeneralHamiltonian:
             if not isinstance(U, potential.Potential2D):
                 raise TypeError("f has to be instance of Potential1D or Potential2D")
             
-        mt = self.mtot.copy()
+        mt = self.mtot.copy()#.todense()
         
         if isinstance(U, potential.Potential1D):
             
@@ -74,16 +76,18 @@ class GeneralHamiltonian:
         #TODO: implement vector potential A(r) position dependent 
         conversion_factor = 1.602176487 / 1.0545717*1e5 
         
-        phase_matrix = np.exp(1j * conversion_factor * A[0] * 
-                              np.array([[self.coords[i][0] - self.coords[j][0] 
-                                         for i in xrange(self.Ntot)] 
-                                        for j in xrange(self.Ntot)]))*\
-                       np.exp(1j * conversion_factor * A[1] * 
-                              np.array([[self.coords[i][1] - self.coords[j][1] 
-                                         for i in xrange(self.Ntot)] 
-                                        for j in xrange(self.Ntot)]))
+        nonzero_elements = self.mtot.nonzero()
         
-        m_pot = self.mtot * phase_matrix
+        phase_matrix = np.exp(1j * conversion_factor * A[0] * 
+                             np.array([self.coords[nonzero_elements[0][k]][0] - 
+                                       self.coords[nonzero_elements[1][k]][0] 
+                                       for k in xrange(len(nonzero_elements[0]))]))*\
+                      np.exp(1j * conversion_factor * A[1] * 
+                             np.array([self.coords[nonzero_elements[0][k]][1] - 
+                                       self.coords[nonzero_elements[1][k]][1] 
+                                       for k in xrange(len(nonzero_elements[0]))]))
+        m_pot_data = self.mtot.data * phase_matrix
+        m_pot = scipy.sparse.csr_matrix((m_pot_data, nonzero_elements), shape=(self.Ntot, self.Ntot))
         
         return self.copy_ins(m_pot)
     
@@ -91,27 +95,43 @@ class GeneralHamiltonian:
         
         conversion_factor=1.602176487/1.0545717*1e-5  # e/hbar*Angstrem^2
         
+        nonzero_elements = self.mtot.nonzero()
+        
         if gauge == 'landau_x':
             phase_matrix = np.exp(1j * conversion_factor * magnetic_B * 
-                                  np.array([[-0.5 * (self.coords[i][0] - self.coords[j][0]) *\
-                                             (self.coords[i][1] + self.coords[j][1]) 
-                                             for i in xrange(self.Ntot)] 
-                                            for j in xrange(self.Ntot)]))
+                                  np.array([-0.5 * (self.coords[nonzero_elements[0][k]][0] -
+                                                     self.coords[nonzero_elements[1][k]][0]) *\
+                                             (self.coords[nonzero_elements[0][k]][1] +
+                                               self.coords[nonzero_elements[1][k]][1]) 
+                                             for k in xrange(len(nonzero_elements[0]))]))
         elif gauge == 'landau_y':
             phase_matrix = np.exp(1j * conversion_factor * magnetic_B * 
-                                  np.array([[0.5 * (self.coords[i][0] + self.coords[j][0]) *\
-                                             (self.coords[i][1] - self.coords[j][1]) 
-                                             for i in xrange(self.Ntot)] 
-                                            for j in xrange(self.Ntot)]))
+                                  np.array([0.5 * (self.coords[nonzero_elements[0][k]][0] +
+                                                    self.coords[nonzero_elements[1][k]][0]) *\
+                                             (self.coords[nonzero_elements[0][k]][1] -
+                                               self.coords[nonzero_elements[1][k]][1]) 
+                                              for k in xrange(len(nonzero_elements[0]))]))
         
-        m_pot = self.mtot * phase_matrix
+        m_pot_data = self.mtot.data * phase_matrix
+        m_pot = scipy.sparse.csr_matrix((m_pot_data, nonzero_elements), shape=(self.Ntot, self.Ntot))
         
         return self.copy_ins(m_pot)
                     
     def eigenvalue_problem(self):
-                
-        w, v = np.linalg.eig(self.mtot)
-        
+        w, v = np.linalg.eig(self.mtot.todense())
+        #print len(w)
+        #from pyamg import smoothed_aggregation_solver
+        #st = time.time()
+        #ml = smoothed_aggregation_solver(self.mtot)
+        # initial approximation to the K eigenvectors
+        #K = 10
+        #X = scipy.rand(self.mtot.shape[0], K) 
+        # preconditioner based on ml
+        #M = ml.aspreconditioner()
+        # compute eigenvalues and eigenvectors with LOBPCG
+        #w, v = linalg.lobpcg(self.mtot, X, M=M, tol=1e-8, largest=False)
+        #w, v = linalg.eigs(self.mtot, k=99)
+        #print time.time() - st
         return w, v 
         
     def electron_density(self, mu, kT):
@@ -191,10 +211,11 @@ class HamiltonianTB(GeneralHamiltonian):
         
         m0 = mm.make_H0(Ny)
         mI = mm.make_HI(Ny)
+        
         self.mtot = mm.make_H(m0, mI, Nx)
         self.Nx = Nx
         self.Ny = Ny
-        self.Ntot = len(self.mtot)
+        self.Ntot = self.mtot.shape[0]
         self.coords = self.get_position()
        
     def make_periodic_y(self): 
@@ -207,7 +228,7 @@ class HamiltonianTB(GeneralHamiltonian):
         
         mtot = mm.make_H(m0, mI, self.Nx)
        
-        return self.copy_ins(mtot) 
+        return self.copy_ins(mtot)
         
     def get_position(self):
         return [[i, j, 0] for i in xrange(self.Nx) for j in xrange(self.Ny)]
@@ -226,7 +247,7 @@ class HamiltonianGraphene(GeneralHamiltonian):
         self.mtot = mm.make_H(m0, mI, Nx)
         self.Nx = Nx
         self.Ny = Ny
-        self.Ntot = len(self.mtot)
+        self.Ntot = self.mtot.shape[0]
         self.coords = self.get_position()
     
     def _instance_with_new_matrix(self, mtot):
@@ -279,7 +300,7 @@ class HamiltonianGrapheneArmchair(GeneralHamiltonian):
         self.mtot = mm.make_H(m0, mI, Nx)
         self.Nx = Nx
         self.Ny = Ny
-        self.Ntot = len(self.mtot)
+        self.Ntot = self.mtot.shape[0]
         self.coords = self.get_position()
     
     def _instance_with_new_matrix(self, mtot):
@@ -333,7 +354,7 @@ class HamiltonianFromW90(GeneralHamiltonian):
         
         GeneralHamiltonian.__init__(self)
                
-        self.mtot = HamW90.maincell_hamiltonian_matrix().toarray()
+        self.mtot = HamW90.maincell_hamiltonian_matrix()
         self.coords = HamW90.orbitalpositions()       
         self.Nx = Nx
         self.Ny = len(self.mtot) / Nx

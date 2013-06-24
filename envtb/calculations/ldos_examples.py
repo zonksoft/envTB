@@ -47,7 +47,7 @@ def electron_density_graphene_example(Nx=30, Ny=32, mu=0.0, kT=0.0025, magnetic_
     return None
 # end def electron_density_graphene_example
 
-def plot_ldos_example(Nx=20, Ny=30):
+def plot_ldos_example(Nx=30, Ny=30):
     
     potential = envtb.ldos.potential.Potential1DFromFunction(
         lambda x: - 5. * (Ny/2-x) * 2 / Ny)
@@ -236,11 +236,11 @@ def use_w90_example(Ny=10, Nx=10, magnetic_B=None):
 
 def run_examples():
     #use_w90_example(magnetic_B=0)
-    #plot_ldos_example()
-    #electron_density_example()
-    #electron_density_graphene_example()
+    plot_ldos_example()
+    #fail!!!  electron_density_example()
+    electron_density_graphene_example()
     plot_ldos_graphene_example()
-    #plot_ldos_graphene_armchair_example()
-    #plot_ldos_example_2Dpot()
+    plot_ldos_graphene_armchair_example()
+    plot_ldos_example_2Dpot()
 
 run_examples()

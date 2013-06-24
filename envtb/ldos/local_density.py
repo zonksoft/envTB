@@ -7,11 +7,7 @@ class LocalDensityOfStates:
         self.bc = bc
         self.hamiltonian = H
         self.green = None
-        #self.green = GreensFunction(H, E, bc)
-        #self.spectral_function = complex(0.0,1.0) * (self.green.Green - np.conjugate(np.transpose(self.green.Green)))
-        
-        #self.LDOS = np.diag(self.spectral_function)
-  
+    
     def __call__(self, E):
         self.green = greens_function.GreensFunction(self.hamiltonian, E, self.bc)
         

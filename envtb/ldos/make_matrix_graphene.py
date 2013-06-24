@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import sparse
+import scipy.sparse
 
 e0 = -0.126 
 g1 = -3.145
@@ -10,16 +10,22 @@ a = 1.42
 dx = np.sqrt(3) * a
 
 def make_H0(n):
+    a11 = e0 * np.ones(n, dtype = complex)
+    a12 = g1 * np.ones(n, dtype = complex)
+    a23 = g2 * np.ones(n, dtype = complex)
+    a34 = g3 * np.ones(n, dtype = complex)
+    diags = np.array([0,-1,1,-2,2,-3,3])
+    return scipy.sparse.spdiags(np.array([a11, a12, a12, a23, a23, a34, a34]),
+                                diags, n, n, format="lil")
+    #m = (np.diag(e0 * np.ones(n, dtype = complex)) + 
+    #     np.diag(g1 * np.ones(n-1, dtype = complex), 1) + 
+    #     np.diag(g1 * np.ones(n-1, dtype = complex), -1) + 
+    #     np.diag(g2 * np.ones(n-2, dtype = complex), 2) + 
+    #     np.diag(g2 * np.ones(n-2, dtype = complex), -2) +  
+    #     np.diag(g3 * np.ones(n-3, dtype = complex), 3) + 
+    #     np.diag(g3 * np.ones(n-3, dtype = complex), -3))
    
-    m = (np.diag(e0 * np.ones(n, dtype = complex)) + 
-         np.diag(g1 * np.ones(n-1, dtype = complex), 1) + 
-         np.diag(g1 * np.ones(n-1, dtype = complex), -1) + 
-         np.diag(g2 * np.ones(n-2, dtype = complex), 2) + 
-         np.diag(g2 * np.ones(n-2, dtype = complex), -2) +  
-         np.diag(g3 * np.ones(n-3, dtype = complex), 3) + 
-         np.diag(g3 * np.ones(n-3, dtype = complex), -3))
-   
-    return m #sparse.dia_matrix(m)
+    #return m #sparse.dia_matrix(m)
 
 def make_HI(n):
    
@@ -39,7 +45,7 @@ def make_HI(n):
         m[i+4, i+3] = g3
         m[i+3, i+4] = g3
 
-    return m #sparse.dia_matrix(m)
+    return scipy.sparse.lil_matrix(m) #sparse.dia_matrix(m)
 
 def make_periodic_H0(n):
     
