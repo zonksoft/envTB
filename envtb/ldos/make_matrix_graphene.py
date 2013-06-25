@@ -62,7 +62,7 @@ def make_periodic_H0(n):
         m[:2,-2:] = m0[:,:]
         m[-2:, :2] = np.transpose(m0)[:,:]
     
-    return m
+    return scipy.sparse.lil_matrix(m)
     
 def make_periodic_HI(n):
    
@@ -85,7 +85,7 @@ def make_periodic_HI(n):
     m[0, -1] = g3
     m[-1, 0] = g3
     
-    return m #sparse.dia_matrix(m)
+    return scipy.sparse.lil_matrix(m)
 
 
 def block_matrix(m, n):

@@ -65,10 +65,12 @@ class GeneralHamiltonian:
            
             #mt[:,:] += np.diag([U([self.coords[i][0], self.coords[i][1]])
             #                    for i in xrange(self.Ntot)])
-            mdia = scipy.sparse.dia_matrix((np.array([U(self.coords[i][1])
+            mdia = scipy.sparse.dia_matrix((np.array([U([self.coords[i][0],
+                                            self.coords[i][1]])
                                 for i in xrange(self.Ntot)]), np.array([0])),
                                            shape=(self.Ntot,self.Ntot))
             mt = mt + mdia.tocsr()
+            
         return self.copy_ins(mt)
     
     def apply_vector_potential(self, A):
@@ -86,12 +88,12 @@ class GeneralHamiltonian:
         nonzero_elements = self.mtot.nonzero()
         
         phase_matrix = np.exp(1j * conversion_factor * A[0] * 
-                             np.array([self.coords[nonzero_elements[0][k]][0] - 
-                                       self.coords[nonzero_elements[1][k]][0] 
+                             np.array([self.coords[nonzero_elements[1][k]][0] -
+                                       self.coords[nonzero_elements[0][k]][0]
                                        for k in xrange(len(nonzero_elements[0]))]))*\
                       np.exp(1j * conversion_factor * A[1] * 
-                             np.array([self.coords[nonzero_elements[0][k]][1] - 
-                                       self.coords[nonzero_elements[1][k]][1] 
+                             np.array([self.coords[nonzero_elements[1][k]][1] -
+                                       self.coords[nonzero_elements[0][k]][1]
                                        for k in xrange(len(nonzero_elements[0]))]))
         m_pot_data = self.mtot.data * phase_matrix
         m_pot = scipy.sparse.csr_matrix((m_pot_data, nonzero_elements), shape=(self.Ntot, self.Ntot))
@@ -106,17 +108,17 @@ class GeneralHamiltonian:
         
         if gauge == 'landau_x':
             phase_matrix = np.exp(1j * conversion_factor * magnetic_B * 
-                                  np.array([-0.5 * (self.coords[nonzero_elements[0][k]][0] -
-                                                     self.coords[nonzero_elements[1][k]][0]) *\
+                                  np.array([-0.5 * (self.coords[nonzero_elements[1][k]][0] -
+                                                     self.coords[nonzero_elements[0][k]][0]) *\
                                              (self.coords[nonzero_elements[0][k]][1] +
                                                self.coords[nonzero_elements[1][k]][1]) 
                                              for k in xrange(len(nonzero_elements[0]))]))
         elif gauge == 'landau_y':
             phase_matrix = np.exp(1j * conversion_factor * magnetic_B * 
-                                  np.array([0.5 * (self.coords[nonzero_elements[0][k]][0] +
-                                                    self.coords[nonzero_elements[1][k]][0]) *\
-                                             (self.coords[nonzero_elements[0][k]][1] -
-                                               self.coords[nonzero_elements[1][k]][1]) 
+                                  np.array([0.5 * (self.coords[nonzero_elements[1][k]][0] +
+                                                    self.coords[nonzero_elements[0][k]][0]) *\
+                                             (self.coords[nonzero_elements[1][k]][1] -
+                                               self.coords[nonzero_elements[0][k]][1]) 
                                               for k in xrange(len(nonzero_elements[0]))]))
         
         m_pot_data = self.mtot.data * phase_matrix
@@ -125,6 +127,7 @@ class GeneralHamiltonian:
         return self.copy_ins(m_pot)
                     
     def eigenvalue_problem(self):
+        
         w, v = np.linalg.eig(self.mtot.todense())
         #print len(w)
         #from pyamg import smoothed_aggregation_solver
@@ -201,11 +204,12 @@ class GeneralHamiltonian:
         return None
         
     def make_periodic_x(self):
-        mtot = self.mtot.copy()
+        mtot = self.mtot.copy().tolil()
+        
         mtot[-self.Ny:,:self.Ny] = mtot[:self.Ny, self.Ny:2*self.Ny]
-        mtot[:self.Ny, -self.Ny:] = mtot[:self.Ny, self.Ny:2*self.Ny]        
-       
-        return self.copy_ins(mtot) 
+        mtot[:self.Ny, -self.Ny:] = mtot[:self.Ny, self.Ny:2*self.Ny]
+        
+        return self.copy_ins(mtot.tocsr()) 
 
 # end class GeneralHamiltonian
 
@@ -226,9 +230,10 @@ class HamiltonianTB(GeneralHamiltonian):
         self.coords = self.get_position()
        
     def make_periodic_y(self): 
+        mlil = self.mtot.tolil()
         
-        m0 = self.mtot[:self.Ny, :self.Ny]
-        mI = self.mtot[:self.Ny, self.Ny:2 * self.Ny]
+        m0 = mlil[:self.Ny, :self.Ny]
+        mI = mlil[:self.Ny, self.Ny:2 * self.Ny]
         
         m0[0, -1] = -mm.t
         m0[-1, 0] = -mm.t
@@ -274,7 +279,7 @@ class HamiltonianGraphene(GeneralHamiltonian):
         mist = np.mod(self.Ny, 4)
         ny = self.Ny
         if mist != 0:
-            ny = self.Ny + 4 - mist           
+            ny = self.Ny + 4 - mist
         
         m0 = mmg.make_periodic_H0(ny)
         mI = mmg.make_periodic_HI(ny)

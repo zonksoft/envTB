@@ -18,12 +18,12 @@ def make_H0(Np, Ec = 0):
 
 
 def make_periodic_H0(n, Ec = 0):
-    m = make_H0(n, Ec)   
+    m = make_H0(n, Ec).tolil()
    
     m[0,-1] = -t
-    m[-1,0] = -t 
+    m[-1,0] = -t
 
-    return  m 
+    return  m.tocsr()
 
 def make_HI(n):
    
@@ -37,6 +37,8 @@ def make_H(H0, HI, nx):
     #H = np.zeros((nx*ny,nx*ny), dtype = complex)
     H = scipy.sparse.lil_matrix((nx*ny,nx*ny), dtype=complex)
     
+    HIT = HI.transpose().conjugate()
+    
     for i in xrange(nx):
         j = i * ny
      
@@ -45,13 +47,10 @@ def make_H(H0, HI, nx):
         try:
             H[j:j+ny,j+ny:j+2*ny] = HI[:,:]
         except:
-            print "Oops! make_matrix, 47", j, i
             None
         try:
-            H[j+ny:j+2*ny,j:j+ny] = np.conjugate(np.transpose(HI[:,:]))
-     
+            H[j+ny:j+2*ny,j:j+ny] = HIT[:,:]
         except:
-            print "Oops! make_matrix, 53", j, i
             continue
     
     return H.tocsr()

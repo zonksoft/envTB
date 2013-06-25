@@ -37,10 +37,10 @@ class Plotter:
         for i in xrange(len(vector)):
             
             if maxel != 0.0:
-                msize = vector[i].real * 150. / np.sqrt(np.sqrt(len(vector))) / maxel
+                msize = vector[i] * 150. / np.sqrt(np.sqrt(len(vector))) / maxel
                 #R = 1/(maxel) * (density1d[i].real)
                 #G = 1/(maxel) * (maxel - density1d[i].real)
-                if vector[i].real >= maxel:
+                if vector[i] >= maxel:
                     R = 1
                     G = 0
                 else:

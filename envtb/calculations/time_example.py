@@ -7,6 +7,8 @@ import envtb.time_propagator.lanczos
 import envtb.time_propagator.wave_function
 import envtb.wannier90.w90hamiltonian as w90hamiltonian
 
+directory = '/tmp/'
+
 def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
                             num_error=10**(-18), regime='SIL', 
                             file_out='/tmp/a.png'):
@@ -61,14 +63,14 @@ def propagate_gauss_TB(Nx=50, Ny=40, frame_num=100):
     maxel = 0.8 * np.max(wf_final.wf1d)
     wf_final.plot_wave_function(maxel)
     plt.axes().set_aspect('equal')
-    plt.savefig('../../../../Desktop/pics_2d/TB/0%d_2d.png' % 0)
+    plt.savefig(directory+'0%d_2d.png' % 0)
     plt.close()
 
     for i in xrange(frame_num):
     
         wf_init = wf_final
         wf_final = propagate_wave_function(wf_init, ham, maxel = maxel, 
-            file_out = '../../../../Desktop/pics_2d/TB/f%03d_2d.png' % i)[0]
+            file_out = directory+'f%03d_2d.png' % i)[0]
     
     return None
     
@@ -251,11 +253,11 @@ def propagate_el_den_graphene_W90(Nx=50, Ny=40, magnetic_B=None, mu=0.01,
     return None
     
     
-#propagate_gauss_TB()
+propagate_gauss_TB()
 #propagate_el_den_TB()
 
-propagate_gauss_graphene()
+#propagate_gauss_graphene()
 #propagate_el_den_graphene()
 #propagate_gauss_graphene_W90()
-propagate_el_den_graphene_W90()
+#propagate_el_den_graphene_W90()
 

@@ -11,48 +11,48 @@ def electron_density_example(Nx = 20, Ny = 20, mu = 0.5, kT = 0.0025):
     ham = envtb.ldos.hamiltonian.HamiltonianTB(Ny, Nx)
     ham2 = ham.make_periodic_y()
     ham3 = ham2.make_periodic_x()
-        
+    
     dens = ham3.electron_density(mu, kT)
-        
+    
     envtb.ldos.plotter.Plotter(range(ham.Ny), dens[ham.Ny:2*ham.Ny]).plotting()
     plt.show()
     
     envtb.ldos.plotter.Plotter().plot_density(dens, ham.coords)
     
     plt.show()
-   
+    
     return None
 # end def electron_density_example
 
-def electron_density_graphene_example(Nx=30, Ny=32, mu=0.0, kT=0.0025, magnetic_B=None):
+def electron_density_graphene_example(Nx=30, Ny=32, mu=0.0, kT=0.0025, magnetic_B=500.0):
     
     ham=envtb.ldos.hamiltonian.HamiltonianGraphene(Ny, Nx)
     #ham2 = ham.make_periodic_x()
     #ham_per = ham.make_periodic_y()
     #ham_per.get_position()
     
-    ham.apply_magnetic_field(magnetic_B, gauge='landau_x')
+    ham2 = ham.apply_magnetic_field(magnetic_B, gauge='landau_x')
     
-    dens1 = ham.electron_density(mu, kT)
+    dens1 = ham2.electron_density(mu, kT)
     
-    envtb.ldos.plotter.Plotter().plot_density(dens1, ham.coords)
+    envtb.ldos.plotter.Plotter().plot_density(dens1, ham2.coords)
     plt.show()
     
-    dens2 = ham.electron_density(mu, kT)
+    dens2 = ham2.electron_density(mu+1, kT)
     
-    envtb.ldos.plotter.Plotter().plot_density(dens2, ham.coords)
+    envtb.ldos.plotter.Plotter().plot_density(dens2-dens1, ham2.coords)
     plt.show()
     
     
     return None
 # end def electron_density_graphene_example
 
-def plot_ldos_example(Nx=5, Ny=5):
+def plot_ldos_example(Nx=40, Ny=40):
     
     potential = envtb.ldos.potential.Potential1DFromFunction(
         lambda x: - 5. * (Ny/2-x) * 2 / Ny)
     ham = envtb.ldos.hamiltonian.HamiltonianTB(Ny, Nx)
-    print ham.mtot
+    
     ham2 = ham.apply_potential(potential)
     
     envtb.ldos.plotter.Plotter().plot_potential(ham2, ham)
@@ -60,24 +60,25 @@ def plot_ldos_example(Nx=5, Ny=5):
     plt.show()
     
     local_dos=envtb.ldos.local_density.LocalDensityOfStates(ham2)
-    local_dos(0.01)
-    #plt.subplot(2,2,1)
-    #envtb.ldos.plotter.Plotter().plot_density(local_dos(0.01), ham2.coords)
-    #plt.title('E = 0.01')
-    #plt.subplot(2,2,2)
-    #envtb.ldos.plotter.Plotter().plot_density(local_dos(0.2), ham2.coords)
-    #plt.title('E = 0.2')
-    #plt.subplot(2,2,3)
-    #envtb.ldos.plotter.Plotter().plot_density(local_dos(0.5), ham2.coords)
-    #plt.title('E = 0.5')
-    #plt.subplot(2,2,4)
-    #envtb.ldos.plotter.Plotter().plot_density(local_dos(1.0), ham2.coords)
-    #plt.title('E = 1.0')
-    #plt.show()
     
-    #envtb.ldos.plotter.Plotter().plot_density(local_dos(0.01), ham2.coords)
-    #plt.axes().set_aspect('equal')
-    #plt.show()
+    plt.subplot(2,2,1)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(0.01), ham2.coords)
+    plt.title('E = 0.01')
+    plt.subplot(2,2,2)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(0.2), ham2.coords)
+    plt.title('E = 0.2')
+    plt.subplot(2,2,3)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(0.5), ham2.coords)
+    plt.title('E = 0.5')
+    plt.subplot(2,2,4)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(1.0), ham2.coords)
+    plt.title('E = 1.0')
+    
+    plt.show()
+    
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(0.01), ham2.coords)
+    plt.axes().set_aspect('equal')
+    plt.show()
     
     return None
 # end def plot_ldos_example
@@ -86,6 +87,7 @@ def plot_ldos_graphene_example(Nx=20, Ny=30, magnetic_B=150.0):
     
     ham_nm = envtb.ldos.hamiltonian.HamiltonianGraphene(Ny, Nx)
     ham = ham_nm.apply_magnetic_field(magnetic_B)
+    print ham.mtot
     #ham.mtot[0,0] = 10.0
     #ham.mtot[0,1] = 0.0
     #ham.mtot[1,0] = 0.0
@@ -134,18 +136,24 @@ def plot_ldos_graphene_armchair_example(Nx=20, Ny=30, magnetic_B=150.0):
     return None
 # end def plot_ldos_grephene_example
 
-def plot_ldos_example_2Dpot(Nx=30, Ny=40):
+def plot_ldos_example_2Dpot(Nx=30, Ny=70):
     
-    ham=envtb.ldos.hamiltonian.HamiltonianTB(Ny, Nx)
+    #ham=envtb.ldos.hamiltonian.HamiltonianTB(Ny, Nx)
+    ham=envtb.ldos.hamiltonian.HamiltonianGraphene(Ny, Nx)
     
     i0 = ham.Nx / 2
     j0 = ham.Ny / 2
     ic = i0*ham.Ny + j0
     potential = envtb.ldos.potential.Potential2DFromFunction(
-        lambda x: 0.01 * (ham.coords[ic][1]-x[1])**2 + 
+        lambda x: 0.01 * (ham.coords[ic][1]-x[1])**2 +
                   0.01 * (ham.coords[ic][0]-x[0])**2)
     
     ham2 = ham.apply_potential(potential)
+    print ham2.mtot
+    
+    envtb.ldos.plotter.Plotter().plot_potential(ham2, ham)
+    plt.axes().set_aspect
+    plt.show()
     #ham.make_periodic_y()
     local_dos=envtb.ldos.local_density.LocalDensityOfStates(ham2)
         
@@ -236,11 +244,11 @@ def use_w90_example(Ny=10, Nx=10, magnetic_B=None):
 
 def run_examples():
     #use_w90_example(magnetic_B=0)
-    plot_ldos_example()
-    #fail!!!  electron_density_example()
-    #electron_density_graphene_example()
-    #plot_ldos_graphene_example()
-    #plot_ldos_graphene_armchair_example()
-    #plot_ldos_example_2Dpot()
+    #plot_ldos_example() #sparse PASS
+    #electron_density_example() #sparse PASS
+    #electron_density_graphene_example() #check electron density for magnetic field?
+    #plot_ldos_graphene_example() #sparse PASS
+    #plot_ldos_graphene_armchair_example() #all FAIL
+    plot_ldos_example_2Dpot()
 
 run_examples()

@@ -33,11 +33,7 @@ class GreensFunction:
         #if self.bc == 'open':
         #sig1[0,0] = self.calculate_self_energy_for_1d(E, -0.05)
         #sig2[-1,-1] = self.calculate_self_energy_for_1d(E, 0.05)
-        #Hsparse = H.mtot
-        #matrix = H.mtot
-        #print matrix
-        matrix = (E + zplus) * sparse.eye(H.Ntot, H.Ntot, k = 0, dtype = complex) - H.mtot#sparse#.mtot.tolil()
-        print matrix
+        matrix = (E + zplus) * sparse.eye(H.Ntot, H.Ntot, k = 0, dtype = complex) - H.mtot
         solver = linalg.factorized(matrix)
         return solver
     
