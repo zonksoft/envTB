@@ -95,7 +95,7 @@ class LanczosPropagator():
                 
         """
         
-        Hwf = np.dot(self.ham.mtot, np.array(self.Q[-1])) 
+        Hwf = self.ham.mtot.dot(np.array(self.Q[-1]))#np.dot(self.ham.mtot, np.array(self.Q[-1])) 
         
         return Hwf 
     
