@@ -19,7 +19,7 @@ Nc = 2
 
 def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
                             num_error=10**(-18), regime='SIL', 
-                            file_out='/tmp/a.png'):
+                            file_out=None, **kwrds):
     
     prop = envtb.time_propagator.lanczos.LanczosPropagator(
         wf=wf_init, ham=hamilt, NK=NK, dt=dt)
@@ -31,16 +31,13 @@ def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
             % vars()
     print 'norm', wf_final.check_norm()
     
-    wf_final.plot_wave_function(maxel)
-    plt.axes().set_aspect('equal')
-    #plt.ylim(-100,100)
-    plt.savefig(file_out)
-    plt.close()
-    
-    #envtb.ldos.plotter.Plotter(xval=range(len(wf_final.wf1d)), yval=np.abs(wf_final.wf1d)).plotting()
-    #plt.savefig(file_out+'_new.png')
-    
-    return wf_final, dt_new, NK_new
+    if file_out is None:
+        return wf_final, dt_new, NK_new
+    else:
+        wf_final.save_wave_function_pic(file_out, maxel, **kwrds)
+        return wf_final, dt_new, NK_new
+
+# end def propagate_wave_function
 
 def wf_init_from_electron_density(hamilt, mu=0.1, kT=0.0025):
     
@@ -92,30 +89,28 @@ def propagate_graphene_flatpulse(Nx=50, Ny=50, frame_num=1500):
     wf_out = open('wave_functions.out','w')
     dt_new = dt
     NK_new = NK
-    time = 0.0
+    time_counter = 0.0
     
-    maxel = 0.7*max(wf_final.wf1d)
-    wf_out.writelines(`time`+'   '+`wf_final.wf1d.tolist()`+'\n')
+    maxel = 0.7 * max(wf_final.wf1d)
+    #wf_out.writelines(`time`+'   '+`wf_final.wf1d.tolist()`+'\n')
+    wf_final.save_wave_function_data(wf_out, time_counter)
     
     for i in xrange(100):
         print 'frame %(i)d' % vars()
-        time += dt_new
-        import time
-        st = time.time()
-        ham2 = ham.apply_vector_potential(Ax(time))
-        print time.time()-st
-        #print ham2.mtot
-        
+        time_counter += dt_new
+       
+        ham2 = ham.apply_vector_potential(Ax(time_counter))
+       
         wf_init = wf_final
         wf_final, dt_new, NK_new = propagate_wave_function(
             wf_init, ham2, NK=NK_new, dt=dt_new, 
-            maxel = maxel, regime='TSC', 
-            file_out = directory+'f%03d_2d.png' % i)
+            maxel = maxel, regime='TSC')
+            #file_out = directory+'f%03d_2d.png' % i)
         
         if np.mod(i,1) == 0:
             #tar.append(time)
-            wf_out.writelines(`time`+'   '+`wf_final.wf1d.tolist()`+'\n')
-           
+            #wf_out.writelines(`time`+'   '+`wf_final.wf1d.tolist()`+'\n')
+            wf_final.save_wave_function_data(wf_out, time_counter)
     wf_out.close()
         
 propagate_graphene_flatpulse()

@@ -178,7 +178,7 @@ def define_zigzag_ribbon_w90(nnfile, width, length, magnetic_B=None):
                                                "../../exampledata/01_graphene_vasp_wannier90/POSCAR",
                                                "../../exampledata/01_graphene_vasp_wannier90/wannier90.wout",
                                                "../../exampledata/01_graphene_vasp_wannier90/OUTCAR")
-    print ham.maincell_hamiltonian_matrix()
+    
     ham2 = ham.create_supercell_hamiltonian(
         [[0, 0, 0], [1, 0, 0]],
         [[1, -1, 0], [1, 1, 0], [0, 0, 1]],
@@ -197,14 +197,16 @@ def define_zigzag_ribbon_w90(nnfile, width, length, magnetic_B=None):
         [[i, 0, 0] for i in range(length)], 
         [[length, 0, 0], [0, 1, 0], [0, 0, 1]],
         output_maincell_only=True)
- 
+    
     ham6 = ham5.create_modified_hamiltonian(
         usedorbitals=range(1, ham5.nrorbitals()-1))
     
-    path = ham4.point_path([[-0.5,0,0],[1.0,0,0]],300)
-    ham4.plot_bandstructure(path, '' ,'d')
-    plt.ylim(-2, 2)
-    plt.show()
+    #path = ham4.point_path([[0.65,0,0],[0.7,0,0]],20)
+    #ham4.plot_bandstructure(path, '' ,'d')
+    #data=ham4.bandstructure_data(path,basis='c',usedhoppingcells='all')
+    
+    #plt.ylim(0, 0.2)
+    #plt.show()
     
     return ham5
 # end def define_zigzag_ribbon_w90 
@@ -217,7 +219,7 @@ def use_w90_example(Ny=10, Nx=10, magnetic_B=None):
         Ny, Nx, magnetic_B=magnetic_B)
     
     ham = envtb.ldos.hamiltonian.HamiltonianFromW90(ham_w90, Nx)
-    print ham.mtot
+    #print ham.mtot
     """
     i0 = ham.Nx / 2
     j0 = ham.Ny / 2
@@ -242,13 +244,27 @@ def use_w90_example(Ny=10, Nx=10, magnetic_B=None):
     return None
 # end def use_w90_example
 
+def DOS(Nx=50, Ny=50):
+    
+    potential = envtb.ldos.potential.Potential1DFromFunction(
+        lambda x: - 5. * (Ny/2-x) * 2 / Ny)
+    ham = envtb.ldos.hamiltonian.HamiltonianTB(Ny, Nx)
+    w,v = ham.eigenvalue_problem()
+    plt.plot(w, 'o')
+    plt.show()
+    ham2 = ham.apply_potential(potential)
+    den = envtb.ldos.local_density.DensityOfStates(ham, E=np.arange(0,2,0.01))
+    plt.hist(w)
+    den.plot_density_of_states()
+    plt.show()
+
 def run_examples():
-    #use_w90_example(magnetic_B=0)
+    use_w90_example(magnetic_B=0)
     #plot_ldos_example() #sparse PASS
     #electron_density_example() #sparse PASS
     #electron_density_graphene_example() #check electron density for magnetic field?
     #plot_ldos_graphene_example() #sparse PASS
     #plot_ldos_graphene_armchair_example() #all FAIL
-    plot_ldos_example_2Dpot()
-
-run_examples()
+    #plot_ldos_example_2Dpot()
+    #DOS()
+#run_examples()

@@ -51,7 +51,7 @@ def define_zigzag_ribbon_w90(nnfile, width, length, magnetic_B=None):
     return ham5
 # end def define_zigzag_ribbon_w90 
     
-def use_w90(Ny=43, Nx=40, magnetic_B=None):
+def use_w90(Ny=43, Nx=40, magnetic_B=50):
     
     # Ny: number of atoms in slice is 2*(Ny+1)
     ham_w90 = define_zigzag_ribbon_w90(
@@ -61,19 +61,33 @@ def use_w90(Ny=43, Nx=40, magnetic_B=None):
     ham = envtb.ldos.hamiltonian.HamiltonianFromW90(ham_w90, Nx)
     
     potential = envtb.ldos.potential.Potential2DFromFunction(
-        lambda x: 0.1 * np.sin(0.25*(x[1])/2.)**2 +\
-                  0.1 * np.sin(0.25*(x[0])/2.)**2)
-    
+        lambda x: -10. * np.sin(0.25*(x[1])/2.)**2 -\
+                  10. * np.sin(0.25*(x[0])/2.)**2)
     ham2 = ham.apply_potential(potential)
-    envtb.ldos.plotter.Plotter().plot_potential(ham2, ham)
+    
+    envtb.ldos.plotter.Plotter().plot_potential(ham2, ham, alpha=0.7)
+    plt.title('E = 0.7')
     plt.axes().set_aspect('equal')
     plt.show()
     
     local_dos=envtb.ldos.local_density.LocalDensityOfStates(ham)
-    
-    envtb.ldos.plotter.Plotter().plot_density(local_dos(0.7), ham.coords)
+    plt.subplot(2,2,1)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(0.5), ham.coords)
+    #envtb.ldos.plotter.Plotter().plot_potential(ham2, ham, alpha=0.2)
     plt.title('E = 0.7')
-    plt.axes().set_aspect('equal')
+    plt.subplot(2,2,2)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(0.8), ham.coords)
+    #envtb.ldos.plotter.Plotter().plot_potential(ham2, ham, alpha=0.2)
+    plt.title('E = 0.7')
+    plt.subplot(2,2,3)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(1.0), ham.coords)
+    #envtb.ldos.plotter.Plotter().plot_potential(ham2, ham, alpha=0.2)
+    plt.title('E = 0.7')
+    plt.subplot(2,2,4)
+    envtb.ldos.plotter.Plotter().plot_density(local_dos(1.5), ham.coords)
+    #envtb.ldos.plotter.Plotter().plot_potential(ham2, ham, alpha=0.2)
+    plt.title('E = 0.7')
+    #plt.axes().set_aspect('equal')
     plt.show()
     
     return None
