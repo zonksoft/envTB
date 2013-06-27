@@ -18,6 +18,7 @@ class WaveFunction():
         plt.axes().set_aspect('equal')
           
     def find_average_position(self):
+        
         f_aver = sum([np.abs(self.wf1d[i])**2 for i in xrange(len(self.wf1d))])
         x_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][0] 
                       for i in xrange(len(self.wf1d))]) / f_aver 
@@ -25,7 +26,26 @@ class WaveFunction():
                       for i in xrange(len(self.wf1d))]) / f_aver
         
         return x_aver, y_aver        
- 
+    
+    def save_wave_function_data(self, file_out, param=None):
+        
+        file_out.writelines(`param`+'   '+`self.wf1d.tolist()`+'\n')
+    
+    def save_wave_function_pic(self, pic_out, maxel=None, **kwrds):
+        self.plot_wave_function(maxel)
+        plt.axes().set_aspect('equal')
+        plt.savefig(pic_out)
+        plt.close()
+    
+    def wave_function_from_file(self, file_name, wf_num=-1):
+        
+        f_in = open(file_name,'r')
+        ln = f_in.readlines()
+        lnS = ln[wf_num].split('   ')
+        tm = float(lnS[0])
+        self.wf1d = np.array(eval(lnS[1]))
+        
+        return tm
 # end class WaveFunction        
  
     
