@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pylab as plt
 
 light_speed = 3 * 10**(8)
-print 'Agrh!'
 
 class VectorPotential:
     

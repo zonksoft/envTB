@@ -22,7 +22,7 @@ class Plotter:
         plt.colorbar()
         return None 
    
-    def plot_density(self, vector, coords, max_el=None):
+    def plot_density(self, vector, coords, max_el=None, **kwrds):
        
         if max_el == None:
             maxel = np.max(vector)
@@ -55,7 +55,7 @@ class Plotter:
                 B = 0.0
                     
             plt.plot(coords[i][0], coords[i][1], 'o', mfc='k', ms=2)
-            plt.plot(coords[i][0], coords[i][1], 'o', mfc=(R,G,B), ms=msize, alpha=0.7)
+            plt.plot(coords[i][0], coords[i][1], 'o', mfc=(R,G,B), ms=msize, **kwrds)
             
             if coords[i][0] < xmin:
                 xmin = coords[i][0]
@@ -77,7 +77,7 @@ class Plotter:
         #plt.axes().set_aspect('equal')
         return None    
     
-    def plot_potential(self, ham_mit_pot, ham_bare, maxel=None, minel=None):
+    def plot_potential(self, ham_mit_pot, ham_bare, maxel=None, minel=None, **kwrds):
                      
         xmin = 0.0
         xmax = 0.0
@@ -116,7 +116,7 @@ class Plotter:
                 B = 0.0
                     
             plt.plot(ham_mit_pot.coords[i][0], ham_mit_pot.coords[i][1], 'o', mfc='k', ms=2)
-            plt.plot(ham_mit_pot.coords[i][0], ham_mit_pot.coords[i][1], 'o', mfc=(R,G,B), ms=msize, alpha=0.7)
+            plt.plot(ham_mit_pot.coords[i][0], ham_mit_pot.coords[i][1], 'o', mfc=(R,G,B), ms=msize, **kwrds)
             
             if ham_mit_pot.coords[i][0] < xmin:
                 xmin = ham_mit_pot.coords[i][0]
