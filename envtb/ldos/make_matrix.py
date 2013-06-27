@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse
+from scipy.sparse import linalg
 
 hbar = 1.055*10**(-34)
 m = 0.25 * 9.109 * 10**(-31)
@@ -83,16 +84,18 @@ def eigenvalue_problem(H0, HI):
     return None
 
 def make_A(H0_, HI_, E):
-    n = len(H0_) 
-    m = np.zeros((2*len(H0_), 2*len(H0_)), dtype = float)
-
-    H_I_ = np.linalg.inv(np.transpose(HI_))
+    n = H0_.shape[0]
+    m = scipy.sparse.lil_matrix((2*n, 2*n), dtype = float)
+    
+    HIT_ = HI_.transpose()
+    
+    H_I_ = scipy.sparse.lil_matrix(np.linalg.inv(HIT_.todense()))#linalg.inv(HIT_)#np.linalg.inv(np.transpose(HI_))
    
     mE = E * np.identity(n, dtype = float)
 
-    m[:n, :n] = np.dot(H_I_, mE - H0_)
-    m[:n, n:] = np.dot(-H_I_, HI_)
-    m[n:, :n] = np.identity(n, dtype = float)
+    m[:n, :n] = H_I_.dot(mE - H0_)
+    m[:n, n:] = -H_I_.dot(HI_)
+    m[n:, :n] = scipy.sparse.eye(n, n, dtype = float)
    
-    return m
+    return m.tocsc()
 

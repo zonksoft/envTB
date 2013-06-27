@@ -126,23 +126,10 @@ class GeneralHamiltonian:
         
         return self.copy_ins(m_pot)
                     
-    def eigenvalue_problem(self):
-        
-        w, v = np.linalg.eig(self.mtot.todense())
-        #print len(w)
-        #from pyamg import smoothed_aggregation_solver
-        #st = time.time()
-        #ml = smoothed_aggregation_solver(self.mtot)
-        # initial approximation to the K eigenvectors
-        #K = 10
-        #X = scipy.rand(self.mtot.shape[0], K) 
-        # preconditioner based on ml
-        #M = ml.aspreconditioner()
-        # compute eigenvalues and eigenvectors with LOBPCG
-        #w, v = linalg.lobpcg(self.mtot, X, M=M, tol=1e-8, largest=False)
-        #w, v = linalg.eigs(self.mtot, k=99)
-        #print time.time() - st
-        return w, v 
+    def eigenvalue_problem(self, k=20, sigma=0.0, **kwrds):
+        w,v = linalg.eigs(self.mtot.tocsc(), k=k, sigma=sigma, **kwrds)
+        #w, v = np.linalg.eig(self.mtot.todense())
+        return w, v
         
     def electron_density(self, mu, kT):
         
@@ -159,25 +146,28 @@ class GeneralHamiltonian:
                     
         return density
     
-    def __get_spec(self, k):
+    def get_spec(self, k0):
         
-        m0 = self.mtot[:self.Ny,:self.Ny]
-        mI = self.mtot[:self.Ny,self.Ny:2*self.Ny]
-        mIT = self.mtot[self.Ny:2*self.Ny,:self.Ny]
+        mlil = self.mtot.tolil()
+        m0 = mlil[:self.Ny,:self.Ny].tocsr()
+        mI = mlil[:self.Ny,self.Ny:2*self.Ny].tocsr()
+        mIT = mI.transpose() #mlil[self.Ny:2*self.Ny,:self.Ny].tocsr()
         
-        try:
-            dz = self.coords[self.Ny][0] - self.coords[0][0]
+        #print 'mI', mI
+        #print 'mIT', mIT.transpose()
+         
+        dz = self.coords[self.Ny][0] - self.coords[0][0]
+        dz = 1.4*np.sqrt(3.)
+        A = m0 + np.exp(1j * k0 * dz) * mI +\
+            np.exp(-1j * k0 * dz) * mIT
+        #w, v = np.linalg.eig(A)
+        n_eigs = 40
+        if m0.shape[0] < n_eigs:
+            n_eigs = m0.shape[0]-2
         
-        except:
-            dz = 1.42
-        
-        A = m0 + complex(np.cos(k * dz), np.sin(k * dz)) * mI +\
-            complex(np.cos(k * dz), -np.sin(k * dz)) * mIT
-
-        w, v = np.linalg.eig(A)
-   
+        w,v = linalg.eigs(A.tocsc(), k=n_eigs, sigma=0)
         wE = self.__sort_spec(w, v)[0]
-                        
+        
         return wE
     
     def __sort_spec(self, w, v):
@@ -191,16 +181,17 @@ class GeneralHamiltonian:
    
         return ws, np.array(vtmp)
     
-    def plot_bandstructure(self, krange = np.linspace(0.0,2.5,300)):
-        w = np.array([self.__get_spec(k) for k in krange])
-        [plt.plot(krange, w[:,i]) for i in xrange(len(w[0,:]))]
+    def plot_bandstructure(self, krange = np.linspace(0.0,2.5,100), **kwrds):
+        w = np.array([self.get_spec(k) for k in krange])
+        
+        [plt.plot(krange, w[:,i], **kwrds) for i in xrange(len(w[0,:]))]
         #[plt.axhline(y = np.sign(n) * np.sqrt(2. * 1.6 * 10**(-19) * 
         #                                      1.05 * 10**(-34) * 0.82**2 * 
         #                                      10**12 * 300 * np.abs(n))/1.6*10**(19)) for n in range(-6,7)]
-        plt.ylim(-1.5, 1.5)
+        #plt.ylim(-1.5, 1.5)
         plt.xlabel(r'$k_x$')
         plt.ylabel(r'$E,eV$')
-        plt.show()
+        #plt.show()
         return None
         
     def make_periodic_x(self):
@@ -366,12 +357,13 @@ class HamiltonianFromW90(GeneralHamiltonian):
         
         GeneralHamiltonian.__init__(self)
                
-        self.mtot = HamW90.maincell_hamiltonian_matrix()
+        self.mtot = HamW90.maincell_hamiltonian_matrix().tocsr()
         self.coords = HamW90.orbitalpositions()       
         self.Nx = Nx
-        self.Ny = len(self.mtot) / Nx
-        if np.mod(len(self.mtot), Nx) != 0:
+        self.Ny = self.mtot.shape[0] / Nx
+
+        if np.mod(self.mtot.shape[0], Nx) != 0:
             self.Ny += 1
-        self.Ntot = len(self.mtot) 
+        self.Ntot = self.mtot.shape[0]
 
 # end class HamiltonianFromW90
