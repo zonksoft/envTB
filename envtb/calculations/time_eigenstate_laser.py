@@ -7,10 +7,10 @@ import envtb.time_propagator.vector_potential
 import envtb.wannier90.w90hamiltonian as w90hamiltonian
 
 directory = '/tmp/'
-dt = 0.002 * 10**(-12)
+dt = 0.004 * 10**(-12)
 NK = 12
-laser_freq = 10 * 10**(12)
-laser_amp = 0.5 * 10**(-2)
+laser_freq = 1 * 10**(12)
+laser_amp = 1.0 * 10**(-2)
 Nc = 3 #number of laser cycles
 CEP = np.pi/2.
 direct = [np.sqrt(3.)/2.,0.5]
@@ -37,13 +37,13 @@ def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
 
 # end def propagate_wave_function
 
-def propagate_graphene_pulse(Nx=200, Ny=200, frame_num=2000, magnetic_B=None):
+def propagate_graphene_pulse(Nx=300, Ny=300, frame_num=5000, magnetic_B=None):
     """
     Since in lanczos in the exponent exp(E*t/hbar) we are using E in eV
     """
     ham = envtb.ldos.hamiltonian.HamiltonianGraphene(Nx, Ny)
-    '''
-    w, v = ham.eigenvalue_problem(k=150, sigma=0.0)
+    
+    w, v = ham.eigenvalue_problem(k=160, sigma=0.0)
     isort = np.argsort(w)
     v = np.array(v)
     wsort = np.sort(w)
@@ -51,68 +51,71 @@ def propagate_graphene_pulse(Nx=200, Ny=200, frame_num=2000, magnetic_B=None):
     for i in xrange(len(isort)):
         vsort[:,i] = v[:,isort[i]]
     
-    plt.plot(wsort.real, 'o', ms=2)
+    ##plt.plot(wsort.real, 'o', ms=2)
     
-    plt.show()
+    ##plt.show()
     
-    Nstate = 1
+    ##Nstate = 2
     
-    envtb.ldos.plotter.Plotter().plot_density(
-        vector=abs(vsort[:, Nstate]), coords=ham.coords, alpha=0.7)
-    plt.show()
-    '''
+    ##envtb.ldos.plotter.Plotter().plot_density(
+    ##    vector=abs(vsort[:, Nstate]), coords=ham.coords, alpha=0.7)
+    ##plt.show()
+    
     ''' Make vector potential'''
     
     Ax = envtb.time_propagator.vector_potential.LP_SinSqEnvelopePulse(
         amplitude_E0=laser_amp, frequency=laser_freq, Nc=Nc, cep=CEP, direction=direct)
-    Ax.plot_pulse()
-    Ax.plot_envelope()
-    Ax.plot_electric_field()
-    plt.show()
+    #Ax.plot_pulse()
+    #Ax.plot_envelope()
+    #Ax.plot_electric_field()
+    #plt.show()
     
-    wf_out = open('wave_functions.out','w')
-    dt_new = dt
-    NK_new = NK
-    time_counter = 0.0
+    for Nstate in xrange(20):
+        wf_out = open('wave_functions_%(Nstate)d.out' % vars(), 'w')
+
+        dt_new = dt
+        NK_new = NK
+        time_counter = 0.0
     
-    '''initialize wave function
-    create wave function from file (WaveFunction(coords=ham.coords).wave_function_from_file),
-    wave function from eigenstate (WaveFunction(vec=v[:, Nstate],coords=ham.coords)) or
-    create Gaussian wave packet (GaussianWavePacket(coords=ham.coords, ic=ic, p0=[0.0, 1.5], sigma=7.))
-    '''
-    wf_final = envtb.time_propagator.wave_function.WaveFunction(coords=ham.coords)
-    time_counter = wf_final.wave_function_from_file('wave_functions_0.out')
-    ###wf_final = envtb.time_propagator.wave_function.WaveFunction(vec=v[:, Nstate],coords=ham.coords)
-    ##ic = Nx/2 * Ny + Ny/2
-    ##wf_final = envtb.time_propagator.wave_function.GaussianWavePacket(
-    ##        ham.coords, ic, p0=[0.0, 1.5], sigma=7.)
-    maxel = max(wf_final.wf1d)
-    wf_final.save_wave_function_data(wf_out, time_counter)
+        '''initialize wave function
+        create wave function from file (WaveFunction(coords=ham.coords).wave_function_from_file),
+        wave function from eigenstate (WaveFunction(vec=v[:, Nstate],coords=ham.coords)) or
+        create Gaussian wave packet (GaussianWavePacket(coords=ham.coords, ic=ic, p0=[0.0, 1.5], sigma=7.))
+        '''
+        #wf_final = envtb.time_propagator.wave_function.WaveFunction(coords=ham.coords)
+        #time_counter = wf_final.wave_function_from_file('wave_functions_0.out')
+        wf_final = envtb.time_propagator.wave_function.WaveFunction(vec=v[:, Nstate],coords=ham.coords)
+        ##ic = Nx/2 * Ny + Ny/2
+        ##wf_final = envtb.time_propagator.wave_function.GaussianWavePacket(
+        ##        ham.coords, ic, p0=[0.0, 1.5], sigma=7.)
+        #maxel = max(wf_final.wf1d)
+        
+        wf_final.save_wave_function_data(wf_out, time_counter)
     
-    import time
+        import time
     
-    '''main loop'''
-    for i in xrange(frame_num):
+        '''main loop'''
+        for i in xrange(frame_num):
         
-        print 'frame %(i)d' % vars()
-        time_counter += dt_new
+            print 'frame %(i)d' % vars()
+            time_counter += dt_new
         
-        st = time.time()
-        ham2 = ham.apply_vector_potential(Ax(time_counter))
-        print 'efficiency ham2', time.time() - st
+            st = time.time()
+            ham2 = ham.apply_vector_potential(Ax(time_counter))
+            #print 'efficiency ham2', time.time() - st
         
-        print 'time', time_counter, 'A', Ax(time)
-        st = time.time()
-        wf_init = wf_final
-        wf_final, dt_new, NK_new = propagate_wave_function(
-            wf_init, ham2, NK=NK_new, dt=dt_new, 
-            maxel = maxel, regime='TSC', alpha=0.7)
-            #file_out = directory+'f%03d_2d.png' % i)
-        print 'efficiency lanz', time.time() - st
+            print 'time', time_counter, 'A', Ax(time)
+            st = time.time()
+            wf_init = wf_final
+            wf_final, dt_new, NK_new = propagate_wave_function(
+                  wf_init, ham2, NK=NK_new, dt=dt_new, maxel=None, 
+                  regime='TSC', alpha=0.7)
+                  #file_out = directory+'f%03d_2d.png' % i)
+            #print 'efficiency lanz', time.time() - st
         
-        if np.mod(i,20) == 0:
-            wf_final.save_wave_function_data(wf_out, time_counter)
+            if np.mod(i,10) == 0:
+                  wf_final.save_wave_function_data(wf_out, time_counter)
            
-    wf_out.close()
+        wf_out.close()
 
 propagate_graphene_pulse()
