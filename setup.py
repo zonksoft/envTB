@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def read(fname):
@@ -14,7 +14,7 @@ setup(
     license="BSD",
     keywords="solid state physics tight binding",
     url="https://github.com/zonksoft/envTB",
-    packages=['envtb'],
+    packages=find_packages(exclude=['exampledata', 'testsuite']),
     long_description=read('README.md'),
     classifiers=[
         "Development Status :: 3 - Alpha",
