@@ -3,6 +3,9 @@ import numpy
 
 def _numpy_array_from_triangle(matrix_triangle):
     """
+    Creates a square numpy array from a lower
+    triangle matrix (given as list or array).
+    
     matrix_triangle: lower triangle
     """
     nrorbs = len(matrix_triangle[-1])
@@ -19,21 +22,30 @@ class MolcasFockMatrix:
         self.fock_matrix = numpy.array(fock_matrix, copy=False)
         
     @classmethod
-    def from_molcas_output(cls, molcas_file, nrorbs):
+    def get_matrices_from_molcas_output(cls, molcas_file, nrorbs):
         """
+        Creates MolcasFockMatrix objects from a Molcas log file.
+        
         molcas_file: Log file contents as list of strings
         nrorbs: number of basis orbitals
+        
+        Return:
+        list of MolcasFockMatrix instances
         """
         
-        return cls(MolcasFockMatrix.__get_fock_matrix(molcas_file, nrorbs))
+        return [cls(fock_matrix) for fock_matrix in 
+                MolcasFockMatrix.__get_fock_matrices(molcas_file, nrorbs)]
     
     @staticmethod
-    def __get_fock_matrix(molcas_file, nrorbs):
+    def __get_fock_matrices(molcas_file, nrorbs):
         """
-        Returns the fock matrix (the first one that occurs in the file).
+        Returns the Fock matrices in the file (as a list of arrays).
+        
+        nrorbs: Number of orbitals 
         """
         search_pattern=re.compile('print Fock-Matrix in AO-basis')
         
+        fock_matrices = []
         for nr, line in enumerate(molcas_file):
             res=search_pattern.search(line)
             if res:
@@ -41,7 +53,10 @@ class MolcasFockMatrix:
                 matrix_triangle = [[float(x) for x in line.split()] for line in matrix_lines]
                 
                 matrix = _numpy_array_from_triangle(matrix_triangle)
-                return matrix    
+                
+                fock_matrices.append(matrix)
+         
+        return fock_matrices
                 
     def apply_operator(self, left, right):
         """
@@ -65,7 +80,7 @@ class MolcasOutput:
             self.__get_scf_results(self.molcas_file)
         
         self.overlap_matrix = self.__get_overlap_matrix(self.molcas_file, self.number_of_basis_functions)
-        self.fock_matrix = MolcasFockMatrix.from_molcas_output(
+        self.fock_matrices = MolcasFockMatrix.get_matrices_from_molcas_output(
             self.molcas_file, self.number_of_basis_functions)        
         
     def __regex_patterns_through_list(self, patterns, data, datatype=float):
