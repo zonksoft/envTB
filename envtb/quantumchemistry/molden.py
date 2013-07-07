@@ -157,6 +157,9 @@ class SimpleMolecularOrbitalPlotter:
         return ax.scatter(x, y, s, c, edgecolors='none')
             
              
+# XXX: works well for a set from molden file. With a more 'custom' set, e.g. the inner
+# product will be ill-defined. What to do about that? Maybe link orbitals
+# to original set? Or distinguish between original set, non-original and incomplete?
 
 class MolecularOrbitalSet:
     def __init__(self, molecular_orbitals):
@@ -176,6 +179,12 @@ class MolecularOrbitalSet:
         
     def occupations(self):
         return [orb.occupation for orb in self.molecular_orbitals]
+        
+    def energies(self, only_occupied=False):
+        if only_occupied is False:
+            return [orb.energy for orb in self.molecular_orbitals]
+        else:
+            return [orb.energy for orb in self.molecular_orbitals if orb.occupation != 0]              
     
     def plot_occupations(self, ax):
         occupations = self.occupations()
@@ -188,7 +197,29 @@ class MolecularOrbitalSet:
         
     def __getitem__(self, key):
         return self.molecular_orbitals[key]
+    
+    def __select_spin_orbitals(self, spin):
+        new_mo_list = []
+        for orb in self.molecular_orbitals:
+            if orb.spin.lower() == spin:
+                new_mo_list.append(orb)
         
+        return MolecularOrbitalSet(new_mo_list)    
+        
+    def alpha_spin_orbitals(self):
+        """
+        Return new MolecularOrbitalSet which contains
+        the alpha spin orbitals.
+        """
+        return self.__select_spin_orbitals('alpha')
+
+    def beta_spin_orbitals(self):
+        """
+        Return new MolecularOrbitalSet which contains
+        the beta spin orbitals.
+        """    
+        return self.__select_spin_orbitals('beta')
+                
     def overlap(self):
         """
         Overlap matrix is S=(V^T)^-1 V^-1
@@ -212,14 +243,20 @@ class MolecularOrbitalSet:
         coeff2 = orb2.coefficients
         return numpy.dot(numpy.dot(coeff1, self.overlap()), coeff2)
     
-    def molecular_orbital_matrix(self):
+    def molecular_orbital_matrix(self, order=None):
         #molecular orbitals in rows
-        return numpy.vstack([orb.coefficients for orb in self.molecular_orbitals])
+        if order is None:
+            return numpy.array([orb.coefficients for orb in self.molecular_orbitals])
+        else:
+            return numpy.array([[orb.coefficients[i] for i in order] for orb in self.molecular_orbitals])
         
     def norm(self, orb):
         return math.sqrt(self.inner_product(orb, orb))
         
-    def save_to_molcas_uhforb_file(self, other_mo_set, fname, infostring, add_dummy_energies=False):
+    # XXX: function assumes two separate sets; add functionality for one set that contains
+    # alpha and beta
+        
+    def save_to_molcas_uhforb_file(self, other_mo_set, fname, infostring, atomic_orbitals, add_dummy_energies=False):
         """
         An UhfOrb file contains two molecular orbital sets, so another set has to be supplied
         through other_mo_set. The current set will be the first set written to the file.
@@ -228,16 +265,20 @@ class MolecularOrbitalSet:
         add_dummy_energies: Creates dummy energies in steps of 0.1 eV instead of
         the energies saved in the instance (which are probably zero if you are
         using this feature)        
+        atomic_orbitals: The atomic orbitals of the corresponding MoldenFile.
         """
         
-        orbitals_coefficients_1 = [orb.coefficients for orb in self.molecular_orbitals]
-        occupations_1 = [orb.occupation for orb in self.molecular_orbitals]
+        orbitals_coefficients_1 = self.molecular_orbital_matrix(
+            order=atomic_orbitals.concatenate_orbitals().molden_to_molcas_resort_order())
+        occupations_1 = self.occupations()
         
-        orbitals_coefficients_2 = [orb.coefficients for orb in other_mo_set.molecular_orbitals]
-        occupations_2 = [orb.occupation for orb in other_mo_set.molecular_orbitals]
-                
+        orbitals_coefficients_2 = other_mo_set.molecular_orbital_matrix(
+            order=atomic_orbitals.concatenate_orbitals().molden_to_molcas_resort_order())
+        occupations_2 = other_mo_set.occupations()
+        
+        # XXX: shouldn't there be two sets of electron energies?
         if not add_dummy_energies:
-            one_electron_energies = [orb.energy for orb in self.molecular_orbitals]
+            one_electron_energies = self.energies()
         else:
             nr_orbitals = len(self.molecular_orbitals)
             one_electron_energies = numpy.arange(-nr_orbitals/2., nr_orbitals/2.)*0.1  
@@ -248,17 +289,19 @@ class MolecularOrbitalSet:
             orbitals_coefficients_2, occupations_2, one_electron_energies)            
                   
     
-    def save_to_molcas_gssorb_file(self, fname, infostring, add_dummy_energies=False):
+    def save_to_molcas_gssorb_file(self, fname, infostring, atomic_orbitals, add_dummy_energies=False):
         """
         fname: *.GssOrb
 
         add_dummy_energies: Creates dummy energies in steps of 0.1 eV instead of
         the energies saved in the instance (which are probably zero if you are
         using this feature)
+        atomic_orbitals: The atomic orbitals of the corresponding MoldenFile.
         """
         
-        orbitals_coefficients = [orb.coefficients for orb in self.molecular_orbitals]
-        occupations = [orb.occupation for orb in self.molecular_orbitals]
+        orbitals_coefficients = self.molecular_orbital_matrix(
+            order=atomic_orbitals.concatenate_orbitals().molden_to_molcas_resort_order())
+        occupations = self.occupations()
         if not add_dummy_energies:
             one_electron_energies = [orb.energy for orb in self.molecular_orbitals]
         else:
@@ -348,7 +391,6 @@ class MoldenFile:
         return FileSectionUtilities.get_section(molden_file, file_sections, '[GTO]')    
     
     def __parse_molden_file(self,molden_file):
-        global gto_section
         file_sections = self.__get_molden_file_sections(molden_file)
         molecule_geometry = self.__get_atoms(molden_file, file_sections)
         mo_section = self.__get_mo_section(molden_file, file_sections)
@@ -393,7 +435,10 @@ class AtomicOrbitalsGTO:
         return float(x.replace('D','E'))
     
     def __parse_gto_blocks(self, lines):
+        # XXX: improve format selection
         gto_sections_heads = FileSectionUtilities.get_section_heads_and_positions(lines, '([0-9]*)  ([0-9]*)')
+        if gto_sections_heads == []:
+            gto_sections_heads = FileSectionUtilities.get_section_heads_and_positions(lines, '^([0-9]+)$')
         gto_sections = FileSectionUtilities.split_by_sections(lines, gto_sections_heads)
         
         gto_blocks = []
@@ -409,7 +454,11 @@ class AtomicOrbitalsGTO:
     def __parse_orbital_blocks(self, atom_number, gto_block):
         gaussian_orbitals = []
         for orb_block in gto_block:
-            orb_type, nr_gaussians, _ = [envtb.general.string_to_number(x) for x in orb_block[0].split()]
+            # XXX: improve format selection            
+            try:
+                orb_type, nr_gaussians, _ = [envtb.general.string_to_number(x) for x in orb_block[0].split()]
+            except ValueError:
+                orb_type, nr_gaussians = [envtb.general.string_to_number(x) for x in orb_block[0].split()]
             gaussian_coeffs = [[AtomicOrbitalsGTO.__scient_d_str_to_float(x) for x in coeff_line.split()] for coeff_line in orb_block[1:] if coeff_line != '']
             gaussian_orbitals.append(GaussianOrbital(orb_type, gaussian_coeffs))
         return GaussianOrbitalAtomSet(atom_number, gaussian_orbitals)        
@@ -441,4 +490,46 @@ class OrbitalList:
             return numpy.array([orbital[3] == angular_momentum for orbital in self.orbital_properties])
         else:
             return [i for i, orbital in enumerate(self.orbital_properties) if orbital[3] == angular_momentum]
+            
+    def select_atom(self, atom_nr, numpy_filter_mode=False):
+        #use numpy_filter_mode like: orbital_coeffs[selection]
+        if numpy_filter_mode:
+            return numpy.array([orbital[0] == atom_nr for orbital in self.orbital_properties])
+        else:
+            return [i for i, orbital in enumerate(self.orbital_properties) if orbital[0] == atom_nr]
+            
+    def molden_to_molcas_resort_order(self):
+        # Supports s and p orbitals
+        groups = []
+        atomnr = -1
+        for i, orb in enumerate(self.orbital_properties):
+            if orb[0] != atomnr:
+                groups.append([])
+                atomnr = orb[0]
+            groups[-1].append([i] + orb)
+            
+        resort = []
+        for group in groups:
+            s = [fct for fct in group if fct[4]=='s']
+            px = [fct for fct in group if fct[4]=='px']
+            py = [fct for fct in group if fct[4]=='py']
+            pz = [fct for fct in group if fct[4]=='pz']
+    
+            resort.extend(s+px+py+pz)
+    
+        return [x[0] for x in resort]
+    
+    @staticmethod
+    def invert_list_order(order):
+        neworder = [0]*len(order) 
+    
+        for i, nr in enumerate(order):
+            neworder[nr] = i
+            
+        return neworder
+    
+    def molcas_to_molden_resort_order(self):
+        order = self.molden_to_molcas_resort_order()
+    
+        return OrbitalList.invert_list_order(order)            
                                  
