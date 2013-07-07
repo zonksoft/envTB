@@ -1591,8 +1591,10 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
 
         return fct_on_grid
 
+# XXX: fully support more than one unit cell contained in the data grid.
+
 class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
-    def __init__(self, orbgrid, grid_latticevecs, startpos, number=None, position=None, spread=None):
+    def __init__(self, orbgrid, grid_latticevecs, startpos, unit_cell_grid=(1,1,1), number=None, position=None, spread=None):
         """
         Represents a Wannier orbital.
         
@@ -1602,12 +1604,14 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
         number: Orbital index
         position: Center position
         spread: Orbital spread
+        unit_cell_grid: number of unit cells per dimension contained in the data.
         """
         utilities.LinearInterpolationNOGrid.__init__(self,orbgrid, grid_latticevecs,startpos)
 
         self.position = position
         self.spread = spread
         self.number = number
+        self.unit_cell_grid = unit_cell_grid
         
     def set_position(self, position):
         self.position = position
@@ -1738,9 +1742,20 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
         Calculate the Fourier transform of the orbital.
         With the returned FourierTransform object, you get the
         Fourier transform data and convenient utility functions.
+        
+        shape: shape of the supercell (3-tuple), which is empty except for the
+        given data grid, in integer multiples of the data grid size.
+        Default is None, which equals (1,1,1).        
         """
+        
+        if shape is None:
+            cell_shape = self.data().shape
+        else:
+            cell_shape = [(x * y) / z for x, y, z in zip(shape, self.data().shape, self.unit_cell_grid)]
+            print cell_shape
+            
         return envtb.utility.fourier.FourierTransform(
-            self.latticevecs(), self.data(), shape, axes)
+            self.latticevecs(), self.data(), cell_shape, axes)
     
 
 class LocalizedOrbitalSet:
@@ -1780,7 +1795,7 @@ class WannierRealSpaceOrbitals(LocalizedOrbitalSet):
     >>>     plot(points[:,2], values,label=str(nr))
     >>> legend()
     """
-    def __init__(self, path):
+    def __init__(self, path, unit_cell_grid):
         """
         path: If path points to a directory, all *.xsf files will be read.
               If it points to a file, only this file will be read.
@@ -1794,6 +1809,7 @@ class WannierRealSpaceOrbitals(LocalizedOrbitalSet):
             self.directory = os.path.dirname(path)
             
         self.orbitals = None
+        self.unit_cell_grid = unit_cell_grid
         
     def read(self):
         """
@@ -1849,7 +1865,7 @@ class WannierRealSpaceOrbitals(LocalizedOrbitalSet):
         
         grid_latticevecs = [vec/ctr for vec,ctr in zip(latticevecs,shape)]
         
-        return WannierOrbital(orbgrid, grid_latticevecs,startpos)
+        return WannierOrbital(orbgrid, grid_latticevecs,startpos, self.unit_cell_grid)
     
     #Copy from Hamiltonian. XXX Refactor!!    
     def __orbital_spreads_and_positions(self,wannier90_wout_filename):

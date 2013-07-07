@@ -8,23 +8,24 @@ class FourierTransform:
         latticevecs: The grid lattice vectors of data_on_grid.
         data_on_grid: 3D array, data grid.
         shape: shape of the supercell (3-tuple), which is empty except for the
-        given data grid, in integer multiples of the data grid size.
-        Default is None, which equals (1,1,1).
+        given data grid, in gridpoints.
+        Default is None, in which case the shape of the data will be used.
         axes: Axes along which the FT will be performed (Default None,
         which equals (0,1,2) ), e.g. (0,1) if the z axis shall not be
         transformed.
         """
         self.original_data = data_on_grid
         self.original_latticevecs = latticevecs
+        
         if shape is None:
             cell_shape = data_on_grid.shape
         else:
-            cell_shape = [x * y for x, y in zip(shape, data_on_grid.shape)]
+            cell_shape = shape
 
         if axes is None:
             axes = (0, 1, 2)
-        else:
-            cell_shape = [j for i, j in enumerate(shape) if i in axes]
+        #else:
+        #    cell_shape = [j for i, j in enumerate(shape) if i in axes]
 
         # self.reciprocal_latticevecs, self.transformed_grid = \
         #    FourierTransform.calculate_fourier_grid(self.original_latticevecs,
@@ -95,7 +96,8 @@ class RealSpaceWaveFunctionFourierTransform:
         at the instantiation.
 
         real_space_orbitals: Orbital set (instance of w90hamiltonian.LocalizedOrbitalSet)
-        wave_function_shape: Shape of the wave functions which will be transformed.
+        wave_function_shape: Shape of the wave functions which will be transformed, in multiples
+        of the unit cell.
         transform_axes: Axes which will be transformed; e.g. (0,1) means that the
         z axis will not be transformed.
 
@@ -111,7 +113,7 @@ class RealSpaceWaveFunctionFourierTransform:
 
         for orbnr, orb in \
             self.wannier_real_space_orbitals.orbitals.iteritems():
-            self.fourier_transformations[orbnr] = orb.fourier_transform(wave_function_shape)
+            self.fourier_transformations[orbnr] = orb.fourier_transform(wave_function_shape, axes=transform_axes)
 
 
     # XXX: write function to go from wave function in vector to array
@@ -125,7 +127,7 @@ class RealSpaceWaveFunctionFourierTransform:
 
         return numpy.dstack((numpy.vstack((numpy.hstack((matrix,) * nj),) * ni),) * nk)
 
-    def fourier_transform(self, latticevecs, wave_functions, full_transform=False):
+    def fourier_transform(self, wave_functions, full_transform=False):
         """
         Fourier transform a given wave function.
 
@@ -137,8 +139,6 @@ class RealSpaceWaveFunctionFourierTransform:
         lattice vectors. Every periodic WF which is not a cuboid can be transformed
         to a cuboid by periodic rearrangement.
         The WF needs to have the shape previously supplied to the constructor.
-        latticevecs: grid that spans the unit lattice, as an integer
-        multiple of unit cells.
         full_transform: If True, the output will contain all wavelengths; if False,
         only the wavelengths which occur on the wave function lattice, not those
         in the real space orbital lattice.
@@ -148,6 +148,9 @@ class RealSpaceWaveFunctionFourierTransform:
         transformed_wave_functions: the Fourier transforms of the lattice WF (dict)
         """
 
+        # XXX: full_transform = True gives only positive frequencies, what about the
+        # negative ones?
+        
         transformed_coefficients = {}
         transformed_wave_functions = {}
         for orbnr, orb in \
@@ -160,9 +163,8 @@ class RealSpaceWaveFunctionFourierTransform:
             #    FourierTransform.calculate_fourier_grid(
             #        latticevecs, wave_function.shape)
 
-            transformed_orb_values_on_grid = orb.fourier_transform(wave_function.shape)
             if full_transform:
-                periodicity = transformed_orb_values_on_grid.original_data.shape
+                periodicity = self.fourier_transformations[orbnr].original_data.shape
                 wannier_transformed = self.__periodic_matrix(transformed_wave_function, *periodicity) * self.fourier_transformations[orbnr].transformed_data
             else:
                 nx, ny, nz = transformed_wave_function.shape
