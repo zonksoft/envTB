@@ -7,13 +7,18 @@ import envtb.time_propagator.vector_potential
 import envtb.wannier90.w90hamiltonian as w90hamiltonian
 
 directory = '/tmp/'
-dt = 0.004 * 10**(-12)
+#for 1THz pulse (amp=0.5*10**(-2)) use 0.004*10^(-12) and 5500 frames
+#for 10THz pulse (amp=0.5*10**(-2)) use 0.001*10^(-12) and 2500 frames
+dt = 0.001 * 10**(-12)
 NK = 12
-laser_freq = 1 * 10**(12)
-laser_amp = 1.0 * 10**(-2)
+laser_freq = 10. * 10**(12)
+laser_amp = 0.5 * 10**(-2)
 Nc = 3 #number of laser cycles
 CEP = np.pi/2.
 direct = [np.sqrt(3.)/2.,0.5]
+Nframes = 2500
+Nx = 200
+Ny = 200
 
 def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
                             num_error=10**(-18), regime='SIL', 
@@ -37,13 +42,13 @@ def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
 
 # end def propagate_wave_function
 
-def propagate_graphene_pulse(Nx=300, Ny=300, frame_num=5000, magnetic_B=None):
+def propagate_graphene_pulse(Nx=20, Ny=20, frame_num=10, magnetic_B=None):
     """
     Since in lanczos in the exponent exp(E*t/hbar) we are using E in eV
     """
     ham = envtb.ldos.hamiltonian.HamiltonianGraphene(Nx, Ny)
     
-    w, v = ham.eigenvalue_problem(k=160, sigma=0.0)
+    w, v = ham.eigenvalue_problem(k=250, sigma=0.0)
     isort = np.argsort(w)
     v = np.array(v)
     wsort = np.sort(w)
@@ -51,9 +56,9 @@ def propagate_graphene_pulse(Nx=300, Ny=300, frame_num=5000, magnetic_B=None):
     for i in xrange(len(isort)):
         vsort[:,i] = v[:,isort[i]]
     
-    ##plt.plot(wsort.real, 'o', ms=2)
+    #plt.plot(wsort.real, 'o', ms=2)
     
-    ##plt.show()
+    #plt.show()
     
     ##Nstate = 2
     
@@ -70,7 +75,7 @@ def propagate_graphene_pulse(Nx=300, Ny=300, frame_num=5000, magnetic_B=None):
     #Ax.plot_electric_field()
     #plt.show()
     
-    for Nstate in xrange(20):
+    for Nstate in xrange(1, 20):
         wf_out = open('wave_functions_%(Nstate)d.out' % vars(), 'w')
 
         dt_new = dt
@@ -118,4 +123,4 @@ def propagate_graphene_pulse(Nx=300, Ny=300, frame_num=5000, magnetic_B=None):
            
         wf_out.close()
 
-propagate_graphene_pulse()
+propagate_graphene_pulse(Nx=Nx, Ny=Ny, frame_num=Nframes)
