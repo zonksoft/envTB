@@ -14,10 +14,10 @@ def FermiFunction(x, mu, kT):
     return 1./(1. + np.exp((x - mu).real/kT))
 
 
-class GeneralHamiltonian:  
+class GeneralHamiltonian:
 
     def __init__(self, mtot=None, Nx=None, Ny=None, coords=None):
-     
+        
         self.mtot = mtot
         self.Nx = Nx
         self.Ny = Ny
@@ -37,7 +37,7 @@ class GeneralHamiltonian:
             ins.Ny = Ny
         return ins
     
-    def apply_potential(self, U):
+    def apply_potential(self, U, sign_variation=False):
         """
         This function apply potential to the hamiltonian
         
@@ -48,7 +48,8 @@ class GeneralHamiltonian:
         """
         if not isinstance(U, potential.Potential1D):
             if not isinstance(U, potential.Potential2D):
-                raise TypeError("f has to be instance of Potential1D or Potential2D")
+                if not isinstance(U, potential.SoftConfinmentPotential):
+                    raise TypeError("f has to be instance of Potential1D or Potential2D or SoftConfinmentPotential")
             
         mt = self.mtot.copy()#.todense()
         
@@ -70,6 +71,23 @@ class GeneralHamiltonian:
                                 for i in xrange(self.Ntot)]), np.array([0])),
                                            shape=(self.Ntot,self.Ntot))
             mt = mt + mdia.tocsr()
+            
+        elif isinstance(U, potential.SoftConfinmentPotential):
+            if not sign_variation:
+                mdia = scipy.sparse.dia_matrix((np.array([U([self.coords[i][0], 
+                                                         self.coords[i][1]]) 
+                                for i in xrange(self.Ntot)]), np.array([0])),
+                                            shape=(self.Ntot,self.Ntot))
+            else:
+                data = np.zeros(self.Ntot, dtype=float)
+                #for i in xrange(self.Ntot):
+                if np.mod(self.Ny, 2) == 0:
+                    data = [U([self.coords[i][0], self.coords[i][1]], i=i+int(i/self.Ny)) for i in xrange(self.Ntot)]
+                else:
+                    data = [U([self.coords[i][0], self.coords[i][1]], i=i) for i in xrange(self.Ntot)]
+                mdia = scipy.sparse.dia_matrix((np.array(data), np.array([0])),
+                                            shape=(self.Ntot,self.Ntot))
+            mt = mt.multiply(mdia.tocsr())
             
         return self.copy_ins(mt)
     
