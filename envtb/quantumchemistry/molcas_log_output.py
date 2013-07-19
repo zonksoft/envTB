@@ -72,8 +72,13 @@ class MolcasFockMatrix:
                 
                 
 class MolcasOutput:
-    def __init__(self, path):
-        self.molcas_file = open(path).readlines()
+    @classmethod
+    def from_file(cls, fname):
+        molcas_file = open(path).readlines()
+        return cls(molcas_file)
+        
+    def __init__(self, molcas_file):
+        self.molcas_file = molcas_file
         self.number_of_basis_functions, self.occupied_orbitals_alpha, self.occupied_orbitals_beta, \
             self.orbital_file_label = self.__get_initial_properties(self.molcas_file)
         self.total_scf_energy, self.one_electron_energy, self.two_electron_energy = \
