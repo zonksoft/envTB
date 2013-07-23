@@ -178,18 +178,58 @@ class RealSpaceWaveFunctionFourierTransform:
 class ZigzagGNRHelper:
     def __init__(self, nnfile, height, length, paddingx=0, paddingy=0):
         """
-        height: height of zGNR in 4-atom basiscells
-        length: number of slices
+        height: height of zGNR in 4-atom basiscells. MUST BE EVEN.
+        length: number of slices. MUST BE EVEN.
         paddingx, paddingy: number of padding orbitals in x and y direction
         nnfile: Nearest neighbour file with geometry
         """
+        
+        if height % 2 != 0 or length % 2 != 0:
+            raise ValueError('height and length must be even numbers.')
+            
         self.height, self.length = height,length
         self.paddingx, self.paddingy = paddingx, paddingy
         self.nnfile = nnfile
         
+        self.supercell_hamiltonian = self.__create_supercell_hamiltonian(nnfile, height, length)
+        
+        
+    @staticmethod
+    def rings_to_atoms(nr_of_rings):
+        return 2*nr_of_rings + 2
+        
+    @staticmethod
+    def rings_to_2cells(nr_of_rings):
+        """
+        Returns the number of 2-cells (zigzag basis cell containing two
+        graphene cells), including padding at top and bottom.
+        """
+        
+        if nr_of_rings % 2 == 0:
+            return nr_of_rings/2 + 1
+        else:
+            return (nr_of_rings+1)/2 + 1   
+            
+    @staticmethod        
+    def atoms_to_rings(nr_of_atoms):
+        return (nr_of_atoms - 2)/2                 
+        
     def __create_hamiltonian(self, nnfile, height, length):
-    
-        unitcells=self.height*2
+        """
+        Creates a graphene rectangle Hamiltonian from a nearest neighbour
+        parameter file.
+
+        nnfile: path to a nearest-neighbour parameter file.
+        height: height of the rectangle in 4-atom unitcells (nr of atoms = 4*height*length)
+        length: length of the rectangle (nr of stripes)
+
+        
+        Return:
+        ham: Hamiltonian of the graphene unitcell.
+        ham5: Hamiltonian of the graphene rectangle.
+        """
+       
+        unitcells=height
         ham = Hamiltonian.from_nth_nn_list(nnfile)
         
         ham2 = ham.create_supercell_hamiltonian(
@@ -207,52 +247,67 @@ class ZigzagGNRHelper:
             length)], [[length, 0, 0], [0, 1, 0], [0, 0, 1]])
         
         return ham, ham5
+        
+    def __create_supercell_hamiltonian(self, nnfile, height, length):
+        unitcells=length*2
+        ham = Hamiltonian.from_nth_nn_list(nnfile)
+        
+        ham3 = ham.create_supercell_hamiltonian(
+            [[i, j, 0] for j in range(height) for i in range(unitcells)],
+            [[unitcells, 0, 0], [0, height, 0], [0, 0, 1]])
+        
+        #ham4 = ham3.create_modified_hamiltonian(
+        #    ham3.drop_dimension_from_cell_list(1))
+        
+        
+        return ham3
 
 
     def __create_transformations(self, ham):
         a1, a2, a3 = ham.latticevectors()
-        b1 = 8*a1
-        b2 = 4*a2
+        b1 = 2*self.length*a1
+        b2 = self.height*a2
         b3 = a3
         
         c1=b1
-        c2=(a1-a2)*4
+        c2=(a1+a2)*self.height
         c3=a3
 
         vecs=numpy.vstack((b1,b2,b3))
         gr_vecs=numpy.vstack((a1,a2,a3))
+        lattice_vecs =numpy.vstack((c1, c2, c3))
         invvecs = numpy.linalg.inv(vecs)
         invgr_vecs = numpy.linalg.inv(gr_vecs)
+        invlattice_vecs = numpy.linalg.inv(lattice_vecs)
         
-        return vecs, gr_vecs, invvecs, invgr_vecs, a1, a2, a3, b1, b2, b3, c1, c2, c3
+        return vecs, gr_vecs, lattice_vecs, invvecs, invgr_vecs, invlattice_vecs
 
     def split_sublattices(self, vec, nrorbs):
         return numpy.array([[vec[i] for i in range(start,len(vec),nrorbs)] for start in range(nrorbs)])
 
-    def __shift_vector(self, vec, b1, b2, c2, invvecs):
-        transformed = numpy.dot(vec,invvecs)
-        transformed_right = numpy.dot(vec-c2,invvecs)
-        if transformed[1] < 0:
-            if transformed_right[0] < 0:
-                return vec + b1/2 + b2
-            else:
-                return vec - b1/2 + b2
-        else:
-            return vec
+    def __shift_vectors(self, coords, vecs, invvecs, lattice_vecs, invlattice_vecs):
+        
+        coords2 = coords - numpy.dot(numpy.floor(numpy.dot(coords, invlattice_vecs)), lattice_vecs)
+        coords3 = coords2 - numpy.dot(numpy.floor(numpy.dot(coords2, invvecs)), vecs)
+        
+        return coords3
         
     def resort_nanoribbon(self):    
         ham, ham5 = self.__create_hamiltonian(self.nnfile, self.height, self.length)
-        vecs, gr_vecs, invvecs, invgr_vecs, a1, a2, a3, b1, b2, b3, c1, c2, c3 = self.__create_transformations(ham)
+        vecs, gr_vecs, lattice_vecs, invvecs, invgr_vecs, invlattice_vecs, = self.__create_transformations(ham)
           
         orbpos = numpy.array(ham5.orbitalpositions())
         
         coords = self.split_sublattices(orbpos,2)[0]
-        shiftvecs = numpy.array([self.__shift_vector(vec, b1, b2, c2, invvecs) for vec in coords])
+        shiftvecs = self.__shift_vectors(coords, vecs, invvecs, lattice_vecs, invlattice_vecs)
         enumeration=numpy.array([range(len(shiftvecs))]).transpose()
         l=numpy.round(numpy.hstack((numpy.dot(shiftvecs,invgr_vecs),enumeration))*3)/3
         ind=numpy.lexsort((l[:,0],l[:,1]))    
         return l[ind][:,3]
-
+        
+    def resort_nanoribbon_vector(self, vec):
+        return numpy.array([vec[2*int(i)+j] for i in self.resort_nanoribbon() for j in range(2)])
+                
     def pad_nanoribbon_vector_to_periodic(self, vec):
         splitvecs=numpy.split(vec,len(vec)/(4*self.height-2))
         splitvecs=[numpy.append(splitvec,0) for splitvec in splitvecs]
