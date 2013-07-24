@@ -214,7 +214,7 @@ class ZigzagGNRHelper:
     def atoms_to_rings(nr_of_atoms):
         return (nr_of_atoms - 2)/2                 
         
-    def __create_hamiltonian(self, nnfile, height, length):
+    def create_hamiltonian(self, nnfile, height, length):
         """
         Creates a graphene rectangle Hamiltonian from a nearest neighbour
         parameter file.
@@ -246,7 +246,7 @@ class ZigzagGNRHelper:
         ham5 = ham4.create_supercell_hamiltonian([[i, 0, 0] for i in range(
             length)], [[length, 0, 0], [0, 1, 0], [0, 0, 1]])
         
-        return ham, ham5
+        return ham, ham2, ham5
         
     def __create_supercell_hamiltonian(self, nnfile, height, length):
         unitcells=length*2
@@ -293,7 +293,7 @@ class ZigzagGNRHelper:
         return coords3
         
     def resort_nanoribbon(self):    
-        ham, ham5 = self.__create_hamiltonian(self.nnfile, self.height, self.length)
+        ham, ham2, ham5 = self.create_hamiltonian(self.nnfile, self.height, self.length)
         vecs, gr_vecs, lattice_vecs, invvecs, invgr_vecs, invlattice_vecs, = self.__create_transformations(ham)
           
         orbpos = numpy.array(ham5.orbitalpositions())
