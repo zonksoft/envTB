@@ -17,6 +17,13 @@ class FourierTransform:
         self.original_data = data_on_grid
         self.original_latticevecs = latticevecs
         
+        
+        
+        self.reshaped_latticevecs = self.__reshape_latticevecs(latticevecs, shape, data_on_grid)
+        
+        print self.original_latticevecs
+        print self.reshaped_latticevecs
+        
         if shape is None:
             cell_shape = data_on_grid.shape
         else:
@@ -27,11 +34,23 @@ class FourierTransform:
         #else:
         #    cell_shape = [j for i, j in enumerate(shape) if i in axes]
 
-        # self.reciprocal_latticevecs, self.transformed_grid = \
-        #    FourierTransform.calculate_fourier_grid(self.original_latticevecs,
-        #                                            cell_shape)
+        self.reciprocal_latticevecs, self.transformed_grid = \
+           FourierTransform.calculate_fourier_grid(self.reshaped_latticevecs,
+                                                   cell_shape)
         self.transformed_data = self.__calculate_fourier_transform(self.original_data, cell_shape, axes)
 
+
+    def __reshape_latticevecs(self, latticevecs, data_shape, data_on_grid):
+        if len(data_shape) == 1:
+            data_shape = numpy.array(list(data_shape) + [1,1])
+            
+        elif len(data_shape) == 2:
+            data_shape = numpy.array(list(data_shape) + [1])            
+        else:
+            data_shape = numpy.array(data_shape)
+            
+        return latticevecs * (numpy.array(data_shape, dtype=numpy.float) / numpy.array(data_on_grid.shape))
+            
     def __calculate_fourier_transform(self, original_data, shape, axes):
         """
         shape: if not None, original_data will be filled up with zeroes
@@ -47,6 +66,7 @@ class FourierTransform:
         data shape.
 
         Return:
+        reciprocal_latticevecs: reciprocal lattice vectors.
         fourier_grid_latticevecs: lattice vectors of the Fourier grid.
         fourier_grid: the grid itself.
         """
@@ -56,16 +76,26 @@ class FourierTransform:
                                                ])
         reciprocal_latticevecs *= 2 * numpy.pi / numpy.linalg.det(latticevecs)
 
-        gridsize = data_shape
 
-        fourier_grid_latticevecs = reciprocal_latticevecs / data_shape
+        
+        if len(data_shape) == 1:
+            data_shape = numpy.array(list(data_shape) + [1,1])
+            
+        elif len(data_shape) == 2:
+            data_shape = numpy.array(list(data_shape) + [1])            
+        else:
+            data_shape = numpy.array(data_shape)
+
+        #fourier_grid_latticevecs = reciprocal_latticevecs * data_shape
+        
+        gridsize = data_shape        
 
         fourier_grid = numpy.array([[[numpy.dot([i, j, k], reciprocal_latticevecs)
-                  for k in numpy.arange(0, 1, 1. / gridsize[2])]
-                 for j in numpy.arange(0, 1, 1. / gridsize[1])]
-                for i in numpy.arange(0, 1, 1. / gridsize[0])])
+                  for k in numpy.arange(0, gridsize[2])]
+                 for j in numpy.arange(0, gridsize[1])]
+                for i in numpy.arange(0, gridsize[0])])
 
-        return fourier_grid_latticevecs, fourier_grid
+        return reciprocal_latticevecs, fourier_grid
 
 
     def plot(self, ax, kzidx=0, value='abs'):
@@ -108,14 +138,37 @@ class RealSpaceWaveFunctionFourierTransform:
         ... real_space_wave_function_fourier_transform.fourier_transform(
         ... latticevecs, {1: wave_function})
         """
+        
+        # XXX stuff is called wannier_real_space_orbitals, but should be called 
+        # real_space_orbitals because they can be any instance of LocalizedOrbitalSet
+        
         self.fourier_transformations = {}
         self.wannier_real_space_orbitals = real_space_orbitals
+        
+        self.lattice_reciprocal_latticevecs, self.lattice_fourier_grid = \
+            FourierTransform.calculate_fourier_grid(
+                real_space_orbitals.latticevecs*(self.__fill_shape_to_3d(wave_function_shape)), wave_function_shape)
+               
 
         for orbnr, orb in \
             self.wannier_real_space_orbitals.orbitals.iteritems():
             self.fourier_transformations[orbnr] = orb.fourier_transform(wave_function_shape, axes=transform_axes)
+            
+        self.orbital_reciprocal_latticevecs, self.orbital_fourier_grid = \
+            self.fourier_transformations.values()[0].reciprocal_latticevecs, \
+            self.fourier_transformations.values()[0].transformed_grid            
 
-
+    def __fill_shape_to_3d(self, shape):
+        if len(shape) == 1:
+            filled_shape = numpy.array(list(shape) + [1,1])
+            
+        elif len(shape) == 2:
+            filled_shape = numpy.array(list(shape) + [1])            
+        else:
+            filled_shape = numpy.array(shape)
+            
+        return filled_shape
+        
     # XXX: write function to go from wave function in vector to array
 
     def __periodic_matrix(self, matrix, ni, nj, nk):
@@ -159,12 +212,11 @@ class RealSpaceWaveFunctionFourierTransform:
 
             wave_function = numpy.array(wave_functions[orbnr], copy=False)
             transformed_wave_function = numpy.fft.fftn(wave_function)
-            # transformed_lattice_vectors, transformed_grid = \
-            #    FourierTransform.calculate_fourier_grid(
-            #        latticevecs, wave_function.shape)
+
 
             if full_transform:
-                periodicity = self.fourier_transformations[orbnr].original_data.shape
+                periodicity = numpy.array(self.fourier_transformations[orbnr].transformed_data.shape) / numpy.array(transformed_wave_function.shape)
+                print periodicity
                 wannier_transformed = self.__periodic_matrix(transformed_wave_function, *periodicity) * self.fourier_transformations[orbnr].transformed_data
             else:
                 nx, ny, nz = transformed_wave_function.shape

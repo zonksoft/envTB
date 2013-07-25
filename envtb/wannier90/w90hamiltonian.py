@@ -1518,7 +1518,7 @@ class LocalizedOrbital:
 
 class LocalizedOrbitalFromFunction(LocalizedOrbital):
     def __init__(self, fct, latticevecs, startpos, number=None,
-                 position=None, spread=None, gridpoints=10):
+                 position=None, spread=None, gridpoints=10, dim2=False, unit_cell_grid=(1,1,1)):
         """
         Describes a localized orbital, given by a function fct.
 
@@ -1531,6 +1531,9 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
         gridpoints: default number of gridpoints per dimension if 
         function has to be discretized (e.g. for discrete Fourier transform)
         by function_on_grid().
+        dim2: If True, only one gridpoint in z direction at z=0 is evaluated
+        when the function has to be discretized.
+        unit_cell_grid: number of unit cells per dimension contained in the volume given by latticevecs.
 
         Usage:
         >>> a=600
@@ -1547,6 +1550,8 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
         self.position = position
         self.spread = spread
         self.gridpoints = gridpoints
+        self.dim2 = dim2
+        self.unit_cell_grid = unit_cell_grid
 
     @classmethod
     def from_xyz_string(cls, fct_string):
@@ -1565,27 +1570,49 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
         Calculate the Fourier transform of the orbital.
         With the returned FourierTransform object, you get the
         Fourier transform data and convenient utility functions.
+        
+        shape: shape of the supercell (3-tuple), which is empty except for the
+        given data grid, in integer multiples of the data grid size.
+        Default is None, which equals (1,1,1). 
         """
+        
+        data = self.function_on_grid()
+        if shape is None:
+            cell_shape = data.shape
+        else:
+            # XXX: error occurs if grid to transform is not a multiple of unit cell grid -> handle        
+            cell_shape = [(x * y) / z for x, y, z in zip(shape, data.shape, self.unit_cell_grid)]
+            print cell_shape
+                    
         return envtb.utility.fourier.FourierTransform(
-            self.latticevecs(), self.function_on_grid(), shape, axes)
-    
+            self.latticevecs(), data, cell_shape, axes)
+            
     def latticevecs(self):
         return self.__latticevecs
     
-    def function_on_grid(self, gridpoints=None):
+    def function_on_grid(self, gridpoints=None, dim2=None):
         """
         Evaluate the function on a grid.
 
         gridpoints: Grid points per dimension. If None,
         the setting from the constructor is used.
+        dim2: If True, only one gridpoint in z direction at z=0 is evaluated.
         """
 
         if gridpoints is None:
             gridpoints = self.gridpoints
+        
+        if dim2 is None:
+            dim2 = self.dim2
+            
+        if dim2 is True:
+            zrange = [0.]
+        else:
+            zrange = numpy.arange(0, 1, 1. / gridpoints)
 
         fct_on_grid = numpy.array([[[
                   self.__call__(*(self.__startpos + numpy.dot([i, j, k], self.__latticevecs)))
-                  for k in numpy.arange(0, 1, 1. / gridpoints)]
+                  for k in zrange]
                   for j in numpy.arange(0, 1, 1. / gridpoints)]
                   for i in numpy.arange(0, 1, 1. / gridpoints)])
 
@@ -1751,6 +1778,7 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
         if shape is None:
             cell_shape = self.data().shape
         else:
+            # XXX: error occurs if grid to transform is not a multiple of unit cell grid -> handle
             cell_shape = [(x * y) / z for x, y, z in zip(shape, self.data().shape, self.unit_cell_grid)]
             print cell_shape
             
@@ -1759,14 +1787,16 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
     
 
 class LocalizedOrbitalSet:
-    def __init__(self, orbitals):
+    def __init__(self, orbitals, latticevecs):
         """
         Base class for basis orbital sets. You can also use the base class
         to arrange your own set.
         
         orbitals: dict of orbitals (instance of LocalizedOrbital)
+        latticevecs: lattice vectors describing the unit cell.
         """
         self.orbitals = orbitals
+        self.latticevecs = latticevecs
         
 
 class WannierRealSpaceOrbitals(LocalizedOrbitalSet):
