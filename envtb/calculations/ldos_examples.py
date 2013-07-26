@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import envtb.ldos.hamiltonian
 import envtb.ldos.potential 
 import envtb.ldos.plotter
@@ -211,8 +212,10 @@ def define_zigzag_ribbon_w90(nnfile, width, length, magnetic_B=None):
     return ham5
 # end def define_zigzag_ribbon_w90 
     
-def use_w90_example(Ny=10, Nx=10, magnetic_B=None):
+def use_w90_example(Ny=30, Nx=30, magnetic_B=None):
     
+
+    #pypar.finalize()  
     # Ny: number of atoms in slice is 2*(Ny+1)
     ham_w90 = define_zigzag_ribbon_w90(
         "../../exampledata/02_graphene_3rdnn/graphene3rdnnlist.dat", 
@@ -234,6 +237,13 @@ def use_w90_example(Ny=10, Nx=10, magnetic_B=None):
     plt.axes().set_aspect('equal')
     plt.show()
     """
+    import pypar
+    
+    proc = pypar.size()
+    myid = pypar.rank()
+    node = pypar.get_processor_name()
+    print 'I am proc %d of %d on node %s' % (myid, proc, node)
+    
     local_dos=envtb.ldos.local_density.LocalDensityOfStates(ham)
     
     envtb.ldos.plotter.Plotter().plot_density(local_dos(0.7), ham.coords)
@@ -260,11 +270,11 @@ def DOS(Nx=50, Ny=50):
 
 def run_examples():
     use_w90_example(magnetic_B=0)
-    #plot_ldos_example() #sparse PASS
-    #electron_density_example() #sparse PASS
+    #plot_ldos_example() 
+    #electron_density_example() 
     #electron_density_graphene_example() #check electron density for magnetic field?
-    #plot_ldos_graphene_example() #sparse PASS
+    #plot_ldos_graphene_example()
     #plot_ldos_graphene_armchair_example() #all FAIL
     #plot_ldos_example_2Dpot()
     #DOS()
-#run_examples()
+run_examples()
