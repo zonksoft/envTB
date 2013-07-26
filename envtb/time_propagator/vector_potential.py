@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pylab as plt
+import math
 
 light_speed = 3 * 10**(8)
 
@@ -26,7 +27,7 @@ class VectorPotential:
         Ey = [self.get_electric_field(t)[1] for t in tarr]
         plt.plot(tarr, Ey, label = r'$E_y$')
     
-    def plot_pulse(self):
+    def plot_vector_potential(self):
         tarr = np.linspace(-0.1 / self.frequency, 7 * np.pi / self.frequency, 100)
         plt.subplot(1,2,1)
         Ax = [self.__call__(t)[0] for t in tarr]
@@ -42,7 +43,7 @@ class VectorPotential:
     
 class VectorPotentialWave(VectorPotential):
     
-    def __init__(self, amplitude_E0, frequency, direction=[1.0,0.0]):
+    def __init__(self, amplitude_E0, frequency, direction=[1.0,0.0], polarization='lin'):
         
         """
         amplitude_E0: is a maximum field strength
@@ -57,9 +58,9 @@ class VectorPotentialWave(VectorPotential):
         return [VecPot * self.direction[0], VecPot * self.direction[1]]
        
     
-class LP_FlatTopPulse(VectorPotential):
+class FlatTopPulse(VectorPotential):
     
-    def __init__(self, amplitude_E0, frequency, direction=[1.0,0.0]):
+    def __init__(self, amplitude_E0, frequency, direction=[1.0,0.0], polarization='lin'):
         
         """
         amplitude_E0: is the maximum field strength
@@ -81,13 +82,13 @@ class LP_FlatTopPulse(VectorPotential):
             return [VecPot * self.direction[0], VecPot * self.direction[1]]
 
     
-class LP_SinSqEnvelopePulse(VectorPotential):
+class SinSqEnvelopePulse(VectorPotential):
     
-    def __init__(self, amplitude_E0, frequency, Nc=1, cep=0.0, direction=[1.0,0.0]): 
+    def __init__(self, amplitude_E0, frequency, Nc=1, cep=0.0, direction=[1.0,0.0], polarization='lin'): 
         
         """
-        This class contains linearly polarized light filed described
-        by the vector potential with a sin^2 envelope 
+        This class contains vector potential of a laser field
+        with a sin^2 envelope 
         
         amplitude_E0: is the peak filed strength
         
@@ -125,4 +126,55 @@ class LP_SinSqEnvelopePulse(VectorPotential):
                 np.sin(self.frequency * t / 2./self.Nc)**2 * self.direction[1] for t in tarr]
         plt.plot(tarr, A, '--')
         
-                   
+# end class LP_SinSqEnvelopePulse
+
+class GaussianEnvelopePulse(VectorPotential):
+    
+    def __init__(self, amplitude_E0, frequency, t0=None, Nc=1, cep=0.0, direction=[1.0,0.0], polarization='lin'):
+        
+        """
+        This class contains vector potential of a laser field
+        with a gaussian envelope 
+        
+        amplitude_E0: is the peak filed strength
+        
+        frequency: pulse frequency
+        
+        t0: standard deviation of gaussian; FWHM = 1.177 * t0
+        t0 = 2. * Nc / self.frequency
+        """
+        
+        self.amplitude= amplitude_E0
+        self.frequency = frequency
+        self.pulse_duration = 2. * Nc * np.pi / self.frequency
+        if t0 is None:
+            self.t0 = 2. * Nc / self.frequency
+        else:
+            self.t0 = t0
+        self.tc = np.pi * Nc / self.frequency
+        norm = np.sqrt(direction[0]**2 + direction[1]**2)
+        self.direction = np.array(direction) / norm
+        self.CEP = cep
+    
+    def __call__(self, t):
+        
+        if t >= 0 and t < self.pulse_duration:
+            VecPot = -self.amplitude * light_speed / self.frequency *\
+                    math.exp(-((t-self.tc)/self.t0)**2)*\
+                    math.sin(self.frequency * t + self.CEP)
+            return [VecPot * self.direction[0], VecPot * self.direction[1]]
+        else:
+            return [0.,0]
+        
+    def plot_envelope(self):
+        tarr = np.linspace(0., self.pulse_duration, 100)
+        plt.subplot(1,2,1)
+        A = [self.amplitude * light_speed / self.frequency *\
+                math.exp(-((t-self.tc)/self.t0)**2) * self.direction[0] for t in tarr]
+        plt.plot(tarr, A, '--')
+        plt.subplot(1,2,2)
+        A = [self.amplitude * light_speed / self.frequency *\
+                math.exp(-((t-self.tc)/self.t0)**2) * self.direction[1] for t in tarr]
+        plt.plot(tarr, A, '--')
+        
+# end class GaussianEnvelopePulse
