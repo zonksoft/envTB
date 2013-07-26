@@ -49,45 +49,29 @@ class GeneralHamiltonian:
         if not isinstance(U, potential.Potential1D):
             if not isinstance(U, potential.Potential2D):
                 if not isinstance(U, potential.SoftConfinmentPotential):
-                    raise TypeError("f has to be instance of Potential1D or Potential2D or SoftConfinmentPotential")
+                    if not isinstance(U, potential.SuperLatticePotential):
+                        raise TypeError("f has to be instance of Potential1D or Potential2D or SoftConfinmentPotential or SuperLatticePotential")
             
-        mt = self.mtot.copy()#.todense()
+        mt = self.mtot.copy()
         
         if isinstance(U, potential.Potential1D):
             
-            #mt[:,:] += np.diag([U(self.coords[i][1])
-            #                    for i in xrange(self.Ntot)])
             mdia = scipy.sparse.dia_matrix((np.array([U(self.coords[i][1])
                                 for i in xrange(self.Ntot)]), np.array([0])),
                                            shape=(self.Ntot,self.Ntot))
             mt = mt + mdia.tocsr()
             
-        elif isinstance(U, potential.Potential2D):
-           
-            #mt[:,:] += np.diag([U([self.coords[i][0], self.coords[i][1]])
-            #                    for i in xrange(self.Ntot)])
-            mdia = scipy.sparse.dia_matrix((np.array([U([self.coords[i][0],
-                                            self.coords[i][1]])
-                                for i in xrange(self.Ntot)]), np.array([0])),
-                                           shape=(self.Ntot,self.Ntot))
-            mt = mt + mdia.tocsr()
+        else:
             
-        elif isinstance(U, potential.SoftConfinmentPotential):
-            if not sign_variation:
-                mdia = scipy.sparse.dia_matrix((np.array([U([self.coords[i][0], 
-                                                         self.coords[i][1]]) 
-                                for i in xrange(self.Ntot)]), np.array([0])),
-                                            shape=(self.Ntot,self.Ntot))
-            else:
-                data = np.zeros(self.Ntot, dtype=float)
-                #for i in xrange(self.Ntot):
-                if np.mod(self.Ny, 2) == 0:
-                    data = [U([self.coords[i][0], self.coords[i][1]], i=i+int(i/self.Ny)) for i in xrange(self.Ntot)]
-                else:
-                    data = [U([self.coords[i][0], self.coords[i][1]], i=i) for i in xrange(self.Ntot)]
-                mdia = scipy.sparse.dia_matrix((np.array(data), np.array([0])),
-                                            shape=(self.Ntot,self.Ntot))
-            mt = mt.multiply(mdia.tocsr())
+            mdia = np.array([U([self.coords[i][0], self.coords[i][1]])
+                                for i in xrange(self.Ntot)])
+            
+            if sign_variation:
+                mdia[::2] = -1.0 * mdia[::2]
+            
+            mdia = scipy.sparse.dia_matrix((mdia, np.array([0])), shape=(self.Ntot,self.Ntot))
+            
+            mt = mt + mdia.tocsr()
             
         return self.copy_ins(mt)
     
@@ -146,9 +130,18 @@ class GeneralHamiltonian:
                     
     def eigenvalue_problem(self, k=20, sigma=0.0, **kwrds):
         w,v = linalg.eigs(self.mtot.tocsc(), k=k, sigma=sigma, **kwrds)
-        #w, v = np.linalg.eig(self.mtot.todense())
         return w, v
-        
+    
+    def sorted_eigenvalue_problem(self, k=20, sigma=0.0, **kwrds):
+        w,v = linalg.eigs(self.mtot.tocsc(), k=k, sigma=sigma, **kwrds)
+        isort = np.argsort(w)
+        v = np.array(v)
+        wsort = np.sort(w)
+        vsort = np.zeros(v.shape, dtype=complex)
+        for i in xrange(len(isort)):
+            vsort[:,i] = v[:,isort[i]]
+        return wsort, vsort
+    
     def electron_density(self, mu, kT):
         
         if self.w == None:

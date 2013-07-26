@@ -97,7 +97,7 @@ class SoftConfinmentPotential:
         self.max_y = max_y
         
     
-    def __call__(self, r, i=0):
+    def __call__(self, r):
         """
         Returns the value of the potential at r.
         r is a list of [x,y]
@@ -109,18 +109,18 @@ class SoftConfinmentPotential:
         
         if pot_corner < 1.0:
             
-            return pot_corner * (-1)**(i)
+            return (1.0+(-1)*pot_corner)*10.0
         else:
             if pot_edge < 1.0:
                 
-                return pot_edge * (-1)**(i)
+                return (1.0+(-1)*pot_edge)*10.0
             else:
                 
-                return pot_edge
+                return (1.0+(-1)*pot_edge)*10.0
     
     def __smooth_function(self, x):
         #return 0.1 * (self.da - x)
-        return abs(np.cos((1.01*x + 0.99*self.da) / self.da * np.pi / 2.))
+        return abs(np.cos((1.0*x + 1.0*self.da) / self.da * np.pi / 2.))
     
     #def __smooth_function_right(self, x):
         #return 0.1 * (self.da - x)
@@ -173,4 +173,46 @@ class SoftConfinmentPotential:
             
             pot_amp = self.__smooth_function(x) * self.__smooth_function(y)
             return pot_amp
+
 #end class SoftConfinmentPotential
+
+class SuperLatticePotential:
+    
+    def __init__(self, Ny, Nx, pot, coords):
+        self.coords = coords
+        self.pot = pot # 1d array corresponding to coords
+        
+        self.Nx = Nx
+        self.Ny = Ny
+        self.xmax = self.coords[Ny * Nx - 1][1]
+        self.ymax = self.coords[Ny][1]
+    
+    def __call__(self, r):
+        '''
+            r is a list with coords [x, y]
+        '''
+        a = 1.42
+        
+        iy_main = int(r[1] / 3. / a * 4)
+        
+        irest = np.mod(r[1], 3.*a)
+        if abs(irest) <= a/2 + 0.00001:
+            iy = iy_main + 1
+        elif abs(irest) <= 3.*a/2. + 0.00001:
+            iy = iy_main + 2
+        elif abs(irest) <= 2. * a + 0.00001:
+            iy = iy_main + 3
+        else:
+            iy = iy_main
+        
+        ix = int(r[0] / np.sqrt(3) /a)
+        
+        while iy > self.Ny-1:
+            iy = iy - self.Ny
+        
+        while ix > self.Nx-1:
+            ix = ix - self.Nx
+        
+        index = ix * self.Ny + iy
+        
+        return self.pot[index]
