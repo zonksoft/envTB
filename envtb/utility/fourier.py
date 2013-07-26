@@ -1,6 +1,7 @@
 import numpy
 import envtb.quantumcapacitance.utilities as utilities
 from envtb.wannier90.w90hamiltonian import Hamiltonian
+import envtb.wannier90.w90hamiltonian as w90
 
 class FourierTransform:
     def __init__(self, latticevecs, data_on_grid, shape=None, axes=None):
@@ -20,9 +21,6 @@ class FourierTransform:
         
         
         self.reshaped_latticevecs = self.__reshape_latticevecs(latticevecs, shape, data_on_grid)
-        
-        print self.original_latticevecs
-        print self.reshaped_latticevecs
         
         if shape is None:
             cell_shape = data_on_grid.shape
@@ -216,7 +214,6 @@ class RealSpaceWaveFunctionFourierTransform:
 
             if full_transform:
                 periodicity = numpy.array(self.fourier_transformations[orbnr].transformed_data.shape) / numpy.array(transformed_wave_function.shape)
-                print periodicity
                 wannier_transformed = self.__periodic_matrix(transformed_wave_function, *periodicity) * self.fourier_transformations[orbnr].transformed_data
             else:
                 nx, ny, nz = transformed_wave_function.shape
@@ -244,7 +241,8 @@ class ZigzagGNRHelper:
         self.nnfile = nnfile
         
         self.supercell_hamiltonian = self.__create_supercell_hamiltonian(nnfile, height, length)
-        
+        self.graphene_hamiltonian, self.doublecell_hamiltonian, self.ribbon_hamiltonian = \
+            self.__create_hamiltonian(nnfile, height, length)
         
     @staticmethod
     def rings_to_atoms(nr_of_rings):
@@ -266,7 +264,7 @@ class ZigzagGNRHelper:
     def atoms_to_rings(nr_of_atoms):
         return (nr_of_atoms - 2)/2                 
         
-    def create_hamiltonian(self, nnfile, height, length):
+    def __create_hamiltonian(self, nnfile, height, length):
         """
         Creates a graphene rectangle Hamiltonian from a nearest neighbour
         parameter file.
@@ -345,7 +343,7 @@ class ZigzagGNRHelper:
         return coords3
         
     def resort_nanoribbon(self):    
-        ham, ham2, ham5 = self.create_hamiltonian(self.nnfile, self.height, self.length)
+        ham, ham2, ham5 = self.graphene_hamiltonian, self.doublecell_hamiltonian, self.ribbon_hamiltonian
         vecs, gr_vecs, lattice_vecs, invvecs, invgr_vecs, invlattice_vecs, = self.__create_transformations(ham)
           
         orbpos = numpy.array(ham5.orbitalpositions())
@@ -375,3 +373,116 @@ class ZigzagGNRHelper:
         if height is None:
             height = self.height*4
         return numpy.reshape(vec,(-1,height))
+        
+        
+class GNRSimpleFourierTransform:
+    def __init__(self, height_nr_atoms, length_nr_slices, nnfile):
+        """
+        height_nr_atoms: height of the zigzag ribbon in atoms.
+        length_nr_slices: length of the ribbon in slices.
+        nnfile: nearest-neighbour file which contains the graphene geometry.
+        """
+        self.height_nr_atoms = height_nr_atoms
+        self.length_nr_slices = length_nr_slices
+        
+        self.zgh = self.__create_zigzag_gnr_helper(height_nr_atoms, length_nr_slices, nnfile)
+        
+        a=10
+        self.localized_orbital_set = self.__create_gaussian_basis_orbitals(self.zgh, a)
+        self.orbital_fourier_transform = RealSpaceWaveFunctionFourierTransform(
+            self.localized_orbital_set,(self.zgh.length,self.zgh.height),(0,1))
+    
+    def fourier_transform(self, wave_function):
+        """
+        Fourier transform a zigzag GNR wave function.
+
+        Return:
+        Fourier transform on a grid.
+
+        """
+        pad_and_split_wave_function = \
+            self.__pad_and_split_zgnr_wavefunction(wave_function, self.zgh)
+        
+        transformed_coefficients, transformed_wave_functions = \
+            self.orbital_fourier_transform.fourier_transform(pad_and_split_wave_function, full_transform=True)
+        
+        fourier_transform = self.__add_transformations(transformed_coefficients)
+        
+        return fourier_transform
+        
+    def __create_zigzag_gnr_helper(self, height_nr_atoms, length_nr_slices, nnfile):
+        """
+        Create a ZigzagGNRHelper.
+        height_nr_atoms: height of the zigzag ribbon in atoms.
+        length_nr_slices: length of the ribbon in slices.
+        nnfile: nearest-neighbour file which contains the graphene geometry.
+        """
+        height=ZigzagGNRHelper.rings_to_2cells(ZigzagGNRHelper.atoms_to_rings(height_nr_atoms))
+        length=length_nr_slices 
+        return ZigzagGNRHelper(nnfile, height, length, paddingx=0, paddingy=0)
+
+    def __pad_and_split_zgnr_wavefunction(self, wave_function, zgh):
+        """
+        Pad and split a zigzag-gnr wavefunction (geometry is given by zgr).
+    
+        Padding is necessary because a zigzag-ribbon is not periodic in y direction - some
+        "ghost atoms" with no electron density are added at the top and the bottom.
+    
+        The wave function is split into four sublattice wave functions which correspond to the
+        four atoms in the "graphene four-atom ribbon unit cell".
+    
+        wave_function: the wave function of the nanoribbon (down-up runs faster than left-right)
+        zgh: ZigzagGNRHelper for the system.    
+    
+        Return:
+        dictionary with the four sublattice wave functions.
+        """
+        padded = zgh.pad_vector(zgh.pad_nanoribbon_vector_to_periodic(wave_function))
+        l1, l2, l3, l4 = [numpy.dstack((zgh.vector_to_grid(x, zgh.height),)) for x in zgh.split_sublattices(padded, 4)]
+        pad_and_split_wave_function = {0: l1, 1: l2, 2: l3, 3:l4}
+        return pad_and_split_wave_function
+
+    def __create_gaussian_basis_orbitals(self, zgh, a):
+        """
+        Create a unit cell basis set with four basis orbitals (four-atom ribbon unit cell).
+        One Gaussian is positioned on each atom.
+    
+        zgh: ZigzagGNRHelper for the system.
+        a: Gaussian spread (arbitrary parameter)
+    
+        Return:
+        LocalizedOrbitalSet containing the basis orbitals.
+        """
+        doublecell_ham = zgh.doublecell_hamiltonian
+        
+        unit_cell_grid = (2,2,1)
+        gridpoints = 60
+        
+        def gaussian_orbital_at_center(x0, y0, z0):
+            return w90.LocalizedOrbitalFromFunction(
+                lambda x, y, z: (a/numpy.pi)**(3./2)*numpy.exp(-a*((x-x0)**2+(y-y0)**2+(z-z0)**2)),
+                doublecell_ham.latticevectors()*unit_cell_grid, [-2,-1,0], gridpoints=gridpoints, dim2=True, 
+                unit_cell_grid=unit_cell_grid)
+        
+        
+        localized_orbital_set = w90.LocalizedOrbitalSet({i: gaussian_orbital_at_center(x0, y0, z0) for i,(x0,y0,z0) in 
+                                            enumerate(doublecell_ham.orbitalpositions())}, doublecell_ham.latticevectors())
+        
+        return localized_orbital_set
+    
+    @staticmethod
+    def roll_2d_center(data):
+        return numpy.roll(numpy.roll(data,data.shape[0]/2,axis=0),data.shape[1]/2,axis=1)
+    
+    def __add_transformations(self, coeffs):
+        """
+        Add up a dictionary of arrays.
+        It is used for adding up the contributions to the Fourier
+        transformation from the different sublattices.
+    
+        coeffs: Dictionary containing numpy arrays.
+        """
+        transf_sum = numpy.zeros(coeffs.values()[0].shape, dtype=coeffs.values()[0].dtype)
+        for transf in coeffs.values():
+            transf_sum += transf
+        return transf_sum

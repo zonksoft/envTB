@@ -1582,7 +1582,6 @@ class LocalizedOrbitalFromFunction(LocalizedOrbital):
         else:
             # XXX: error occurs if grid to transform is not a multiple of unit cell grid -> handle        
             cell_shape = [(x * y) / z for x, y, z in zip(shape, data.shape, self.unit_cell_grid)]
-            print cell_shape
                     
         return envtb.utility.fourier.FourierTransform(
             self.latticevecs(), data, cell_shape, axes)
@@ -1780,7 +1779,6 @@ class WannierOrbital(utilities.LinearInterpolationNOGrid, LocalizedOrbital):
         else:
             # XXX: error occurs if grid to transform is not a multiple of unit cell grid -> handle
             cell_shape = [(x * y) / z for x, y, z in zip(shape, self.data().shape, self.unit_cell_grid)]
-            print cell_shape
             
         return envtb.utility.fourier.FourierTransform(
             self.latticevecs(), self.data(), cell_shape, axes)
