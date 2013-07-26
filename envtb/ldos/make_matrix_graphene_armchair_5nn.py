@@ -49,7 +49,7 @@ def make_H0(n):
    m[n_half:, :n_half] = mI[:,:]
    m[:n_half, n_half:] = mI[:,:]
    
-   return m
+   return sparse.csr_matrix(m)
 
 def make_HI(n):
    n_half = n / 2
@@ -96,35 +96,5 @@ def make_HI(n):
    m[:n_half, :n_half] = m2[:,:]
    m[n_half:, n_half:] = m1[:,:]
    m[:n_half, n_half:] = mI[:,:]
-   
-   print m1
-   print m2
-   print mI
 
-   return m
-
-def block_matrix(m, n):
-   
-   n_half = n / 2
-
-   b11 = m[:n/2, :n/2]
-   b22 = m[n/2:, n/2:]
-   b12 = m[:n/2, n/2:]
-   b21 = m[n/2:, :n/2]
-
-   return b11, b22, b12, b21
-
-def make_A(H0_, HI_, E):
-   n = len(H0_) 
-   m = np.zeros((2*len(H0_), 2*len(H0_)), dtype = complex)
-
-   H_I_ = np.linalg.inv(np.transpose(HI_))
-   
-   mE = E * np.identity(n, dtype = complex)
-
-   m[:n, :n] = np.dot(H_I_, mE - H0_)
-   m[:n, n:] = np.dot(-H_I_, HI_)
-   m[n:, :n] = np.identity(n, dtype = complex)
-   
-   return m
-
+   return sparse.csr_matrix(m)

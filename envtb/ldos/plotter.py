@@ -22,8 +22,8 @@ class Plotter:
         plt.colorbar()
         return None 
    
-    def plot_density(self, vector, coords, max_el=None):
-        
+    def plot_density(self, vector, coords, max_el=None, **kwrds):
+       
         if max_el == None:
             maxel = np.max(vector)
         else:
@@ -37,10 +37,10 @@ class Plotter:
         for i in xrange(len(vector)):
             
             if maxel != 0.0:
-                msize = vector[i].real * 150. / np.sqrt(np.sqrt(len(vector))) / maxel
+                msize = vector[i] * 150. / np.sqrt(np.sqrt(len(vector))) / maxel
                 #R = 1/(maxel) * (density1d[i].real)
                 #G = 1/(maxel) * (maxel - density1d[i].real)
-                if vector[i].real >= maxel:
+                if vector[i] >= maxel:
                     R = 1
                     G = 0
                 else:
@@ -55,7 +55,7 @@ class Plotter:
                 B = 0.0
                     
             plt.plot(coords[i][0], coords[i][1], 'o', mfc='k', ms=2)
-            plt.plot(coords[i][0], coords[i][1], 'o', mfc=(R,G,B), ms=msize, alpha=0.7)
+            plt.plot(coords[i][0], coords[i][1], 'o', mfc=(R,G,B), ms=msize, **kwrds)
             
             if coords[i][0] < xmin:
                 xmin = coords[i][0]
@@ -77,14 +77,18 @@ class Plotter:
         #plt.axes().set_aspect('equal')
         return None    
     
-    def plot_potential(self, ham_mit_pot, ham_bare, maxel=None, minel=None):
+    def plot_potential(self, ham_mit_pot, ham_bare=None, maxel=None, minel=None, **kwrds):
                      
         xmin = 0.0
         xmax = 0.0
         ymin = 0.0
         ymax = 0.0
         
-        m = np.diag(ham_mit_pot.mtot) - np.diag(ham_bare.mtot) 
+        if ham_bare is None:
+            m = np.array(ham_mit_pot.mtot.diagonal())
+        else:
+            m = np.array(ham_mit_pot.mtot.diagonal() - ham_bare.mtot.diagonal())
+        
         if minel is None:
             minel = np.min(m).real
         if maxel is None:
@@ -94,27 +98,27 @@ class Plotter:
                               
         for i in xrange(len(m)):
                         
-            if maxel != 0.0:
-                msize = 500. / np.sqrt(len(m))
-                if m[i].real >= maxel:
-                    G = 1
-                    B = 0
-                elif m[i].real <= minel:
-                    G = 0
-                    B = 1
-                else:
-                    G = 0.999 / (maxel - minel) * (m[i].real - minel)
-                    B = 0.999 / (maxel - minel) * (maxel - m[i].real)
+            #if maxel != 0.0:
+            msize = 500. / np.sqrt(len(m))
+            if  m[i].real >= maxel:
+                G = 1
+                B = 0
+            elif m[i].real <= minel:
+                G = 0
+                B = 1
+            else:
+                G = 0.999 / (maxel - minel) * (m[i].real - minel)
+                B = 0.999 / (maxel - minel) * (maxel - m[i].real)
                                         
-                R = 0.0
-            else: 
-                msize = 0.0
-                R = 0.0
-                G = 0.0
-                B = 0.0
+            R = 0.0
+            #else: 
+            #    msize = 0.0
+            #    R = 0.0
+            #    G = 0.0
+            #    B = 0.0
                     
             plt.plot(ham_mit_pot.coords[i][0], ham_mit_pot.coords[i][1], 'o', mfc='k', ms=2)
-            plt.plot(ham_mit_pot.coords[i][0], ham_mit_pot.coords[i][1], 'o', mfc=(R,G,B), ms=msize, alpha=0.7)
+            plt.plot(ham_mit_pot.coords[i][0], ham_mit_pot.coords[i][1], 'o', mfc=(R,G,B), ms=msize, **kwrds)
             
             if ham_mit_pot.coords[i][0] < xmin:
                 xmin = ham_mit_pot.coords[i][0]

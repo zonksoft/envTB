@@ -33,19 +33,17 @@ class GreensFunction:
         #if self.bc == 'open':
         #sig1[0,0] = self.calculate_self_energy_for_1d(E, -0.05)
         #sig2[-1,-1] = self.calculate_self_energy_for_1d(E, 0.05)
-        Hsparse = sparse.lil_matrix(H.mtot)
-        
-        matrix = (E + zplus) * sparse.eye(H.Ntot, H.Ntot, k = 0, dtype = complex) - Hsparse
+        matrix = (E + zplus) * sparse.eye(H.Ntot, H.Ntot, k = 0, dtype = complex) - H.mtot
         solver = linalg.factorized(matrix.tocsc())
         return solver
     
     def get_diagonal_elements(self):
         
         vec = np.eye(self.Ntot, self.Ntot)
-        Green_solver = self.__inv_greens_matrix(self.E, self.H)        
+        Green_solver = self.__inv_greens_matrix(self.E, self.H)
         
         Green_diagonal = np.array([Green_solver(vec[:, i])[i] for i in xrange(self.Ntot)])
-            
+        
         return Green_diagonal
     
     def __calculate_self_energy_for_1d(self, Ef, U):
