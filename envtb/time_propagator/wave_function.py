@@ -17,7 +17,7 @@ class WaveFunction():
             np.abs(self.wf1d), self.coords, max_el=maxel) 
         plt.axes().set_aspect('equal')
           
-    def find_average_position(self):
+    def calculate_average_position(self):
         
         f_aver = sum([np.abs(self.wf1d[i])**2 for i in xrange(len(self.wf1d))])
         x_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][0] 
@@ -25,17 +25,39 @@ class WaveFunction():
         y_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][1] 
                       for i in xrange(len(self.wf1d))]) / f_aver
         
-        return x_aver, y_aver        
+        return x_aver, y_aver
     
-    def save_wave_function_data(self, file_out, param=None):
+    def calculate_current(self, A):
         
-        file_out.writelines(`param`+'   '+`self.wf1d.tolist()`+'\n')
+        wf_prime_x = []
+        wf_prime_y = []
+        n = len(self.wf1d)
+        for i in xrange(n-1):
+            if abs(self.coords[i+1][0] - self.coords[i][0]) > 0:
+                wf_prime_x.append((self.wf1d[i+1]-self.wf1d[i]) / (self.coords[i+1][0] - self.coords[i][0]))
+            else:
+                wf_prime_x.append(0.0)
+            
+            if abs(self.coords[i+1][1] - self.coords[i][1]) > 0:
+                wf_prime_y.append((self.wf1d[i+1]-self.wf1d[i]) / (self.coords[i+1][1] - self.coords[i][1]))
+            else:
+                wf_prime_y.append(0.0)
+       
+        wf_prime_x.append(0)
+        wf_prime_y.append(0)
     
-    def save_wave_function_pic(self, pic_out, maxel=None, **kwrds):
-        self.plot_wave_function(maxel)
-        plt.axes().set_aspect('equal')
-        plt.savefig(pic_out)
-        plt.close()
+        j_x = (np.dot(np.conjugate(np.array(self.wf1d)), np.array(wf_prime_x)) -
+               np.dot(np.array(self.wf1d), np.conjugate(np.array(wf_prime_x)))) * complex(0.0, 1.0)\
+                - A[0] * np.dot(np.array(self.wf1d), np.conjugate(np.array(self.wf1d)))
+        
+        j_y = (np.dot(np.conjugate(np.array(self.wf1d)), np.array(wf_prime_y)) -
+               np.dot(np.array(self.wf1d), np.conjugate(np.array(wf_prime_y)))) * complex(0.0, 1.0)\
+                - A[1] * np.dot(np.array(self.wf1d), np.conjugate(np.array(self.wf1d)))
+    
+        return j_x, j_y
+    
+    def calculate_polarization(self):
+        pass
     
     def wave_function_from_file(self, file_name, wf_num=-1):
         
@@ -46,9 +68,39 @@ class WaveFunction():
         self.wf1d = np.array(eval(lnS[1]))
         
         return tm
-# end class WaveFunction        
- 
     
+    def expand_wave_function(self, v):
+        print 'len', len(v[0,:])
+        return [np.abs(np.dot(np.conjugate(np.transpose(v[:,i])), self.wf1d))
+                for i in xrange(len(v[0,:]))]
+    
+    def save_wave_function_data(self, file_out, param=None):
+        
+        file_out.writelines(`param`+'   '+`self.wf1d.tolist()`+'\n')
+        return None
+    
+    def save_wave_function_pic(self, pic_out, maxel=None, **kwrds):
+        self.plot_wave_function(maxel)
+        plt.axes().set_aspect('equal')
+        plt.savefig(pic_out)
+        plt.close()
+        return None
+        
+    def save_wave_function_expansion(self,file_out, v):
+        a = self.expand_wave_function(v)
+        file_out.writelines(`a`+'\n')
+        return None
+    
+    def save_coords_current(self, file_out, A):
+        
+        x, y = self.calculate_average_position()
+        j_x, j_y = self.calculate_current(A)
+        file_out.writelines('%(x)f   %(y)f   %(j_x)f   %(j_y)f\n' % vars())
+        
+        return None
+        
+# end class WaveFunction
+
 class GaussianWavePacket(WaveFunction):
     
     def __init__(self, coords, ic, p0=[0.0, 0.0], sigma=5.):
@@ -80,8 +132,8 @@ class GaussianWavePacket(WaveFunction):
             for k in xrange(self.Ntot)])
         
         norm = np.sum(np.dot(np.transpose(np.conjugate(wp1d)), wp1d))
-        wp1d = wp1d / np.sqrt(norm) 
-        return wp1d 
+        wp1d = wp1d / np.sqrt(norm)
+        return wp1d
 
 #end class GaussianWavePacket 
 
@@ -103,7 +155,6 @@ class WaveFunction0(WaveFunction):
         self.coords = self.ham.coords
          
     def setup(self, mu, kT):
-        #wf0 = ham.electron_density(mu, kT)
         w, v = self.ham.eigenvalue_problem()
         wf0 = np.zeros(len(v[:,0]), dtype = complex)
         count = 0
@@ -115,7 +166,7 @@ class WaveFunction0(WaveFunction):
                 wf0[:] += v[:,i]
         print count
         norm = np.sum(np.abs(wf0)**2)
-        return wf0 / np.sqrt(norm)  
+        return wf0 / np.sqrt(norm)
 
 #end class WaveFunction0    
         
