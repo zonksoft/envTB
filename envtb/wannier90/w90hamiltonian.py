@@ -1,6 +1,7 @@
 """
 Alle Funktionen durchtesten!!!! Sparse matrix Umstellung hat vl noch
 Spuren hinterlassen
+# XXX: Bugfix bei mixin Hamiltonian
 """
 
 from envtb import general
