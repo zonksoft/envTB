@@ -52,25 +52,19 @@ def propagate_graphene_pulse(Nx=20, Ny=20, frame_num=10, magnetic_B=None):
     
     Nall = 250
     
-    w, v = ham.eigenvalue_problem(k=Nall, sigma=0.0)
-    isort = np.argsort(w)
-    v = np.array(v)
-    wsort = np.sort(w)
-    vsort = np.zeros(v.shape, dtype=complex)
-    for i in xrange(len(isort)):
-        vsort[:,i] = v[:,isort[i]]
+    w, v = ham.sorted_eigenvalue_problem(k=Nall, sigma=0.0)
     
     '''
         Store eigenvalue_problem
     '''
     fout = open('eigenvalue_problem.out', 'w')
     for i in xrange(Nall):
-        fout.writelines(`wsort[i]`+'   '+`vsort[:,i].tolist()`+'\n')
+        fout.writelines(`w[i]`+'   '+`v[:,i].tolist()`+'\n')
     
     
     ''' Make vector potential'''
     
-    A_pot = envtb.time_propagator.vector_potential.LP_SinSqEnvelopePulse(
+    A_pot = envtb.time_propagator.vector_potential.SinSqEnvelopePulse(
         amplitude_E0=laser_amp, frequency=laser_freq, Nc=Nc, cep=CEP, direction=direct)
     
     import pypar
@@ -101,7 +95,7 @@ def propagate_graphene_pulse(Nx=20, Ny=20, frame_num=10, magnetic_B=None):
         '''
         #wf_final = envtb.time_propagator.wave_function.WaveFunction(coords=ham.coords)
         #time_counter = wf_final.wave_function_from_file('wave_functions_0.out')
-        wf_final = envtb.time_propagator.wave_function.WaveFunction(vec=vsort[:, Nstate],coords=ham.coords)
+        wf_final = envtb.time_propagator.wave_function.WaveFunction(vec=v[:, Nstate],coords=ham.coords)
         ##ic = Nx/2 * Ny + Ny/2
         ##wf_final = envtb.time_propagator.wave_function.GaussianWavePacket(
         ##        ham.coords, ic, p0=[0.0, 1.5], sigma=7.)
@@ -132,7 +126,7 @@ def propagate_graphene_pulse(Nx=20, Ny=20, frame_num=10, magnetic_B=None):
         
             if np.mod(i,10) == 0:
                   wf_final.save_wave_function_data(wf_out, time_counter)
-                  wf_final.save_wave_function_expansion(expansion_out, vsort)
+                  wf_final.save_wave_function_expansion(expansion_out, v)
                   wf_final.save_coords_current(coords_out, A_pot(time))
                   
            
