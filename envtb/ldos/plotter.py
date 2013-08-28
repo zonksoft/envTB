@@ -77,8 +77,8 @@ class Plotter:
         #plt.axes().set_aspect('equal')
         return None    
     
-    def plot_potential(self, ham_mit_pot, ham_bare=None, maxel=None, minel=None, **kwrds):
-                     
+    def plot_potential(self, ham_mit_pot, ham_bare=None, maxel=None, minel=None, plot_real=True, **kwrds):
+        
         xmin = 0.0
         xmax = 0.0
         ymin = 0.0
@@ -89,12 +89,17 @@ class Plotter:
         else:
             m = np.array(ham_mit_pot.mtot.diagonal() - ham_bare.mtot.diagonal())
         
-        if minel is None:
-            minel = np.min(m).real
-        if maxel is None:
-            maxel = np.max(m).real
+        if plot_real:
+            m = m.real
+        else:
+            m = m.imag
         
-        print np.min(m).real, np.max(m).real
+        if minel is None:
+            minel = np.min(m)
+        if maxel is None:
+            maxel = np.max(m)
+        
+        print np.min(m), np.max(m)
                               
         for i in xrange(len(m)):
                         
@@ -107,8 +112,8 @@ class Plotter:
                 G = 0
                 B = 1
             else:
-                G = 0.999 / (maxel - minel) * (m[i].real - minel)
-                B = 0.999 / (maxel - minel) * (maxel - m[i].real)
+                G = 0.999 / (maxel - minel) * (m[i] - minel)
+                B = 0.999 / (maxel - minel) * (maxel - m[i])
                                         
             R = 0.0
             #else: 
