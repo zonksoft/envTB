@@ -1,7 +1,8 @@
 import numpy
 import envtb.quantumcapacitance.utilities as utilities
+#import envtb.wannier90.w90hamiltonian as w90
 from envtb.wannier90.w90hamiltonian import Hamiltonian
-import envtb.wannier90.w90hamiltonian as w90
+import math
 
 class FourierTransform:
     def __init__(self, latticevecs, data_on_grid, shape=None, axes=None):
@@ -373,7 +374,8 @@ class ZigzagGNRHelper:
         if height is None:
             height = self.height*4
         return numpy.reshape(vec,(-1,height))
-        
+    
+
         
 class GNRSimpleFourierTransform:
     def __init__(self, height_nr_atoms, length_nr_slices, nnfile):
@@ -391,7 +393,11 @@ class GNRSimpleFourierTransform:
         self.localized_orbital_set = self.__create_gaussian_basis_orbitals(self.zgh, a)
         self.orbital_fourier_transform = RealSpaceWaveFunctionFourierTransform(
             self.localized_orbital_set,(self.zgh.length,self.zgh.height),(0,1))
-    
+        
+        self.maxkx = self.orbital_fourier_transform.orbital_fourier_grid[-1][0][0][0]
+        self.maxky = self.orbital_fourier_transform.orbital_fourier_grid[0][-1][0][1]
+
+
     def fourier_transform(self, wave_function):
         """
         Fourier transform a zigzag GNR wave function.
@@ -486,3 +492,27 @@ class GNRSimpleFourierTransform:
         for transf in coeffs.values():
             transf_sum += transf
         return transf_sum
+    
+    def get_brillouin_zone(self):
+        
+        atmp = self.orbital_fourier_transform.orbital_fourier_grid
+
+        #dkx = atmp[1][0][0][0] - atmp[0][0][0][0]
+        #dky = atmp[0][1][0][1] - atmp[0][0][0][1]
+        #self.maxkx = atmp[-1][0][0][0] - atmp[0][0][0][0]
+        #self.maxky = atmp[0][-1][0][1] - atmp[0][0][0][1]
+        
+        Gamma_point = numpy.array([self.maxkx/2., self.maxky/2.])
+        ag = 2.461
+        K_point_1 = Gamma_point + 4. * numpy.pi / 3. / ag * numpy.array([1.0, 0.0])
+        K_point_2 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([-1.0, math.sqrt(3.0)])
+        K_point_3 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([-1.0, -math.sqrt(3.0)])
+        Kp_point_1 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([1.0, math.sqrt(3.0)])
+        Kp_point_2 = Gamma_point + 4. * numpy.pi / 3. / ag * numpy.array([-1.0, 0.0])
+        Kp_point_3 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([1.0, -math.sqrt(3.0)])
+        Bril_zone = numpy.array([[K_point_1[0], Kp_point_1[0], K_point_2[0], Kp_point_2[0], K_point_3[0], Kp_point_3[0], K_point_1[0]],
+                              [K_point_1[1], Kp_point_1[1], K_point_2[1], Kp_point_2[1], K_point_3[1], Kp_point_3[1], K_point_1[1]]])
+        return Bril_zone
+
+        
+
