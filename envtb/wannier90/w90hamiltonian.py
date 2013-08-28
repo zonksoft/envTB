@@ -21,7 +21,7 @@ import numpy.linalg
 import re
 import envtb.quantumcapacitance.utilities as utilities
 #from mayavi import mlab
-import envtb.utility.fourier
+#import envtb.utility.fourier
 
 class Hamiltonian:
     
