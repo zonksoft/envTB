@@ -11,10 +11,9 @@ class WaveFunction():
     def check_norm(self):
         return np.dot(np.transpose(np.conjugate(self.wf1d)), self.wf1d)
         
-    def plot_wave_function(self, maxel=None):
-        
+    def plot_wave_function(self, maxel=None, **kwrds):
         envtb.ldos.plotter.Plotter().plot_density(
-            np.abs(self.wf1d), self.coords, max_el=maxel) 
+            np.abs(self.wf1d), self.coords, max_el=maxel, **kwrds) 
         plt.axes().set_aspect('equal')
           
     def calculate_average_position(self):
@@ -60,7 +59,7 @@ class WaveFunction():
         pass
     
     def wave_function_from_file(self, file_name, wf_num=-1):
-        
+         
         f_in = open(file_name,'r')
         ln = f_in.readlines()
         lnS = ln[wf_num].split('   ')
