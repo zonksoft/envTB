@@ -75,26 +75,32 @@ class Potential2DFromFunction(Potential2D):
 #end class Potential2DFromFunction
 
 class SoftConfinmentPotential:
-    def __init__(self, da=3., side="All", max_x=100., max_y=100.):
+    def __init__(self, da=3., side='All', max_x=100., max_y=100., amplitude=10.0):
         '''
         The SoftConfinmentPotential gives an exponential decaying function of width da 
         at the boundaries of the flake. One can apply this potential to any boundary by
         specifying side key word.
         
         side - string: "All" - potential is applied to all sides
-                       "1,2,4" - list with any numbers from 1 to 4 specifies sides to 
-                                 which the potential should be applied. Numeration starts
-                                 at x = 0 boundary and goes clockwise through the boundaries.
+                       "leads" - for making potential on the leads
+        
+        imaginary - bool; whether potential is imaginary or not
         
         TODO:
         Note: not applicable for any boundary
         '''
         self.da = da
-        if side == "All":
-            side = "1,2,3,4"
-        self.side = side.split(',')
+        
+        if side == 'All':
+            self.side = 0
+        elif side == 'leads':
+            self.side = 12
+        #if side == "All":
+        #    side = "1,2,3,4"
+        #self.side = side.split(',')
         self.max_x = max_x
         self.max_y = max_y
+        self.amplitude = amplitude
         
     
     def __call__(self, r):
@@ -105,44 +111,38 @@ class SoftConfinmentPotential:
         """
        
         pot_edge = self.__calculate_edge_potential(r)
-        pot_corner = self.__calculate_corner_potential(r)
         
-        if pot_corner < 1.0:
-            
-            return (1.0+(-1)*pot_corner)*10.0
-        else:
-            if pot_edge < 1.0:
-                
-                return (1.0+(-1)*pot_edge)*10.0
-            else:
-                
-                return (1.0+(-1)*pot_edge)*10.0
+        if self.side == 0:
+            pot_corner = self.__calculate_corner_potential(r)
+            if pot_corner < 1.0:
+                return (1.0 + (-1) * pot_corner) * self.amplitude
+            else: return (1.0 + (-1) * pot_edge) * self.amplitude
+        elif self.side == 12:
+            #if pot_edge < 1.0:
+            return (1.0 + (-1) * pot_edge) * self.amplitude
+            #else:
+            #    return (1.0+(-1)*pot_edge)*10.0
     
     def __smooth_function(self, x):
-        #return 0.1 * (self.da - x)
-        return abs(np.cos((1.0*x + 1.0*self.da) / self.da * np.pi / 2.))
+        return abs(np.cos((x + self.da) / self.da * np.pi / 2.))
     
-    #def __smooth_function_right(self, x):
-        #return 0.1 * (self.da - x)
-    #    return abs(np.cos((x + self.da) / self.da * np.pi / 2.))
-        
     def __calculate_edge_potential(self, r):
         x = r[0]
         y = r[1]
         if x > self.max_x - self.da:
             x = x - self.max_x
-            #pot_amp = 0.001 * (self.da - x)
+            pot_amp = self.__smooth_function(x)
+        elif x < self.da:
             pot_amp = self.__smooth_function(x)
         elif y > self.max_y - self.da:
-            y = y - self.max_y
-            #pot_amp = 0.001 * (self.da - y)
-            pot_amp = self.__smooth_function(y)
-        elif x < self.da:
-            #pot_amp = 0.001 * (self.da - x)
-            pot_amp = self.__smooth_function(x)
+            if self.side == 0:
+                y = y - self.max_y
+                pot_amp = self.__smooth_function(y)
+            else: pot_amp = 1.0
         elif y < self.da:
-            #pot_amp = 0.001 * (self.da - y)
-            pot_amp = self.__smooth_function(y)
+            if self.side == 0:
+                pot_amp = self.__smooth_function(y)
+            else: pot_amp = 1.0
         else:
             pot_amp = 1.0
         
