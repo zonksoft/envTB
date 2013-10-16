@@ -50,7 +50,10 @@ class GeneralHamiltonian:
             if not isinstance(U, potential.Potential2D):
                 if not isinstance(U, potential.SoftConfinmentPotential):
                     if not isinstance(U, potential.SuperLatticePotential):
-                        raise TypeError("f has to be instance of Potential1D or Potential2D or SoftConfinmentPotential or SuperLatticePotential")
+                        raise TypeError('''f must be Potential1D or Potential2D
+                                         or SoftConfinmentPotential
+                                         or SuperLatticePotential, 
+                                         not %s''', U.__class__.__name__)
             
         mt = self.mtot.copy()
         

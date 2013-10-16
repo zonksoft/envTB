@@ -30,10 +30,14 @@ class DensityOfStates:
         local_density = LocalDensityOfStates(H=self.hamiltonian, bc=self.bc)
         return np.sum(local_density(E0))/2./np.pi
     
+    def get_DOS(self):
+        DOS = [self.__call__(E0) for E0 in self.E]
+        return DOS 
+
     def plot_density_of_states(self):
         
-        DOS = [self.__call__(E0) for E0 in self.E]
-        
+        DOS = self.get_DOS()
+         
         plt.plot(self.E, DOS, 'r')
         plt.xlabel(r'$E$')
         plt.ylabel(r'$DOS$')

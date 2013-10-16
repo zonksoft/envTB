@@ -14,7 +14,8 @@ class GreensFunction:
         self.bc = bc
         
         if not isinstance(H, hamiltonian.GeneralHamiltonian):
-            raise TypeError("H has to be instance of Hamiltonian")
+            raise TypeError("H must be hamiltonian.GeneralHamiltonian,
+                            not %s", H.__class__.__name__)
         
         self.hamiltonian = H.mtot
         
@@ -27,8 +28,8 @@ class GreensFunction:
     def __inv_greens_matrix(self, E, H):
         
         zplus = complex(0.0, 1.0) * 10**(-12)
-        #sig1 = np.zeros((H.Ny * H.Nx, H.Ny * H.Nx), dtype = complex)
-        #sig2 = np.zeros((H.Ny * H.Nx, H.Ny * H.Nx), dtype = complex)
+        #sig1 = np.zeros((H.Ny * Nx, H.Ny * Nx), dtype = complex)
+        #sig2 = np.zeros((H.Ny * Nx, H.Ny * Nx), dtype = complex)
       
         #if self.bc == 'open':
         #sig1[0,0] = self.calculate_self_energy_for_1d(E, -0.05)

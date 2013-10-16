@@ -277,4 +277,5 @@ def run_examples():
     #plot_ldos_graphene_armchair_example() #all FAIL
     #plot_ldos_example_2Dpot()
     #DOS()
-run_examples()
+if __name__ == '__main__':
+    run_examples()
