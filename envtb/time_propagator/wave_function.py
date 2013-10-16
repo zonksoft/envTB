@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import envtb.ldos.plotter
 
-class WaveFunction():
+class WaveFunction(object):
     
     def __init__(self, vec=None, coords=None):
         self.wf1d = vec
@@ -73,9 +73,10 @@ class WaveFunction():
         return [np.abs(np.dot(np.conjugate(np.transpose(v[:,i])), self.wf1d))
                 for i in xrange(len(v[0,:]))]
     
-    def save_wave_function_data(self, file_out, param=None):
-        
-        file_out.writelines(`param`+'   '+`self.wf1d.tolist()`+'\n')
+    @staticmethod
+    def save_wave_function_data(wave_function, file_out, param=None):
+        print 'Hi!'
+        file_out.writelines(`param`+'   '+`wave_function.tolist()`+'\n')
         return None
     
     def save_wave_function_pic(self, pic_out, maxel=None, **kwrds):
@@ -85,7 +86,7 @@ class WaveFunction():
         plt.close()
         return None
         
-    def save_wave_function_expansion(self,file_out, v):
+    def save_wave_function_expansion(self, file_out, v):
         a = self.expand_wave_function(v)
         file_out.writelines(`a`+'\n')
         return None
