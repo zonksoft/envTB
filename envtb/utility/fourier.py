@@ -1,6 +1,6 @@
 import numpy
 import envtb.quantumcapacitance.utilities as utilities
-#import envtb.wannier90.w90hamiltonian as w90
+import envtb.wannier90.w90hamiltonian as w90
 from envtb.wannier90.w90hamiltonian import Hamiltonian
 import math
 
@@ -226,13 +226,16 @@ class RealSpaceWaveFunctionFourierTransform:
         
 # XXX: Class is badly structured and documented      
 class ZigzagGNRHelper:
-    def __init__(self, nnfile, height, length, paddingx=0, paddingy=0):
+    def __init__(self, nnfile, height, length, paddingx=0, paddingy=0, supercell_ham=True, ribbon_ham=True):
         """
         height: height of zGNR in 4-atom basiscells. MUST BE EVEN.
         length: number of slices. MUST BE EVEN.
         paddingx, paddingy: number of padding orbitals in x and y direction
         nnfile: Nearest neighbour file with geometry
+
+        supercell_ham: should be set to False, to avoid calculation of calculate supercell_hamiltonian
         """
+        print height, divmod(height, 2), length, divmod(length, 2)
         
         if height % 2 != 0 or length % 2 != 0:
             raise ValueError('height and length must be even numbers.')
@@ -240,10 +243,14 @@ class ZigzagGNRHelper:
         self.height, self.length = height,length
         self.paddingx, self.paddingy = paddingx, paddingy
         self.nnfile = nnfile
-        
-        self.supercell_hamiltonian = self.__create_supercell_hamiltonian(nnfile, height, length)
-        self.graphene_hamiltonian, self.doublecell_hamiltonian, self.ribbon_hamiltonian = \
-            self.__create_hamiltonian(nnfile, height, length)
+
+        if supercell_ham: self.supercell_hamiltonian = self.__create_supercell_hamiltonian(nnfile, height, length)
+        if ribbon_ham: 
+            self.graphene_hamiltonian, self.doublecell_hamiltonian, self.ribbon_hamiltonian = \
+                                        self.__create_hamiltonian(nnfile, height, length)
+        else: 
+            self.graphene_hamiltonian, self.doublecell_hamiltonian, self.ribbon_hamiltonian = \
+                                        self.__create_hamiltonian(nnfile, height, length, rib_ham=False)
         
     @staticmethod
     def rings_to_atoms(nr_of_rings):
@@ -255,7 +262,7 @@ class ZigzagGNRHelper:
         Returns the number of 2-cells (zigzag basis cell containing two
         graphene cells), including padding at top and bottom.
         """
-        
+        print nr_of_rings 
         if nr_of_rings % 2 == 0:
             return nr_of_rings/2 + 1
         else:
@@ -265,7 +272,7 @@ class ZigzagGNRHelper:
     def atoms_to_rings(nr_of_atoms):
         return (nr_of_atoms - 2)/2                 
         
-    def __create_hamiltonian(self, nnfile, height, length):
+    def __create_hamiltonian(self, nnfile, height, length, rib_ham=True):
         """
         Creates a graphene rectangle Hamiltonian from a nearest neighbour
         parameter file.
@@ -277,7 +284,8 @@ class ZigzagGNRHelper:
         
         Return:
         ham: Hamiltonian of the graphene unitcell.
-        ham5: Hamiltonian of the graphene rectangle.
+        ham5: Hamiltonian of the graphene rectangle. 
+        if ham5 is not needed, to speed up the code use rib_ham=False
         """
        
         unitcells=height
@@ -287,18 +295,20 @@ class ZigzagGNRHelper:
             [[0, 0, 0], [1, 0, 0]],
             [[1, -1, 0], [1, 1, 0], [0, 0, 1]])
         
-        ham3 = ham2.create_supercell_hamiltonian(
-            [[0, i, 0] for i in range(unitcells)],
-            [[1, 0, 0], [0, unitcells, 0], [0, 0, 1]])
+        if rib_ham:
+            ham3 = ham2.create_supercell_hamiltonian(
+                    [[0, i, 0] for i in range(unitcells)],
+                    [[1, 0, 0], [0, unitcells, 0], [0, 0, 1]])
         
-        ham4 = ham3.create_modified_hamiltonian(
-            ham3.drop_dimension_from_cell_list(1))
+            ham4 = ham3.create_modified_hamiltonian(
+                    ham3.drop_dimension_from_cell_list(1))
         
-        ham5 = ham4.create_supercell_hamiltonian([[i, 0, 0] for i in range(
-            length)], [[length, 0, 0], [0, 1, 0], [0, 0, 1]])
-        
-        return ham, ham2, ham5
-        
+            ham5 = ham4.create_supercell_hamiltonian([[i, 0, 0] for i in range(
+                        length)], [[length, 0, 0], [0, 1, 0], [0, 0, 1]])
+            return ham, ham2, ham5
+        else: 
+            return ham, ham2, ham2
+
     def __create_supercell_hamiltonian(self, nnfile, height, length):
         unitcells=length*2
         ham = Hamiltonian.from_nth_nn_list(nnfile)
@@ -360,6 +370,7 @@ class ZigzagGNRHelper:
         return numpy.array([vec[2*int(i)+j] for i in self.resort_nanoribbon() for j in range(2)])
                 
     def pad_nanoribbon_vector_to_periodic(self, vec):
+        print 'height', self.height
         splitvecs=numpy.split(vec,len(vec)/(4*self.height-2))
         splitvecs=[numpy.append(splitvec,0) for splitvec in splitvecs]
         splitvecs=[numpy.insert(splitvec,0,0) for splitvec in splitvecs]
@@ -386,9 +397,8 @@ class GNRSimpleFourierTransform:
         """
         self.height_nr_atoms = height_nr_atoms
         self.length_nr_slices = length_nr_slices
-        
         self.zgh = self.__create_zigzag_gnr_helper(height_nr_atoms, length_nr_slices, nnfile)
-        
+            
         a=10
         self.localized_orbital_set = self.__create_gaussian_basis_orbitals(self.zgh, a)
         self.orbital_fourier_transform = RealSpaceWaveFunctionFourierTransform(
@@ -424,8 +434,9 @@ class GNRSimpleFourierTransform:
         nnfile: nearest-neighbour file which contains the graphene geometry.
         """
         height=ZigzagGNRHelper.rings_to_2cells(ZigzagGNRHelper.atoms_to_rings(height_nr_atoms))
+        print height
         length=length_nr_slices 
-        return ZigzagGNRHelper(nnfile, height, length, paddingx=0, paddingy=0)
+        return ZigzagGNRHelper(nnfile, height, length, paddingx=0, paddingy=0, supercell_ham=False, ribbon_ham=False)
 
     def __pad_and_split_zgnr_wavefunction(self, wave_function, zgh):
         """
@@ -460,7 +471,7 @@ class GNRSimpleFourierTransform:
         LocalizedOrbitalSet containing the basis orbitals.
         """
         doublecell_ham = zgh.doublecell_hamiltonian
-        
+            
         unit_cell_grid = (2,2,1)
         gridpoints = 60
         
@@ -503,7 +514,7 @@ class GNRSimpleFourierTransform:
         #self.maxky = atmp[0][-1][0][1] - atmp[0][0][0][1]
         
         Gamma_point = numpy.array([self.maxkx/2., self.maxky/2.])
-        ag = 2.461
+        ag = 2.461 
         K_point_1 = Gamma_point + 4. * numpy.pi / 3. / ag * numpy.array([1.0, 0.0])
         K_point_2 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([-1.0, math.sqrt(3.0)])
         K_point_3 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([-1.0, -math.sqrt(3.0)])
