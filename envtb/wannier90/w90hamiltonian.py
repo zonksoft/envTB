@@ -21,8 +21,10 @@ import numpy.linalg
 import re
 import envtb.quantumcapacitance.utilities as utilities
 #from mayavi import mlab
-#import envtb.utility.fourier
-
+try:
+    import envtb.utility.fourier
+except:
+    pass
 class Hamiltonian:
     
     
