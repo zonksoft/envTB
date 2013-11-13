@@ -12,11 +12,10 @@ class GreensFunction:
     def __init__(self, H, E, bc='closed'):
         
         self.bc = bc
-        
+
         if not isinstance(H, hamiltonian.GeneralHamiltonian):
-            raise TypeError("H must be hamiltonian.GeneralHamiltonian,
-                            not %s", H.__class__.__name__)
-        
+            raise TypeError("H must be hamiltonian.GeneralHamiltonian, not %s", H.__class__.__name__)
+
         self.hamiltonian = H.mtot
         
         self.Nx = H.Nx

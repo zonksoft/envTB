@@ -489,14 +489,16 @@ class Hamiltonian:
         #I think this needs lil_matrix, coo_matrix didn't work.
         #blochmatrix = sparse.lil_matrix((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
         blochmatrix = numpy.zeros((len(orbitalnrs), len(orbitalnrs)), dtype=complex)
-        
+        #print 'bloch_phases', bloch_phases
         if dense_blocks is None:
             for i in usedunitcellnrs:
                 blochmatrix += bloch_phases[i] * self.__unitcellmatrixblocks[i]
         else:
             for i in usedunitcellnrs:
-                blochmatrix += bloch_phases[i] * dense_blocks[i]        
+                blochmatrix += bloch_phases[i] * dense_blocks[i]
 
+        #print 'dense_blocks', dense_blocks, bloch_phases
+        #print blochmatrix.shape, blochmatrix
         evals,evecs=linalg.eig(blochmatrix)
         
         if return_evecs==True:
@@ -580,7 +582,6 @@ class Hamiltonian:
             kpoints=self.standard_paths(kpoints)[2]
             basis='d'
 
-
         if self.mpi_comm:
             if self.mpi_rank == 0:
                 path_parts = numpy.array_split(kpoints,self.mpi_size)
@@ -592,6 +593,7 @@ class Hamiltonian:
             path=kpoints
 
         dense_blocks=[block.toarray() for block in self.__unitcellmatrixblocks]
+
         data=numpy.array([self.bloch_eigenvalues(kpoint,basis,usedhoppingcells,dense_blocks=dense_blocks)
                           for kpoint in path])
 
@@ -695,7 +697,7 @@ class Hamiltonian:
         data=self.bandstructure_data(kpoints,basis,usedhoppingcells)
 
         if axes is None:
-            fig=pyplot.figure()
+            fig=pyplot.figure(figsize=(15,10))
             axes=fig.add_subplot(111)
 
         if self.mpi_rank == 0:
@@ -1250,7 +1252,7 @@ class Hamiltonian:
     
         #Apply magnetic field
         #distances_in_unit_cell=numpy.array([[x-y for x in numpy.array(orbitalpositions)] for y in numpy.array(orbitalpositions)])
-        if magnetic_B!=None:        
+        if magnetic_B!=None:
             Tesla_conversion_factor=1.602176487/1.0545717*1e-5
             #print Tesla_conversion_factor
             for i,number in enumerate(unitcellnumbers):
@@ -1283,7 +1285,7 @@ class Hamiltonian:
         
         basis: 3x3 matrix, containing the basis vectors in rows.
         
-        Return:        
+        Return:
         metric_numerator: The numerator of the metric (3x3 matrix)
         metric_denominator: The denominator - a scalar because it is identical for all elements.
         

@@ -175,10 +175,10 @@ def define_zigzag_ribbon_w90(nnfile, width, length, magnetic_B=None):
         get_rid_of = 3
 
     #ham = w90hamiltonian.Hamiltonian.from_nth_nn_list(nnfile)
-    ham = w90hamiltonian.Hamiltonian.from_file("../../exampledata/01_graphene_vasp_wannier90/wannier90_hr.dat",
-                                               "../../exampledata/01_graphene_vasp_wannier90/POSCAR",
-                                               "../../exampledata/01_graphene_vasp_wannier90/wannier90.wout",
-                                               "../../exampledata/01_graphene_vasp_wannier90/OUTCAR")
+    ham = w90hamiltonian.Hamiltonian.from_file("/home/larisa/envtb-data/data/01_graphene_vasp_wannier90/wannier90_hr.dat",
+                                               "/home/larisa/envtb-data/data/01_graphene_vasp_wannier90/POSCAR",
+                                               "/home/larisa/envtb-data/data/01_graphene_vasp_wannier90/wannier90.wout",
+                                               "/home/larisa/envtb-data/data/01_graphene_vasp_wannier90/OUTCAR")
     
     ham2 = ham.create_supercell_hamiltonian(
         [[0, 0, 0], [1, 0, 0]],
@@ -202,14 +202,14 @@ def define_zigzag_ribbon_w90(nnfile, width, length, magnetic_B=None):
     ham6 = ham5.create_modified_hamiltonian(
         usedorbitals=range(1, ham5.nrorbitals()-1))
     
-    #path = ham4.point_path([[0.65,0,0],[0.7,0,0]],20)
-    #ham4.plot_bandstructure(path, '' ,'d')
-    #data=ham4.bandstructure_data(path,basis='c',usedhoppingcells='all')
-    
+    path = ham4.point_path([[0.0,0,0],[0.95,0,0]],100)
+    ham4.plot_bandstructure(path, '' ,'d')
+    data=ham4.bandstructure_data(path,basis='c',usedhoppingcells='all')
+    print data
     #plt.ylim(0, 0.2)
     #plt.show()
     
-    return ham5
+    return ham5, ham4
 # end def define_zigzag_ribbon_w90 
     
 def use_w90_example(Ny=30, Nx=30, magnetic_B=None):

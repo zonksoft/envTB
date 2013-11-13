@@ -7,6 +7,7 @@ m = 0.25 * 9.109 * 10**(-31)
 a = 2 * 10**(-10)
 JtoEV = 1./1.6 * 10**(19) 
 t = hbar**2 / 2./ m/ a**2 * JtoEV
+print t
 
 def make_H0(Np, Ec = 0):
     a = (4. * t + Ec) * np.ones(Np, dtype = complex)
@@ -20,31 +21,30 @@ def make_H0(Np, Ec = 0):
 
 def make_periodic_H0(n, Ec = 0):
     m = make_H0(n, Ec).tolil()
-   
     m[0,-1] = -t
     m[-1,0] = -t
 
     return  m.tocsr()
 
 def make_HI(n):
-   
+
     return -t * scipy.sparse.eye(n, n, dtype = complex, format="lil")
 
 def make_H(H0, HI, nx):
-   
+
     ny = H0.shape[0]
     print ny
     #print H0
     #H = np.zeros((nx*ny,nx*ny), dtype = complex)
     H = scipy.sparse.lil_matrix((nx*ny,nx*ny), dtype=complex)
-    
+
     HIT = HI.transpose().conjugate()
-    
+
     for i in xrange(nx):
         j = i * ny
-     
+
         H[j:j+ny,j:j+ny] = H0[:,:]
-     
+
         try:
             H[j:j+ny,j+ny:j+2*ny] = HI[:,:]
         except:
