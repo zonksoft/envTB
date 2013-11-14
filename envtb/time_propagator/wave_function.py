@@ -1,6 +1,10 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import envtb.ldos.plotter
+try:
+    import matplotlib.pylab as plt
+except:
+    print 'Warning(wave_function): no module matplotlib'
+    pass
 
 class WaveFunction(object):
 
@@ -13,15 +17,15 @@ class WaveFunction(object):
 
     def plot_wave_function(self, maxel=None, **kwrds):
         envtb.ldos.plotter.Plotter().plot_density(
-            np.abs(self.wf1d), self.coords, max_el=maxel, **kwrds) 
+            np.abs(self.wf1d), self.coords, max_el=maxel, **kwrds)
         plt.axes().set_aspect('equal')
 
     def calculate_average_position(self):
 
         f_aver = sum([np.abs(self.wf1d[i])**2 for i in xrange(len(self.wf1d))])
-        x_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][0] 
-                      for i in xrange(len(self.wf1d))]) / f_aver 
-        y_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][1] 
+        x_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][0]
+                      for i in xrange(len(self.wf1d))]) / f_aver
+        y_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][1]
                       for i in xrange(len(self.wf1d))]) / f_aver
 
         return x_aver, y_aver

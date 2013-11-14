@@ -1,5 +1,9 @@
 import numpy as np
-import matplotlib.pylab as plt
+try:
+    import matplotlib.pylab as plt
+except:
+    print 'Warning(plotter): no module matplotlib'
+    pass
 
 class Plotter:
     

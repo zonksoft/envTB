@@ -9,9 +9,13 @@ import math
 import cmath
 from envtb.vasp import poscar
 from scipy import linalg
-from matplotlib import pyplot
-from matplotlib.path import Path
-import matplotlib.patches as patches
+try:
+    from matplotlib import pyplot
+    from matplotlib.path import Path
+    import matplotlib.patches as patches
+except:
+    print 'Warning(w90hamiltonian): no module matplotlib'
+    pass
 import itertools
 from scipy import sparse
 
@@ -26,8 +30,7 @@ try:
 except:
     pass
 class Hamiltonian:
-    
-    
+
     """
     TODO: durchschleifen der argumente bei bloch_eigenvalues etc. ist bloed. vl. argumente bei allen anderen
     mit *args und auf dokumentation von bloch_eigenvalues verweisen?
@@ -50,7 +53,7 @@ class Hamiltonian:
     TODO: remove pyplot dependencies: always take axes and return lines (or
           something similar pragmatic)
     """
-    
+
     __unitcellmatrixblocks=[]
     __unitcellnumbers=[]
     __orbitalspreads=[]
@@ -59,14 +62,14 @@ class Hamiltonian:
     __latticevecs=0
     __nrbands=0
     __fermi_energy=None
-    
+
     def __init__(self):
         """
         There are several ways to initialize the Wannier90 Hamiltonian:
         1) Hamiltonian.from_file(wannier90filename,poscarfilename,wannier90woutfilename)
         2) Hamiltonian.from_raw_data(unitcellmatrixblocks,unitcellnumbers,latticevecs,orbitalspreads,orbitalpositions)
         3) Hamiltonian.from_nth_nn_list(nnfile,customhopping):
-        
+
         See the documentation of those methods.
         """
 
@@ -79,38 +82,38 @@ class Hamiltonian:
             self.mpi_comm = None
             self.mpi_size = 0
             self.mpi_rank = 0
-                
+
         #TODO: wannier90filename should be the id of the wannier90 calculation, and specific
         #filenames derived from that ('bla' -> bla.win, bla.wout, bla_hr.dat etc.). Then,
         #kick out all filename method arguments
-        
+
     def fermi_energy(self):
         """
         Return the system's Fermi energy.
         """
         return self.__fermi_energy
-        
+
     def latticevectors(self):
         """
         Return the system's lattice vectors.
         """
-        
+
         return numpy.array(self.__latticevecs.latticevecs()) #copy
-    
+
     def reciprocal_latticevectors(self):
         """
         Return the system's reciprocal lattice vectors.
         """
-        
+
         return numpy.array(self.__latticevecs.reciprocal_latticevecs()) #copy
-    
+
     def orbitalspreads(self):
         """
         Return the wannier90 orbital spreads.
         """
-        
+
         return list(self.__orbitalspreads)
-    
+
     def orbitalpositions(self):
         """
         Return the wannier90 orbital positions.

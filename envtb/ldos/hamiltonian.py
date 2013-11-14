@@ -4,7 +4,11 @@ import make_matrix_graphene as mmg
 import make_matrix_graphene_armchair_5nn as mmg_a
 import potential
 import copy
-import matplotlib.pylab as plt
+try:
+    import matplotlib.pylab as plt
+except:
+    print 'Warning(hamiltonian): no module matplotlib'
+    pass
 import scipy.sparse
 from scipy.sparse import linalg
 import cmath
