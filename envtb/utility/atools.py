@@ -167,7 +167,7 @@ class PlotNumericalData(object):
         plt.ylim(0.0, max(time))
         plt.colorbar()
         plt.xlabel(r'$E, eV$', fontsize=26)
-        plt.xlim(-0.21,0.21)
+        plt.xlim(-0.3,0.3)
         if file_to_save:
             plt.savefig(file_to_save)
             plt.close()
@@ -284,19 +284,28 @@ class PlotNumericalData(object):
         j_x_ext = np.zeros(3* len(j_x), dtype=complex)
         j_x_ext[1*len(j_x): 2*len(j_x)] = j_x[:]
         j_x_ext_w = np.fft.fft(j_x_ext)
-        freq = np.fft.fftfreq(len(j_x_ext_w), d=dt_f)*4.1357*10**(-15)
+        freq_x = np.fft.fftfreq(len(j_x_ext_w), d=dt_f)*4.1357*10**(-15)
+
+        j_y_ext = np.zeros(3* len(j_y), dtype=complex)
+        j_y_ext[1*len(j_x): 2*len(j_y)] = j_y[:]
+        j_y_ext_w = np.fft.fft(j_y_ext)
+        freq_y = np.fft.fftfreq(len(j_y_ext_w), d=dt_f)*4.1357*10**(-15)
 
         #fig.add_subplot(1,1,1)
         Ax.plot_fourier_transform()
 
         plt.subplot(1,2,1)
         plt.axvline(x=laser_freq_eV, color='r',ls='--')
-        plt.plot(freq[:250], abs(j_x_ext_w)[:250]*10**(-7), label = r'$j_x$')
-        plt.xlim(0.0, 0.25*max(freq))
+        plt.plot(freq_x[:250], abs(j_x_ext_w)[:250]*10**(-7), label = r'$j_x$')
+        plt.xlim(0.0, 0.3*max(freq_x))
         plt.legend(prop={'size':16})
 
         plt.subplot(1,2,2)
+        plt.axvline(x=laser_freq_eV, color='r',ls='--')
+        plt.plot(freq_y[:250], abs(j_y_ext_w)[:250]*10**(-7), label = r'$j_y$')
+        plt.xlim(0.0, 0.3*max(freq_y))
         plt.legend(prop={'size':16})
+
 
         if file_to_save:
             plt.savefig(file_to_save)
@@ -514,7 +523,7 @@ def fast_plot(numdata, plotdata, save=False):
                     laser_freq_eV=numdata.dic_desc['laser_freq_eV'],
                     file_to_save='7_cur_f.png', figuresize=(20,10))
         except:
-            print 'Failed to plot!'
+            print 'Failed to plot fourier!'
             pass
         try:
             plotdata.plot_wave_functions_stack(file_name=numdata.file_name_wf,
