@@ -51,6 +51,8 @@ class GeneralHamiltonian(object):
     def copy_ins_with_new_matrix(self, mtot):
         ins = copy.copy(self)
         ins.mtot = mtot
+        ins.m0 = mtot[:self.Ny, :self.Ny]
+        ins.mI = mtot[ :self.Ny, self.Ny: 2*self.Ny]
         return ins
 
     def make_periodic_x(self):
@@ -76,7 +78,7 @@ class GeneralHamiltonian(object):
                     if not isinstance(U, potential.SuperLatticePotential):
                         raise TypeError('''f must be Potential1D or Potential2D
                                          or SoftConfinmentPotential
-                                         or SuperLatticePotential, 
+                                         or SuperLatticePotential,
                                          not %s''', U.__class__.__name__)
         if self.mtot is None:
             self.build_hamiltonian()
@@ -103,6 +105,83 @@ class GeneralHamiltonian(object):
             mt = mt + mdia.tocsr()
 
         return self.copy_ins_with_new_matrix(mt)
+
+    def apply_simple_vector_potential(self, A):
+        """
+              The function applies a vector potential to the hamiltonian parts (H0 and HI)
+
+        conversion_factor = e/h * Angstrem   is a prefactor (for graphene 1.6 * 10**5)
+
+        A: a vector potential of the form [Ax, Ay]
+        """
+        conversion_factor = 1.602176487 / 1.0545717*1e5
+
+        nonzero_elements_0 = self.m0.nonzero()
+        nonzero_elements_I = self.mI.nonzero()
+
+        phase_matrix_0 = np.exp(1j * conversion_factor * A[0] *
+                             np.array([self.coords[nonzero_elements_0[1][k]][0] -
+                                       self.coords[nonzero_elements_0[0][k]][0]
+                                       for k in xrange(len(nonzero_elements_0[0]))]))*\
+                      np.exp(1j * conversion_factor * A[1] *
+                             np.array([self.coords[nonzero_elements_0[1][k]][1] -
+                                       self.coords[nonzero_elements_0[0][k]][1]
+                                       for k in xrange(len(nonzero_elements_0[0]))]))
+        phase_matrix_1 = np.exp(1j * conversion_factor * A[0] *
+                             np.array([self.coords[nonzero_elements_I[1][k]+self.Ny][0] -
+                                       self.coords[nonzero_elements_I[0][k]][0]
+                                       for k in xrange(len(nonzero_elements_I[0]))]))*\
+                      np.exp(1j * conversion_factor * A[1] *
+                             np.array([self.coords[nonzero_elements_I[1][k]+self.Ny][1] -
+                                       self.coords[nonzero_elements_I[0][k]][1]
+                                       for k in xrange(len(nonzero_elements_I[0]))]))
+        m_0_data = self.m0.data * phase_matrix
+        m_I_data = self.mI.data * phase_matrix
+
+        m_0 = scipy.sparse.csr_matrix((m_0_data, nonzero_elements_0), shape=(self.Ny, self.Ny))
+        m_I = scipy.sparse.csr_matrix((m_I_data, nonzero_elements_I), shape=(self.Ny, self.Ny))
+
+        return self.copy_ins(m0=m_0, mI=m_I)
+
+    def apply_simple_magnetic_field(self, magnetic_B=0, gauge='landau_x'):
+        conversion_factor=1.602176487/1.0545717*1e-5  # e/hbar*Angstrem^2
+
+        nonzero_elements_0 = self.m0.nonzero()
+        nonzero_elements_I = self.mI.nonzero()
+        if gauge == 'landau_x':
+             phase_matrix_0 = np.exp(1j * conversion_factor * magnetic_B *
+                                   np.array([-0.5 * (self.coords[nonzero_elements_0[1][k]][0] -
+                                                      self.coords[nonzero_elements_0[0][k]][0]) *\
+                                              (self.coords[nonzero_elements_0[0][k]][1] +
+                                                self.coords[nonzero_elements_0[1][k]][1])
+                                              for k in xrange(len(nonzero_elements_0[0]))]))
+             phase_matrix_I = np.exp(1j * conversion_factor * magnetic_B *
+                                   np.array([-0.5 * (self.coords[nonzero_elements_I[1][k] + self.Ny][0] -
+                                                      self.coords[nonzero_elements_I[0][k]][0]) *\
+                                              (self.coords[nonzero_elements_I[0][k] + self.Ny][1] +
+                                                self.coords[nonzero_elements_I[1][k]][1])
+                                              for k in xrange(len(nonzero_elements_I[0]))]))
+        elif gauge == 'landau_y':
+            phase_matrix_0 = np.exp(1j * conversion_factor * magnetic_B *
+                                  np.array([0.5 * (self.coords[nonzero_elements_0[1][k]][0] +
+                                                    self.coords[nonzero_elements_0[0][k]][0]) *\
+                                             (self.coords[nonzero_elements_0[1][k]][1] -
+                                               self.coords[nonzero_elements_0[0][k]][1])
+                                              for k in xrange(len(nonzero_elements_0[0]))]))
+            phase_matrix_I = np.exp(1j * conversion_factor * magnetic_B *
+                                  np.array([0.5 * (self.coords[nonzero_elements_I[1][k] + self.Ny][0] +
+                                                    self.coords[nonzero_elements_I[0][k]][0]) *\
+                                             (self.coords[nonzero_elements_I[1][k] + self.Ny][1] -
+                                               self.coords[nonzero_elements_I[0][k]][1])
+                                              for k in xrange(len(nonzero_elements_I[0]))]))
+
+        m_0_data = self.m0.data * phase_matrix_0
+        m_I_data = self.mI.data * phase_matrix_I
+
+        m_0 = scipy.sparse.csr_matrix((m_0_data, nonzero_elements_0), shape=(self.Ny, self.Ny))
+        m_I = scipy.sparse.csr_matrix((m_I_data, nonzero_elements_I), shape=(self.Ny, self.Ny))
+
+        return self.copy_ins(m0=m_0, mI=m_I)
 
     def apply_vector_potential(self, A):
         """
@@ -259,11 +338,11 @@ class HamiltonianTB(GeneralHamiltonian):
         self.mtot = None
 
     def make_periodic_y(self):
-        mlil = self.mtot.tolil()
+        #mlil = self.mtot.tolil()
 
-        m0 = mlil[:self.Ny, :self.Ny]
-        mI = mlil[:self.Ny, self.Ny:2 * self.Ny]
-
+        #m0 = mlil[:self.Ny, :self.Ny]
+        #mI = mlil[:self.Ny, self.Ny:2 * self.Ny]
+        m0 = self.m0.copy()
         m0[0, -1] = -mm.t
         m0[-1, 0] = -mm.t
 
@@ -303,10 +382,13 @@ class HamiltonianGraphene(GeneralHamiltonian):
         mist = np.mod(self.Ny, 4)
         ny = self.Ny
         if mist != 0:
+            import sys
+            print  'Ny should be devidable by 4! Exiting'
+            sys.exit(1)
             ny = self.Ny + 4 - mist
 
-        m0 = mmg.make_periodic_H0(ny)
-        mI = mmg.make_periodic_HI(ny)
+        m0 = mmg.make_periodic_H0(m0=self.m0, n=ny)
+        mI = mmg.make_periodic_HI(mI=self.mI, n=ny)
 
         return self.copy_ins(m0=m0, mI=mI)
 
@@ -445,79 +527,59 @@ class HamiltonianWithSpin(GeneralHamiltonian):
         return self.copy_ins(m0=m0, mI=mI)
 
 
-    def apply_RashbaSO(self, tR = 0.01):
-        m0 = self.m0
-        mI = self.mI
+    def apply_RashbaSO(self, tR=0.01):
+        m0 = self.add_Rashba(m=self.m0.copy(), tR=tR, ham_id=0)
+        mI = self.add_Rashba(m=self.mI.copy(), tR=tR, ham_id=1)
+
+        return self.copy_ins(m0=m0, mI=mI)
+
+    def add_Rashba(self, m, tR, ham_id):
+
+        dxl = self.coords[self.Ny][0] - self.coords[0][0]
+        d = np.sqrt(self.coords[1][0]**2 + self.coords[1][1]**2)
         pauli_mat = self.pauli_matrices()
 
-        d = np.sqrt(self.coords[1][0]**2 + self.coords[1][1]**2)
-
-        for i in xrange(self.Ny):
-            for j in xrange(self.Ny):
-                dx0 = self.coords[j][0] - self.coords[i][0]
+        for i in xrange(self.Ny/2):
+            for j in xrange(self.Ny/2, self.Ny):
+                dx0 = self.coords[j][0] - self.coords[i][0] + dxl * ham_id
                 dy0 = self.coords[j][1] - self.coords[i][1]
-                dxI = self.coords[j+self.Ny][0] - self.coords[i][0]
-                dyI = self.coords[j+self.Ny][1] - self.coords[i][1]
-                ann0 = np.sqrt(dx0**2 + dy0**2)
-                annI = np.sqrt(dxI**2 + dyI**2)
+                ann = np.sqrt(dx0**2 + dy0**2)
+                if ann < 1.01*d:
+                    m[i,j] += 1j * tR * (pauli_mat[0][0, 1]*dy0 - pauli_mat[1][0, 1]*dx0)
+                dx0 = self.coords[i][0] - self.coords[j][0] + dxl * ham_id
+                #dy0 = -dy0
+                ann = np.sqrt(dx0**2 + dy0**2)
+                if ann < 1.01*d:
+                    m[j,i] += 1j * tR * (-pauli_mat[0][1, 0]*dy0 - pauli_mat[1][1, 0]*dx0)
 
-                if ann0 < 1.01 * d:
-                    if i > self.Ny / 2: ispin = 1
-                    else: ispin = 0
-                    if j > self.Ny/2: jspin = 1
-                    else: jspin = 0
-                    if ispin == jspin: continue
-                    else:
-                        m0[i,j] += 1j * tR * (pauli_mat[0][ispin, jspin]*dy0 - pauli_mat[1][ispin, jspin]*dx0)
-
-                if annI < 1.01 * d:
-                    if i > self.Ny / 2: ispin = 1
-                    else: ispin = 0
-                    if j > self.Ny/2: jspin = 1
-                    else: jspin = 0
-                    if ispin == jspin: continue
-                    else:
-                        mI[i,j] += 1j * tR * (pauli_mat[0][ispin, jspin]*dyI - pauli_mat[1][ispin, jspin]*dxI)
-
-        #m_tot_new = mm.make_H(m0, mI,  self.Nx)
-        return self.copy_ins(m0=m0, mI=mI)
+        return m
 
     def apply_DresselhausSO(self, tD = 0.01):
-        m0 = self.m0
-        mI = self.mI
+        m0 = self.add_Dresselhaus(m=self.m0.copy(), tD=tD, ham_id=0)
+        mI = self.add_Dresselhaus(m=self.mI.copy(), tD=tD, ham_id=1)
+
+        return self.copy_ins(m0=m0, mI=mI)
+
+    def add_Dresselhaus(self, m, tD, ham_id):
+
+        dxl = self.coords[self.Ny][0] - self.coords[0][0]
+        d = np.sqrt(self.coords[1][0]**2 + self.coords[1][1]**2)
         pauli_mat = self.pauli_matrices()
 
-        d = np.sqrt(self.coords[1][0]**2 + self.coords[1][1]**2)
-
-        for i in xrange(self.Ny):
-            for j in xrange(self.Ny):
-                dx0 = self.coords[j][0] - self.coords[i][0]
+        for i in xrange(self.Ny/2):
+            for j in xrange(self.Ny/2, self.Ny):
+                dx0 = self.coords[j][0] - self.coords[i][0] + dxl * ham_id
                 dy0 = self.coords[j][1] - self.coords[i][1]
-                dxI = self.coords[j+self.Ny][0] - self.coords[i][0]
-                dyI = self.coords[j+self.Ny][1] - self.coords[i][1]
-                ann0 = np.sqrt(dx0**2 + dy0**2)
-                annI = np.sqrt(dxI**2 + dyI**2)
+                ann = np.sqrt(dx0**2 + dy0**2)
+                if ann < 1.01*d:
+                    m[i,j] += 1j * tD * (pauli_mat[0][0, 1]*dx0 - pauli_mat[1][0, 1]*dy0)
+                dx0 = self.coords[i][0] - self.coords[j][0] + dxl * ham_id
+                #dy0 = -dy0
+                ann = np.sqrt(dx0**2 + dy0**2)
+                if ann < 1.01*d:
+                    m[j,i] += 1j * tD * (pauli_mat[0][1, 0]*dx0 + pauli_mat[1][1, 0]*dy0)
 
-                if ann0 < 1.01 * d:
-                    if i > self.Ny / 2: ispin = 1
-                    else: ispin = 0
-                    if j > self.Ny/2: jspin = 1
-                    else: jspin = 0
-                    if ispin == jspin: continue
-                    else:
-                        m0[i,j] += 1j * tD * (pauli_mat[0][ispin, jspin]*dx0 - pauli_mat[1][ispin, jspin]*dy0)
-
-                if annI < 1.01 * d:
-                    if i > self.Ny / 2: ispin = 1
-                    else: ispin = 0
-                    if j > self.Ny/2: jspin = 1
-                    else: jspin = 0
-                    if ispin == jspin: continue
-                    else:
-                        mI[i,j] += 1j * tD * (pauli_mat[0][ispin, jspin]*dxI - pauli_mat[1][ispin, jspin]*dyI)
-
-        m_tot_new = mm.make_H(m0, mI,  self.Nx)
-        return self.copy_ins(m0=m0, mI=mI)
+        return m
 
     @staticmethod
     def pauli_matrices():
