@@ -135,8 +135,8 @@ class GeneralHamiltonian(object):
                              np.array([self.coords[nonzero_elements_I[1][k]+self.Ny][1] -
                                        self.coords[nonzero_elements_I[0][k]][1]
                                        for k in xrange(len(nonzero_elements_I[0]))]))
-        m_0_data = self.m0.data * phase_matrix
-        m_I_data = self.mI.data * phase_matrix
+        m_0_data = self.m0.data * phase_matrix_0
+        m_I_data = self.mI.data * phase_matrix_I
 
         m_0 = scipy.sparse.csr_matrix((m_0_data, nonzero_elements_0), shape=(self.Ny, self.Ny))
         m_I = scipy.sparse.csr_matrix((m_I_data, nonzero_elements_I), shape=(self.Ny, self.Ny))
