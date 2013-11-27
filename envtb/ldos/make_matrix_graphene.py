@@ -21,8 +21,7 @@ def make_H0(n):
     for i in xrange(0, n-2, 2):
         m[i, i+3] = g3
         m[i+3, i] = g3
-
-    return m
+    return m.tocsr()
 
 def make_HI(n):
 
@@ -44,70 +43,30 @@ def make_HI(n):
         m[i+4, i+3] = g3
         m[i+3, i+4] = g3
 
-    # for i in xrange(0, n-1, 4):
-    #     m[i+1, i] = g1
+    return m.tocsr() #sparse.dia_matrix(m)
 
-    # for i in xrange(0, n-2, 4):
-    #     m[i+2, i+1] = g3
-    #     m[i+1, i+2] = g3
-    #     m[i+2, i] = g2
+def make_periodic_H0(m0=None, n=10):
 
-    # for i in xrange(0, n-3, 4):
-    #     m[i+2, i+3] = g1
-    #     m[i+1, i+3] = g2
+    if m0 is None:
+        m0 = make_H0(n)
 
-    # for i in xrange(0, n-4, 4):
-    #     m[i+2, i+4] = g2
-    #     m[i+4, i+3] = g3
-    #     m[i+3, i+4] = g3
-
-    # for i in xrange(0, n-5, 4):
-    #     m[i+5, i+3] = g2
-    #     m[i+2, i+4] = g2
-    #     m[i+4, i+3] = g3
-    #     m[i+3, i+4] = g3
-
-    return m #sparse.dia_matrix(m)
-
-def make_periodic_H0(n):
-
-    m = (np.diag(e0 * np.ones(n, dtype = complex)) +
-         np.diag(g1 * np.ones(n-1, dtype = complex), 1) +
-         np.diag(g1 * np.ones(n-1, dtype = complex), -1) +
-         np.diag(g2 * np.ones(n-2, dtype = complex), 2) +
-         np.diag(g2 * np.ones(n-2, dtype = complex), -2) +
-         np.diag(g3 * np.ones(n-3, dtype = complex), 3) + 
-         np.diag(g3 * np.ones(n-3, dtype = complex), -3))
+    m = m0.copy().tolil()
 
     if n > 4:
-        m0 = np.array([[g2,g1],[g3,g2]])
-        m[:2,-2:] = m0[:,:]
-        m[-2:, :2] = np.transpose(m0)[:,:]
+        mper = np.array([[g2,g1],[g3,g2]])
+        m[:2,-2:] = mper[:,:]
+        m[-2:, :2] = np.transpose(mper)[:,:]
 
-    return scipy.sparse.lil_matrix(m)
+    return m
 
-def make_periodic_HI(n):
-
-    m = g2 * np.diag(np.ones(n, dtype = complex))
-
-    for i in xrange(0, n-3, 4):
-        m[i+1, i] = g1
-        m[i+2, i+3] = g1
-        m[i+2, i+1] = g3
-        m[i+1, i+2] = g3
-        m[i+1, i+3] = g2
-        m[i+2, i] = g2
-
-    for i in xrange(0, n-5, 4):
-        m[i+5, i+3] = g2
-        m[i+2, i+4] = g2
-        m[i+4, i+3] = g3
-        m[i+3, i+4] = g3
-
+def make_periodic_HI(mI=None, n=10):
+    if mI is None:
+        mI = make_HI(n)
+    m = mI.copy().tolil()
     m[0, -1] = g3
     m[-1, 0] = g3
 
-    return scipy.sparse.lil_matrix(m)
+    return m
 
 
 def block_matrix(m, n):
