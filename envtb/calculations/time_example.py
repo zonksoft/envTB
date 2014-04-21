@@ -26,20 +26,20 @@ def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
     plt.axes().set_aspect('equal')
     plt.savefig(file_out)
     plt.close()
-    
+
     return wf_final, dt_new, NK_new
 
 def wf_init_from_electron_density(hamilt, mu=0.1, kT=0.0025):
-    
+
     wf0 = envtb.time_propagator.wave_function.WaveFunction0(hamilt, mu, kT)
-    
+
     dens1 = hamilt.electron_density(mu, kT)
-    
+
     envtb.ldos.plotter.Plotter().plot_density(
         vector=dens1, coords=hamilt.coords)
-    
-    plt.show()    
-    
+
+    plt.show()
+
     wf0.plot_wave_function()
     return wf0
 
