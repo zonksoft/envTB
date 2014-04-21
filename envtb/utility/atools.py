@@ -126,6 +126,7 @@ class PlotNumericalData(object):
     @staticmethod
     def plot_wave_function(wf, Nx, Ny, file_to_save='wf.png',figuresize=(10,10)):
         wf_resized = wf.reshape(Nx, Ny)
+        print wf_resized.shape
         if figuresize:
             plt.figure(figsize=figuresize) # in inches!
         plt.imshow(np.abs(wf_resized.T), interpolation='bilinear', aspect=0.42)
@@ -314,11 +315,11 @@ class PlotNumericalData(object):
         return None
 
     @staticmethod
-    def plot_wave_function_fourier(wf, plotdata, Nx, Ny, BZ=True, file_to_save='wffour.png', figuresize=(10,10)):
+    def plot_wave_function_fourier(wf, simpleft, Nx, Ny, BZ=True, file_to_save='wffour.png', figuresize=(10,10)):
 
         if figuresize:
             plt.figure(figsize=figuresize) # in inches!
-        if not plotdata.simpleft:
+        if not simpleft:
             nnfile = '/home/larisa/envtb-data/data/02_graphene_3rdnn/graphene1stnnlist.dat'
             plotdata.simpleft = GNRSimpleFourierTransform(Ny, Nx, nnfile)
 

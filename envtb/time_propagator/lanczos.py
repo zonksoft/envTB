@@ -31,6 +31,8 @@ class LanczosPropagator():
         self.NK = NK
         self.dt = dt
         self.ham = ham
+        if self.ham.mtot is None:
+            self.ham.build_hamiltonian()
         #self.Nx = ham.Nx
         #self.Ny = ham.Ny
         #self.coords = ham.coords
@@ -224,9 +226,8 @@ class LanczosPropagator():
             check if conver < num_error
             """
             conver = np.abs(dwfk)**2
-            if conver < num_error:
 
-                print 'num_error', conver
+            if conver < num_error:
 
                 break
 
@@ -236,12 +237,14 @@ class LanczosPropagator():
                 """
                 scale = 0.95 * (num_error / conver)**(1./ self.NK)
                 self.dt *= max([0.5, scale])
+                #print 'num_error', conver
 
             elif regime == 'TSC':
                 """
                 For 'TSC' regime we increase the size of the Krylov space
                 """
                 self.__add_subspace()
+                #print 'num_error', conver
 
         wfk = np.zeros(len(self.Q[0]), dtype = complex)
         for i in xrange(0, self.NK):

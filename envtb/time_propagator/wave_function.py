@@ -13,15 +13,36 @@ class WaveFunction(object):
         self.coords = coords
 
     def check_norm(self):
+        '''
+            The function returns the norm of the wave function
+        '''
         return np.dot(np.transpose(np.conjugate(self.wf1d)), self.wf1d)
 
     def plot_wave_function(self, maxel=None, **kwrds):
+        '''
+        The funciton plots the wave function
+        
+        In:
+        maxel: maximum value
+        **kwrds: keywords for the plot function
+        
+        Return:
+        None
+        '''
         envtb.ldos.plotter.Plotter().plot_density(
             np.abs(self.wf1d), self.coords, max_el=maxel, **kwrds)
         plt.axes().set_aspect('equal')
 
     def calculate_average_position(self):
+        """
+        The function returns the average position of the wave packet on the grid
 
+        In:
+        None
+
+        Return:
+        x_aver, y_aver
+        """
         f_aver = sum([np.abs(self.wf1d[i])**2 for i in xrange(len(self.wf1d))])
         x_aver = sum([np.abs(self.wf1d[i])**2 * self.coords[i][0]
                       for i in xrange(len(self.wf1d))]) / f_aver
@@ -73,7 +94,6 @@ class WaveFunction(object):
         return tm
 
     def expand_wave_function(self, v):
-        print 'len', len(v[0,:])
         return [np.abs(np.dot(np.conjugate(np.transpose(v[:,i])), self.wf1d))
                 for i in xrange(len(v[0,:]))]
 
@@ -102,7 +122,9 @@ class WaveFunction(object):
 
         x, y = self.calculate_average_position()
         j_x, j_y = self.calculate_current(A)
-        file_out.writelines('%(x)f   %(y)f   %(j_x)f   %(j_y)f\n' % vars())
+        x = np.abs(x)
+        y = np.abs(y)
+        file_out.writelines('%(x)f   %(y)f' %vars()+'   '+  str(j_x) + '   '+str(j_y) + '\n')
 
         return None
 

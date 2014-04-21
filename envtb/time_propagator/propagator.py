@@ -15,16 +15,16 @@ class Propagator(object):
     def propagate_wave_function(wf_init, hamilt, NK=10, dt=1., maxel=None,
         num_error=10**(-18), regime='SIL', 
         file_out=None, **kwrds):
-    
+        #print 'Start!' 
         prop = envtb.time_propagator.lanczos.LanczosPropagator(
         		wf=wf_init, ham=hamilt, NK=NK, dt=dt)
     
         wf_final, dt_new, NK_new = prop.propagate(
             	num_error=num_error, regime=regime)
     
-        print 'dt_old = %(dt)g; dt_new = %(dt_new)g; NK_old = %(NK)g; NK_new = %(NK_new)g'\
-          		% vars()
-        print 'norm', wf_final.check_norm()
+        #print 'dt_old = %(dt)g; dt_new = %(dt_new)g; NK_old = %(NK)g; NK_new = %(NK_new)g'\
+          #		% vars()
+        #print 'norm', wf_final.check_norm()
     
         if file_out is None:
             return wf_final, dt_new, NK_new

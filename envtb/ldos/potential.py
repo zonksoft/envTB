@@ -82,7 +82,8 @@ class SoftConfinmentPotential:
         specifying side key word.
         
         side - string: "All" - potential is applied to all sides
-                       "leads" - for making potential on the leads
+                       "armchir" - for making potential at the armchair edge
+                       "zigzag" - for making potential at the zigzag edge
         
         imaginary - bool; whether potential is imaginary or not
         
@@ -93,8 +94,10 @@ class SoftConfinmentPotential:
         
         if side == 'All':
             self.side = 0
-        elif side == 'leads':
+        elif side == 'armchair':
             self.side = 12
+        elif side == 'zigzag':
+            self.side = 34
         #if side == "All":
         #    side = "1,2,3,4"
         #self.side = side.split(',')
@@ -117,39 +120,54 @@ class SoftConfinmentPotential:
             if pot_corner < 1.0:
                 return (1.0 + (-1) * pot_corner) * self.amplitude
             else: return (1.0 + (-1) * pot_edge) * self.amplitude
-        elif self.side == 12:
+        elif self.side == 12 or self.side == 34:
             #if pot_edge < 1.0:
             return (1.0 + (-1) * pot_edge) * self.amplitude
             #else:
             #    return (1.0+(-1)*pot_edge)*10.0
-    
+
     def __smooth_function(self, x):
         return abs(np.cos((x + self.da) / self.da * np.pi / 2.))
-    
+
     def __calculate_edge_potential(self, r):
         x = r[0]
         y = r[1]
+
+        pot_amp = 1.0
+
         if x > self.max_x - self.da:
-            x = x - self.max_x
-            pot_amp = self.__smooth_function(x)
+            if self.side == 0 or self.side == 12:
+                x = x - self.max_x
+                pot_amp = self.__smooth_function(x)
+            else:
+                if y > self.max_y - self.da:
+                    y = y - self.max_y
+                    pot_amp = self.__smooth_function(y)
+                elif y < self.da:
+                    pot_amp = self.__smooth_function(y)
         elif x < self.da:
-            pot_amp = self.__smooth_function(x)
+            if self.side == 0 or self.side == 12:
+                pot_amp = self.__smooth_function(x)
+            else:
+                 if y > self.max_y - self.da:
+                    y = y - self.max_y
+                    pot_amp = self.__smooth_function(y)
+                 elif y < self.da:
+                    pot_amp = self.__smooth_function(y)
+
         elif y > self.max_y - self.da:
-            if self.side == 0:
+            if self.side == 0 or self.side == 34:
                 y = y - self.max_y
                 pot_amp = self.__smooth_function(y)
-            else: pot_amp = 1.0
+
         elif y < self.da:
-            if self.side == 0:
+            if self.side == 0 or self.side == 34:
                 pot_amp = self.__smooth_function(y)
-            else: pot_amp = 1.0
-        else:
-            pot_amp = 1.0
-        
+
         return pot_amp
-    
+
     def __calculate_corner_potential(self,r):
-         
+
             x = r[0]
             y = r[1]
             if x >= self.max_x - self.da and y >= self.max_y - self.da:

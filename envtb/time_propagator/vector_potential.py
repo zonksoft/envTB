@@ -9,6 +9,8 @@ except:
     pass
 #light_speed = 3 * 10**(8)
 
+# amplitude of the field should be in V/m
+
 class VectorPotential:
 
     def __init__(self):
@@ -26,8 +28,11 @@ class VectorPotential:
     def get_magnetic_filed(self):
         pass
 
-    def plot_electric_field(self, **kwrds):
-        tarr = np.linspace(-0.1 / self.frequency, 7 * np.pi / self.frequency, 100)
+    def plot_electric_field(self, trange=None, **kwrds):
+        if trange is None:
+            tarr = np.linspace(-0.1 / self.frequency, 7 * np.pi / self.frequency, 100)
+        else:
+            tarr = trange
         plt.subplot(1,2,1)
         Ex = [self.get_electric_field(t)[0] for t in tarr]
         plt.plot(tarr, Ex, label = r'$E_x$', **kwrds)

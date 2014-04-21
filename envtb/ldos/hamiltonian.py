@@ -56,6 +56,8 @@ class GeneralHamiltonian(object):
         return ins
 
     def make_periodic_x(self):
+        if self.mtot is None:
+            self.build_hamiltonian()
         mtot = self.mtot.copy().tolil()
 
         mtot[-self.Ny:,:self.Ny] = mtot[:self.Ny, self.Ny:2*self.Ny]
@@ -127,7 +129,7 @@ class GeneralHamiltonian(object):
                              np.array([self.coords[nonzero_elements_0[1][k]][1] -
                                        self.coords[nonzero_elements_0[0][k]][1]
                                        for k in xrange(len(nonzero_elements_0[0]))]))
-        phase_matrix_1 = np.exp(1j * conversion_factor * A[0] *
+        phase_matrix_I = np.exp(1j * conversion_factor * A[0] *
                              np.array([self.coords[nonzero_elements_I[1][k]+self.Ny][0] -
                                        self.coords[nonzero_elements_I[0][k]][0]
                                        for k in xrange(len(nonzero_elements_I[0]))]))*\
@@ -276,6 +278,7 @@ class GeneralHamiltonian(object):
         #print 'mIT', mIT.transpose()
 
         dz = self.coords[self.Ny][0] - self.coords[0][0]
+        #print dz
         bloch_phase = cmath.exp(1j * k0 * dz)
         A = m0+ bloch_phase * mI + mIT / bloch_phase
         n_eigs=num_eigs
@@ -320,12 +323,23 @@ class GeneralHamiltonian(object):
 
         return density
 
+    def find_lead_solution(self, E=0.0, k=10, sigma=0.0, **kwrds):
+        A = scipy.sparse.lil_matrix((2*self.Ny, 2*self.Ny), dtype=complex)
+        H_I_ = np.linalg.inv(np.transpose((self.mI).todense()))
+
+        mE = scipy.sparse.dia_matrix((E * np.ones(self.Ny, dtype=complex), np.array([0])), shape=(self.Ny,self.Ny))
+        A[:self.Ny, :self.Ny] = scipy.sparse.lil_matrix(np.dot(H_I_, (mE - self.m0).todense()))
+        A[:self.Ny, self.Ny:] = scipy.sparse.lil_matrix(np.dot(-H_I_, (self.mI).todense()))
+        A[self.Ny:, :self.Ny] = scipy.sparse.dia_matrix((np.ones(self.Ny, dtype=complex), np.array([0])), shape=(self.Ny,self.Ny))
+
+        w, v = linalg.eigs(A.tocsc(), k=k, sigma=sigma, **kwrds)
+        return w, v
 # end class GeneralHamiltonian
 
 
 class HamiltonianTB(GeneralHamiltonian):
 
-    def __init__(self, Ny, Nx=1):
+    def __init__(self, Ny, Nx=1, dx=1.0, dy=1.0):
 
         GeneralHamiltonian.__init__(self)
 
@@ -334,7 +348,9 @@ class HamiltonianTB(GeneralHamiltonian):
         self.Nx = Nx
         self.Ny = Ny
         self.Ntot = Nx * Ny
-        self.coords = self.get_position(Nx, Ny)
+        self.dx=dx
+        self.dy=dy
+        self.coords = self.get_position(Nx, Ny, dx=self.dx, dy=self.dy)
         self.mtot = None
 
     def make_periodic_y(self):
@@ -349,31 +365,30 @@ class HamiltonianTB(GeneralHamiltonian):
         return self.copy_ins(m0=m0, mI=mI)
 
     @staticmethod
-    def get_position(Nx, Ny, s=1):
-        return [[i, j, 0] for i in xrange(Nx) for k in xrange(s)  for j in xrange(Ny)]
+    def get_position(Nx, Ny, s=1, dx=0.01, dy=0.01):
+        return [[i*dx, j*dx, 0] for i in xrange(Nx) for k in xrange(s)  for j in xrange(Ny)]
 
 #end class HamiltonianTB
 
 
 class HamiltonianGraphene(GeneralHamiltonian):
 
-    def __init__(self, Ny, Nx=1):
+    def __init__(self, Ny, Nx=1, rescale=1.0):
 
         GeneralHamiltonian.__init__(self)
-        self.m0 = mmg.make_H0(Ny)
-        self.mI = mmg.make_HI(Ny)
+        self.m0 = mmg.make_H0(Ny, rescale=rescale)
+        self.mI = mmg.make_HI(Ny, rescale=rescale)
         self.Nx = Nx
         self.Ny = Ny
         self.Ntot = Nx * Ny
-        self.coords = self.get_position(Nx, Ny)
+        self.coords = self.get_position(Nx, Ny, rescale=rescale)
         self.mtot = None
 
-
     @staticmethod
-    def get_position(Nx, Ny, s=1):
+    def get_position(Nx, Ny, s=1, rescale=1.0):
 
-        coords = [HamiltonianGraphene.__calculate_coords_in_slice(j) for k in xrange(s) for j in xrange(Ny) ]
-        coords += [[coords[j][0] + i * mmg.dx, coords[j][1]] for i in xrange(1, Nx)  for k in xrange(s) for j in xrange(Ny)]
+        coords = [HamiltonianGraphene.__calculate_coords_in_slice(j, rescale=rescale) for k in xrange(s) for j in xrange(Ny) ]
+        coords += [[coords[j][0] + i * mmg.dx / rescale, coords[j][1]] for i in xrange(1, Nx)  for k in xrange(s) for j in xrange(Ny)]
 
         return coords
 
@@ -393,16 +408,17 @@ class HamiltonianGraphene(GeneralHamiltonian):
         return self.copy_ins(m0=m0, mI=mI)
 
     @staticmethod
-    def __calculate_coords_in_slice(j):
+    def __calculate_coords_in_slice(j, rescale=1.0):
         jn = int(j)/4
+        a = mmg.a / rescale
         if np.mod(j,4.) == 1.0:
-            return [np.sqrt(3)/2.*mmg.a, 3.*mmg.a*jn + 1./2.*mmg.a]
+            return [np.sqrt(3)/2.*a, 3.*a*jn + 1./2.*a]
         elif np.mod(j, 4.) == 2.0:
-            return [np.sqrt(3)/2.*mmg.a, 3.*mmg.a*jn + 3./2.*mmg.a]
+            return [np.sqrt(3)/2.*a, 3.*a*jn + 3./2.*a]
         elif np.mod(j, 4.) == 3.0:
-            return [0, 3.*mmg.a*jn + 2.*mmg.a]
+            return [0, 3.*a*jn + 2.*a]
         elif np.mod(j, 4.) == 0.0:
-            return [0, 3*mmg.a*jn]
+            return [0, 3*a*jn]
 
 # end class HamiltonianGraphene
 

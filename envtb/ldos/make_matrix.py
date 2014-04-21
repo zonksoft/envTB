@@ -4,16 +4,16 @@ from scipy.sparse import linalg
 
 hbar = 1.055*10**(-34)
 m = 0.067 * 9.109 * 10**(-31)
-a = 1.0 * 10**(-9)
+a = 1.0 * 10**(-10)
 JtoEV = 1./1.6 * 10**(19) 
 t = hbar**2 / 2./ m/ a**2 * JtoEV
 print t
 
 def make_H0(Np, Ec = 0):
-    a = (4. * t + Ec) * np.ones(Np, dtype = complex)
-    b = -t * np.ones(Np, dtype = complex)
+    a0 = (4. * t + Ec) * np.ones(Np, dtype = complex)
+    b0 = -t * np.ones(Np, dtype = complex)
     diags = np.array([0,-1,1])
-    return scipy.sparse.spdiags(np.array([a,b,b]),diags, Np, Np, format="lil")
+    return scipy.sparse.spdiags(np.array([a0,b0,b0]),diags, Np, Np, format="lil")
     #return ((4 * t + Ec) * np.diag(np.ones(Np, dtype = complex))) -\
     #       (t * np.diag(np.ones(Np-1, dtype = complex), 1)) -\
     #       (t * np.diag(np.ones(Np-1, dtype = complex), -1))

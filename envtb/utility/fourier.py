@@ -3,6 +3,7 @@ import envtb.quantumcapacitance.utilities as utilities
 import envtb.wannier90.w90hamiltonian as w90
 from envtb.wannier90.w90hamiltonian import Hamiltonian
 import math
+import matplotlib.pylab as plt
 
 class FourierTransform:
     def __init__(self, latticevecs, data_on_grid, shape=None, axes=None):
@@ -208,7 +209,6 @@ class RealSpaceWaveFunctionFourierTransform:
         for orbnr, orb in \
             self.wannier_real_space_orbitals.orbitals.iteritems():
             # XXX: if you transform several wave functions, you can save this
-
             wave_function = numpy.array(wave_functions[orbnr], copy=False)
             transformed_wave_function = numpy.fft.fftn(wave_function)
 
@@ -237,8 +237,8 @@ class ZigzagGNRHelper:
         """
         print height, divmod(height, 2), length, divmod(length, 2)
         
-        if height % 2 != 0 or length % 2 != 0:
-            raise ValueError('height and length must be even numbers.')
+        #if height % 2 != 0 or length % 2 != 0:
+        #  raise ValueError('height and length must be even numbers.')
             
         self.height, self.length = height,length
         self.paddingx, self.paddingy = paddingx, paddingy
@@ -251,11 +251,11 @@ class ZigzagGNRHelper:
         else: 
             self.graphene_hamiltonian, self.doublecell_hamiltonian, self.ribbon_hamiltonian = \
                                         self.__create_hamiltonian(nnfile, height, length, rib_ham=False)
-        
+
     @staticmethod
     def rings_to_atoms(nr_of_rings):
         return 2*nr_of_rings + 2
-        
+
     @staticmethod
     def rings_to_2cells(nr_of_rings):
         """
@@ -266,12 +266,12 @@ class ZigzagGNRHelper:
         if nr_of_rings % 2 == 0:
             return nr_of_rings/2 + 1
         else:
-            return (nr_of_rings+1)/2 + 1   
-            
-    @staticmethod        
+            return (nr_of_rings+1)/2 + 1
+
+    @staticmethod
     def atoms_to_rings(nr_of_atoms):
-        return (nr_of_atoms - 2)/2                 
-        
+        return (nr_of_atoms - 2)/2
+
     def __create_hamiltonian(self, nnfile, height, length, rib_ham=True):
         """
         Creates a graphene rectangle Hamiltonian from a nearest neighbour
@@ -284,7 +284,7 @@ class ZigzagGNRHelper:
         
         Return:
         ham: Hamiltonian of the graphene unitcell.
-        ham5: Hamiltonian of the graphene rectangle. 
+        ham5: Hamiltonian of the graphene rectangle.
         if ham5 is not needed, to speed up the code use rib_ham=False
         """
        
@@ -302,7 +302,7 @@ class ZigzagGNRHelper:
         
             ham4 = ham3.create_modified_hamiltonian(
                     ham3.drop_dimension_from_cell_list(1))
-        
+
             ham5 = ham4.create_supercell_hamiltonian([[i, 0, 0] for i in range(
                         length)], [[length, 0, 0], [0, 1, 0], [0, 0, 1]])
             return ham, ham2, ham5
@@ -312,15 +312,14 @@ class ZigzagGNRHelper:
     def __create_supercell_hamiltonian(self, nnfile, height, length):
         unitcells=length*2
         ham = Hamiltonian.from_nth_nn_list(nnfile)
-        
+
         ham3 = ham.create_supercell_hamiltonian(
             [[i, j, 0] for j in range(height) for i in range(unitcells)],
             [[unitcells, 0, 0], [0, height, 0], [0, 0, 1]])
-        
+
         #ham4 = ham3.create_modified_hamiltonian(
         #    ham3.drop_dimension_from_cell_list(1))
-        
-        
+
         return ham3
 
 
@@ -329,7 +328,7 @@ class ZigzagGNRHelper:
         b1 = 2*self.length*a1
         b2 = self.height*a2
         b3 = a3
-        
+
         c1=b1
         c2=(a1+a2)*self.height
         c3=a3
@@ -340,40 +339,45 @@ class ZigzagGNRHelper:
         invvecs = numpy.linalg.inv(vecs)
         invgr_vecs = numpy.linalg.inv(gr_vecs)
         invlattice_vecs = numpy.linalg.inv(lattice_vecs)
-        
+
         return vecs, gr_vecs, lattice_vecs, invvecs, invgr_vecs, invlattice_vecs
 
     def split_sublattices(self, vec, nrorbs):
         return numpy.array([[vec[i] for i in range(start,len(vec),nrorbs)] for start in range(nrorbs)])
 
     def __shift_vectors(self, coords, vecs, invvecs, lattice_vecs, invlattice_vecs):
-        
+
         coords2 = coords - numpy.dot(numpy.floor(numpy.dot(coords, invlattice_vecs)), lattice_vecs)
         coords3 = coords2 - numpy.dot(numpy.floor(numpy.dot(coords2, invvecs)), vecs)
-        
+
         return coords3
-        
-    def resort_nanoribbon(self):    
+
+    def resort_nanoribbon(self):
         ham, ham2, ham5 = self.graphene_hamiltonian, self.doublecell_hamiltonian, self.ribbon_hamiltonian
         vecs, gr_vecs, lattice_vecs, invvecs, invgr_vecs, invlattice_vecs, = self.__create_transformations(ham)
-          
+
         orbpos = numpy.array(ham5.orbitalpositions())
-        
+
         coords = self.split_sublattices(orbpos,2)[0]
         shiftvecs = self.__shift_vectors(coords, vecs, invvecs, lattice_vecs, invlattice_vecs)
         enumeration=numpy.array([range(len(shiftvecs))]).transpose()
         l=numpy.round(numpy.hstack((numpy.dot(shiftvecs,invgr_vecs),enumeration))*3)/3
-        ind=numpy.lexsort((l[:,0],l[:,1]))    
+        ind=numpy.lexsort((l[:,0],l[:,1]))
         return l[ind][:,3]
-        
+
     def resort_nanoribbon_vector(self, vec):
         return numpy.array([vec[2*int(i)+j] for i in self.resort_nanoribbon() for j in range(2)])
-                
+
     def pad_nanoribbon_vector_to_periodic(self, vec):
-        print 'height', self.height
-        splitvecs=numpy.split(vec,len(vec)/(4*self.height-2))
-        splitvecs=[numpy.append(splitvec,0) for splitvec in splitvecs]
-        splitvecs=[numpy.insert(splitvec,0,0) for splitvec in splitvecs]
+        if self.height%2 == 0.0:
+            splitvecs=numpy.split(vec, len(vec)/(4*self.height-2))
+            splitvecs=[numpy.append(splitvec,0) for splitvec in splitvecs]
+            splitvecs=[numpy.insert(splitvec,0,0) for splitvec in splitvecs]
+        else:
+            splitvecs=numpy.split(vec, len(vec)/(4*(self.height-1)))
+            splitvecs=[numpy.append(splitvec,[0,0]) for splitvec in splitvecs]
+            splitvecs=[numpy.insert(splitvec,[0,0],0) for splitvec in splitvecs]
+
         return numpy.array(splitvecs).flatten()
 
     def pad_vector(self, vec):
@@ -385,9 +389,8 @@ class ZigzagGNRHelper:
         if height is None:
             height = self.height*4
         return numpy.reshape(vec,(-1,height))
-    
 
-        
+
 class GNRSimpleFourierTransform:
     def __init__(self, height_nr_atoms, length_nr_slices, nnfile):
         """
@@ -398,15 +401,19 @@ class GNRSimpleFourierTransform:
         self.height_nr_atoms = height_nr_atoms
         self.length_nr_slices = length_nr_slices
         self.zgh = self.__create_zigzag_gnr_helper(height_nr_atoms, length_nr_slices, nnfile)
-            
+
         a=10
         self.localized_orbital_set = self.__create_gaussian_basis_orbitals(self.zgh, a)
         self.orbital_fourier_transform = RealSpaceWaveFunctionFourierTransform(
             self.localized_orbital_set,(self.zgh.length,self.zgh.height),(0,1))
-        
+
         self.maxkx = self.orbital_fourier_transform.orbital_fourier_grid[-1][0][0][0]
         self.maxky = self.orbital_fourier_transform.orbital_fourier_grid[0][-1][0][1]
 
+
+    def pad_and_split(self, wave_function):
+
+        return self.__pad_and_split_zgnr_wavefunction(wave_function, self.zgh)
 
     def fourier_transform(self, wave_function):
         """
@@ -418,13 +425,14 @@ class GNRSimpleFourierTransform:
         """
         pad_and_split_wave_function = \
             self.__pad_and_split_zgnr_wavefunction(wave_function, self.zgh)
-        
+
         transformed_coefficients, transformed_wave_functions = \
             self.orbital_fourier_transform.fourier_transform(pad_and_split_wave_function, full_transform=True)
-        
+
         fourier_transform = self.__add_transformations(transformed_coefficients)
-        
-        return fourier_transform
+        fourier_wf = self.__add_transformations(transformed_wave_functions)
+
+        return fourier_transform, fourier_wf
         
     def __create_zigzag_gnr_helper(self, height_nr_atoms, length_nr_slices, nnfile):
         """
@@ -457,6 +465,7 @@ class GNRSimpleFourierTransform:
         padded = zgh.pad_vector(zgh.pad_nanoribbon_vector_to_periodic(wave_function))
         l1, l2, l3, l4 = [numpy.dstack((zgh.vector_to_grid(x, zgh.height),)) for x in zgh.split_sublattices(padded, 4)]
         pad_and_split_wave_function = {0: l1, 1: l2, 2: l3, 3:l4}
+
         return pad_and_split_wave_function
 
     def __create_gaussian_basis_orbitals(self, zgh, a):
@@ -484,46 +493,117 @@ class GNRSimpleFourierTransform:
         
         localized_orbital_set = w90.LocalizedOrbitalSet({i: gaussian_orbital_at_center(x0, y0, z0) for i,(x0,y0,z0) in 
                                             enumerate(doublecell_ham.orbitalpositions())}, doublecell_ham.latticevectors())
-        
         return localized_orbital_set
-    
+
     @staticmethod
     def roll_2d_center(data):
         return numpy.roll(numpy.roll(data,data.shape[0]/2,axis=0),data.shape[1]/2,axis=1)
-    
+
     def __add_transformations(self, coeffs):
         """
         Add up a dictionary of arrays.
         It is used for adding up the contributions to the Fourier
         transformation from the different sublattices.
-    
+
         coeffs: Dictionary containing numpy arrays.
         """
         transf_sum = numpy.zeros(coeffs.values()[0].shape, dtype=coeffs.values()[0].dtype)
         for transf in coeffs.values():
             transf_sum += transf
         return transf_sum
-    
-    def get_brillouin_zone(self):
-        
-        atmp = self.orbital_fourier_transform.orbital_fourier_grid
 
-        #dkx = atmp[1][0][0][0] - atmp[0][0][0][0]
-        #dky = atmp[0][1][0][1] - atmp[0][0][0][1]
-        #self.maxkx = atmp[-1][0][0][0] - atmp[0][0][0][0]
-        #self.maxky = atmp[0][-1][0][1] - atmp[0][0][0][1]
-        
-        Gamma_point = numpy.array([self.maxkx/2., self.maxky/2.])
+    @staticmethod
+    def get_brillouin_zone():
+
+        #Gamma_point = numpy.array([self.maxkx/2., self.maxky/2.])
         ag = 2.461 
-        K_point_1 = Gamma_point + 4. * numpy.pi / 3. / ag * numpy.array([1.0, 0.0])
-        K_point_2 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([-1.0, math.sqrt(3.0)])
-        K_point_3 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([-1.0, -math.sqrt(3.0)])
-        Kp_point_1 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([1.0, math.sqrt(3.0)])
-        Kp_point_2 = Gamma_point + 4. * numpy.pi / 3. / ag * numpy.array([-1.0, 0.0])
-        Kp_point_3 = Gamma_point + 2. * numpy.pi / 3. / ag * numpy.array([1.0, -math.sqrt(3.0)])
+        K_point_1 = 4. * numpy.pi / 3. / ag * numpy.array([1.0, 0.0])
+        K_point_2 = 2. * numpy.pi / 3. / ag * numpy.array([-1.0, math.sqrt(3.0)])
+        K_point_3 = 2. * numpy.pi / 3. / ag * numpy.array([-1.0, -math.sqrt(3.0)])
+        Kp_point_1 = 2. * numpy.pi / 3. / ag * numpy.array([1.0, math.sqrt(3.0)])
+        Kp_point_2 = 4. * numpy.pi / 3. / ag * numpy.array([-1.0, 0.0])
+        Kp_point_3 = 2. * numpy.pi / 3. / ag * numpy.array([1.0, -math.sqrt(3.0)])
         Bril_zone = numpy.array([[K_point_1[0], Kp_point_1[0], K_point_2[0], Kp_point_2[0], K_point_3[0], Kp_point_3[0], K_point_1[0]],
                               [K_point_1[1], Kp_point_1[1], K_point_2[1], Kp_point_2[1], K_point_3[1], Kp_point_3[1], K_point_1[1]]])
         return Bril_zone
 
-        
 
+class GNRSimpleFastFourierTransform:
+    def __init__(self, Nx=1, Ny=4, wave_function=None):
+        
+        self.Nx = Nx
+        self.Ny = Ny
+        if Ny%4 != 0:
+            raise(ValueError, 'Ny should be devidable by 4')
+        if wave_function is not None:
+            self.wave_function = wave_function
+            self.wave_funcion_fourier, self.wave_function_fourier_sublattices = self.make_fourier()
+
+    def make_fourier(self, wave_function=None):
+           #print wf_arr
+        if wave_function is not None:
+            self.wave_function=wave_function
+        wf_arr_split = numpy.split(self.wave_function, self.Nx)
+        wf_arr_split = [numpy.append(splitvec, [0, 0]) for splitvec in wf_arr_split]
+        wf_arr_split = [numpy.insert(splitvec, [0, 0], 0) for splitvec in wf_arr_split]
+        wf_arr_fl = numpy.array(wf_arr_split).flatten()
+        wf_fl = {i: numpy.array(wf_arr_fl[i::4]).reshape(self.Nx, self.Ny/4+1) for i in xrange(4)}
+        wf_four = {i: numpy.fft.fft2(wf_fl[i]) for i in xrange(4)}
+        wf_all = wf_four[0] +  wf_four[1] + wf_four[2] + wf_four[3]
+
+        self.wave_function_fourier = wf_all
+        self.wave_function_fourier_sublattices = wf_four
+        return wf_all, wf_four
+
+    @staticmethod
+    def plot_fourier_transform(wave_function_fourier, N=5, figuresize = (14,14)):
+        a = 1.42
+        wf_per = numpy.dstack((numpy.vstack((numpy.hstack((wave_function_fourier,) * N),) * N),) * 1)
+
+        BZ = GNRSimpleFourierTransform.get_brillouin_zone()
+
+        plt.figure(figsize=figuresize)
+
+        plt.imshow(abs(wf_per[:,:,0]).transpose(), interpolation='nearest', aspect=1.0, 
+                    extent=[0.0, numpy.sqrt(3)*2.*N*numpy.pi/3./a, 0.0, 2.*N*numpy.pi/3./a])
+        plot_indexes = [[nx, ny] for nx in xrange(0, 2*(N+1), 2) for ny in xrange(0, 2*(N+1), 2) if (nx-ny)%4 == 0]
+        [plt.plot(BZ[0]+numpy.sqrt(3)*nx*numpy.pi/3./a, BZ[1]+ny*numpy.pi/3./a, 'w') for nx,ny in plot_indexes]
+
+        plt.plot([0.0, numpy.sqrt(3)*2.*numpy.pi/3./a, numpy.sqrt(3)*2.*numpy.pi/3./a], 
+            [2.*numpy.pi/3./a, 2.*numpy.pi/3./a, 0.0], 'w', ls='--')
+
+        plt.xlim(0.0, numpy.sqrt(3)*2.*N*numpy.pi/3./a)
+        plt.ylim(0.0, 2.*N*numpy.pi/3./a)
+        return None
+
+
+class GNRSimpleFastInvertFourierTransform:
+
+    def __init__(self, Nx=1, Ny=1, wave_function_fourier=None, repeat=False):
+        if wave_function_fourier.__class__ is dict:
+            self.wave_function_fourier = wave_function_fourier
+        else:
+            if repeat:
+                self.wave_function_fourier ={i: wave_function_fourier for i in xrange(4)}
+            else:
+                self.wave_function_fourier = {i: numpy.zeros((Nx, Ny/4+1), dtype = complex)  for i in xrange(4)}
+                if wave_function_fourier is not None:
+                    self.wave_function_fourier[0] = wave_function_fourier
+        self.Nx = Nx
+        self.Ny = Ny
+        self.wave_function = self.inverse_fourier_transform()
+
+    def __remove_cites(self, inverse_fourier):
+        wf_arr_i_split = numpy.split(inverse_fourier, self.Nx)
+        wf_arr_i_split = [splitvec[2:-2] for splitvec in wf_arr_i_split]
+        return numpy.array(wf_arr_i_split).flatten()
+
+    def inverse_fourier_transform(self):
+        wf_i = {i: numpy.fft.ifft2(self.wave_function_fourier[i]).flatten() for i in xrange(4)}
+        wf_arr_i = numpy.zeros(4*len(wf_i[0]), dtype=complex)
+        wf_arr_i[::4] = wf_i[0]
+        wf_arr_i[1::4] = wf_i[1]
+        wf_arr_i[2::4] = wf_i[2]
+        wf_arr_i[3::4] = wf_i[3]
+        wf_arr_i_split = self.__remove_cites(wf_arr_i)
+        return wf_arr_i_split

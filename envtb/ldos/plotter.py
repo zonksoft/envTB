@@ -24,43 +24,44 @@ class Plotter:
         except:
             plt.pcolor(Z)
         plt.colorbar()
-        return None 
-   
-    def plot_density(self, vector, coords, max_el=None, **kwrds):
-       
-        if max_el == None:
-            maxel = np.max(vector)
-        else:
-            maxel = max_el
-                
+        return None
+
+    def plot_density(self, vector, coords, max_el=1.0, min_el=0.0, **kwrds):
+
+        maxel = max_el*np.max(vector)
+        minel = min_el*np.max(vector)
+        print maxel, minel
         xmin = 0.0
         xmax = 0.0
         ymin = 0.0
         ymax = 0.0
-        
+
         for i in xrange(len(vector)):
-            
-            if maxel != 0.0:
-                msize = vector[i] * 150. / np.sqrt(np.sqrt(len(vector))) / maxel
+
+            if maxel != minel:
+                msize = vector[i] * 180. / np.sqrt(np.sqrt(len(vector))) / (maxel-minel)
                 #R = 1/(maxel) * (density1d[i].real)
                 #G = 1/(maxel) * (maxel - density1d[i].real)
                 if vector[i] >= maxel:
                     R = 1
                     G = 0
+                elif vector[i] <= minel:
+                    G = 1
+                    R = 0
                 else:
-                    R = 0.999 / (maxel) * (vector[i].real)
-                    G = 0.999 / (maxel) * (maxel - vector[i].real)
-                   
+                    R = 0.999 / (maxel - minel) * (vector[i].real - minel)
+                    G = 0.999 / (maxel - minel) * (maxel - vector[i].real)
+
                 B = 0.0
-            else: 
+            else:
                 msize = 0.0
                 R = 0.0
                 G = 0.0
                 B = 0.0
-                    
+
             plt.plot(coords[i][0], coords[i][1], 'o', mfc='k', ms=2)
             plt.plot(coords[i][0], coords[i][1], 'o', mfc=(R,G,B), ms=msize, **kwrds)
-            
+
             if coords[i][0] < xmin:
                 xmin = coords[i][0]
             elif coords[i][0] > xmax:
@@ -69,15 +70,16 @@ class Plotter:
                 ymin = coords[i][0]
             elif coords[i][1] > ymax:
                 ymax = coords[i][1]
-        
+
         dx = (xmax-xmin) / 10.
         dy = (ymax-ymin) / 10.
             
-        plt.xlim(xmin - dx, xmax + dx)
-        plt.ylim(ymin - dy, ymax + dy)
+        plt.xlim(xmin - 0.5*dx, xmax + 0.5*dx)
+        plt.ylim(ymin - 0.5*dy, ymax + 0.5*dy)
         
-        plt.xlabel(r'$x$', fontsize = 24)
-        plt.ylabel(r'$y$', fontsize = 24)
+        plt.xlabel(r'$x$', fontsize = 26)
+        plt.ylabel(r'$y$', fontsize = 26)
+        plt.tick_params(labelsize=22)
         #plt.axes().set_aspect('equal')
         return None    
     

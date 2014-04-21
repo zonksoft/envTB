@@ -9,39 +9,39 @@ g3 = -0.35
 a = 1.42
 dx = np.sqrt(3) * a
 
-def make_H0(n):
+def make_H0(n, rescale=1.):
 
-    a11 = e0 * np.ones(n, dtype = complex)
-    a12 = g1 * np.ones(n, dtype = complex)
-    a23 = g2 * np.ones(n, dtype = complex)
+    a11 = rescale * e0 * np.ones(n, dtype = complex)
+    a12 = rescale * g1 * np.ones(n, dtype = complex)
+    a23 = rescale * g2 * np.ones(n, dtype = complex)
     #a34 = g3 * np.ones(n, dtype = complex)
     diags = np.array([0,-1,1,-2,2])
     m =  scipy.sparse.spdiags(np.array([a11, a12, a12, a23, a23]),
                                 diags, n, n, format="lil")
     for i in xrange(0, n-2, 2):
-        m[i, i+3] = g3
-        m[i+3, i] = g3
+        m[i, i+3] = rescale * g3
+        m[i+3, i] = rescale * g3
     return m.tocsr()
 
-def make_HI(n):
+def make_HI(n, rescale=1.):
 
     #m = g2 * np.diag(np.ones(n, dtype = complex))
-    m = scipy.sparse.dia_matrix((g2 * np.ones(n, dtype=complex), np.array([0])), shape=(n,n))
+    m = scipy.sparse.dia_matrix((rescale*g2 * np.ones(n, dtype=complex), np.array([0])), shape=(n,n))
     m = m.tolil()
 
     for i in xrange(0, n-3, 4):
-        m[i+1, i] = g1
-        m[i+2, i+3] = g1
-        m[i+2, i+1] = g3
-        m[i+1, i+2] = g3
-        m[i+1, i+3] = g2
-        m[i+2, i] = g2
+        m[i+1, i] = rescale*g1
+        m[i+2, i+3] = rescale*g1
+        m[i+2, i+1] = rescale*g3
+        m[i+1, i+2] = rescale*g3
+        m[i+1, i+3] = rescale*g2
+        m[i+2, i] = rescale*g2
 
     for i in xrange(0, n-5, 4):
-        m[i+5, i+3] = g2
-        m[i+2, i+4] = g2
-        m[i+4, i+3] = g3
-        m[i+3, i+4] = g3
+        m[i+5, i+3] = rescale*g2
+        m[i+2, i+4] = rescale*g2
+        m[i+4, i+3] = rescale*g3
+        m[i+3, i+4] = rescale*g3
 
     return m.tocsr() #sparse.dia_matrix(m)
 
