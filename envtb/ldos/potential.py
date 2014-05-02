@@ -51,6 +51,30 @@ class Potential2D:
         """
         pass
 
+class Potential2DOnGrid(Potential2D):
+    def range(self,  xmin = None, xmax = None, ymin = None, ymax = None):
+        """
+        Gives the range [xmin,xmax] of the potential.
+        """
+
+        return [xmin, xmax], [ymin, ymax]
+
+    def __call__(self,r):
+        """
+        Returns the value of the potential at r.
+        r is a list of [x,y]
+        """
+        ix = int(r[0]/self.dx)
+        iy = int(r[1]/self.dy)
+        return self.potential[ix,iy]
+
+    def __init__(self, array, dx=1.0, dy=1.0):
+        """
+        docstring
+        """
+        self.potential = array
+        self.dx=dx
+        self.dy=dy
 
 class Potential2DFromFunction(Potential2D):
     def range(self, xmin = None, xmax = None, ymin = None, ymax = None):

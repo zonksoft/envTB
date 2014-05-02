@@ -3,8 +3,8 @@ import scipy.sparse
 from scipy.sparse import linalg
 
 hbar = 1.055*10**(-34)
-m = 0.067 * 9.109 * 10**(-31)
-a = 1.0 * 10**(-10)
+m =  9.109 * 10**(-31)
+a = 0.529 * 10**(-10)
 JtoEV = 1./1.6 * 10**(19) 
 t = hbar**2 / 2./ m/ a**2 * JtoEV
 print t
