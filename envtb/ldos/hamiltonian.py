@@ -61,7 +61,7 @@ class GeneralHamiltonian(object):
         mtot = self.mtot.copy().tolil()
 
         mtot[-self.Ny:,:self.Ny] = mtot[:self.Ny, self.Ny:2*self.Ny]
-        mtot[:self.Ny, -self.Ny:] = mtot[:self.Ny, self.Ny:2*self.Ny]
+        mtot[:self.Ny, -self.Ny:] = mtot[self.Ny:2*self.Ny, :self.Ny]
 
         return self.copy_ins_with_new_matrix(mtot.tocsr())
 

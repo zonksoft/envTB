@@ -290,6 +290,8 @@ class GaussianEnvelopePulse(VectorPotential):
         self.direction = np.array(direction) / norm
         self.CEP = cep
         self.polarization=polarization
+        print 't0', self.t0
+        print 'tc', self.tc
 
     def envelope(self, t):
         return math.exp(-((t-self.tc)/self.t0)**2/0.7213)
@@ -305,3 +307,38 @@ class GaussianEnvelopePulse(VectorPotential):
         return [self.direction[0] * VecPot_x1 - self.direction[1] * VecPot_y1,  self.direction[1] * VecPot_x1 + self.direction[0] * VecPot_y1]
 
 # end class GaussianEnvelopePulse
+
+
+class CustomEnvelopePulse(VectorPotential):
+
+    def __init__(self, amplitude_E0, frequency, envelope=(lambda t: math.exp(-((t-0.1)/0.1)**2/0.7213)), Nc=1, cep=0.0, direction=[1.0,0.0], polarization=0.0):
+
+        """
+        This class contains vector potential of a laser field
+        with a gaussian envelope
+
+        amplitude_E0: is the peak filed strength
+
+        frequency: pulse frequency
+        """
+
+        self.amplitude= amplitude_E0
+        self.frequency = frequency
+        self.pulse_duration = 2. * Nc * np.pi / self.frequency
+        norm = np.sqrt(direction[0]**2 + direction[1]**2)
+        self.direction = np.array(direction) / norm
+        self.CEP = cep
+        self.polarization=polarization
+        self.envelope = envelope
+
+    def __call__(self, t):
+        env = self.envelope(t)
+        VecPot_x = -self.amplitude / self.frequency / np.sqrt(2) *\
+                 math.sin(self.frequency * t + self.CEP) * env
+        VecPot_y = -self.amplitude / self.frequency / np.sqrt(2) *\
+                 math.sin(self.frequency * t + self.CEP + self.polarization) * env
+        VecPot_x1 = np.sqrt(2.)/2.*(VecPot_x+VecPot_y)
+        VecPot_y1 = np.sqrt(2.)/2.*(VecPot_x-VecPot_y)
+        return [self.direction[0] * VecPot_x1 - self.direction[1] * VecPot_y1,  self.direction[1] * VecPot_x1 + self.direction[0] * VecPot_y1]
+
+# end class CustomEnvelopePulse
