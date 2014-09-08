@@ -241,6 +241,34 @@ class GeneralHamiltonian(object):
 
         return self.copy_ins_with_new_matrix(m_pot)
 
+    def add_vacancies(self, Nvac=10, vactype='single', sign_variation=True, randseed=1000, E0=10.0):
+        Ntotal = self.Nx * self.Ny
+        try:
+            mt = self.mtot.copy()
+        except:
+            self.build_hamiltonian()
+            mt = self.mtot.copy()
+
+        import random
+
+        random.seed(randseed)
+        vacan_position = [random.randrange(0.0, stop=Ntotal, step=1.0) for i in xrange(Nvac)]
+        if sign_variation:
+            signs = [random.randrange(-1, stop=2, step=2.0) for i in xrange(Nvac)]
+        else:
+            signs = [1.0 for i in xrange(Nvac)]
+
+        if vactype=='single':
+            for i in xrange(Nvac):
+                mt[vacan_position[i], vacan_position[i]] += E0 * np.sign(signs[i])
+        if vactype=='double':
+            for i in xrange(Nvac):
+                mt[vacan_position[i], vacan_position[i]] += E0
+                pos = random.choice([-1,1])
+                mt[vacan_position[i]+pos, vacan_position[i]+pos] -= E0 
+
+        return self.copy_ins_with_new_matrix(mt)
+
     def eigenvalue_problem(self, k=20, sigma=0.0, **kwrds):
         if self.mtot is None:
             self.build_hamiltonian()

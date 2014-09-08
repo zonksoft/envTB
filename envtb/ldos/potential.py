@@ -88,7 +88,7 @@ class Potential2DFromFunction(Potential2D):
         Returns the value of the potential at r.
         r is a list of [x,y]
         """
-        return self.potential(r)
+        return self.potential(r[0], r[1])
 
     def __init__(self, f):
         """
