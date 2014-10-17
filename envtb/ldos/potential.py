@@ -1,7 +1,7 @@
 import numpy as np
 
 class Potential1D:
-    
+
     def range(self):
         """
         Gives the range [xmin,xmax] of the potential.
@@ -17,7 +17,7 @@ class Potential1D:
 
 
 class Potential1DFromFunction(Potential1D):
-    
+
     def range(self, xmin = None, xmax = None):
         """
         Gives the range [xmin,xmax] of the potential.
@@ -104,18 +104,18 @@ class SoftConfinmentPotential:
         The SoftConfinmentPotential gives an exponential decaying function of width da 
         at the boundaries of the flake. One can apply this potential to any boundary by
         specifying side key word.
-        
+
         side - string: "All" - potential is applied to all sides
                        "armchir" - for making potential at the armchair edge
                        "zigzag" - for making potential at the zigzag edge
-        
+
         imaginary - bool; whether potential is imaginary or not
-        
+
         TODO:
         Note: not applicable for any boundary
         '''
         self.da = da
-        
+
         if side == 'All':
             self.side = 0
         elif side == 'armchair':
@@ -128,17 +128,17 @@ class SoftConfinmentPotential:
         self.max_x = max_x
         self.max_y = max_y
         self.amplitude = amplitude
-        
-    
+
+
     def __call__(self, r):
         """
         Returns the value of the potential at r.
         r is a list of [x,y]
         i counter in hamiltonian array (corresponds to position on diagonal of ham matrix with coordinate r)
         """
-       
+
         pot_edge = self.__calculate_edge_potential(r)
-        
+
         if self.side == 0:
             pot_corner = self.__calculate_corner_potential(r)
             if pot_corner < 1.0:
@@ -212,31 +212,31 @@ class SoftConfinmentPotential:
                 #pot_amp = 0.0001 * (self.da - x)
             else:
                 return 1.0
-            
+
             pot_amp = self.__smooth_function(x) * self.__smooth_function(y)
             return pot_amp
 
 #end class SoftConfinmentPotential
 
 class SuperLatticePotential:
-    
+
     def __init__(self, Ny, Nx, pot, coords):
         self.coords = coords
         self.pot = pot # 1d array corresponding to coords
-        
+
         self.Nx = Nx
         self.Ny = Ny
         self.xmax = self.coords[Ny * Nx - 1][1]
         self.ymax = self.coords[Ny][1]
-    
+
     def __call__(self, r):
         '''
             r is a list with coords [x, y]
         '''
         a = 1.42
-        
+
         iy_main = int(r[1] / 3. / a * 4)
-        
+
         irest = np.mod(r[1], 3.*a)
         if abs(irest) <= a/2 + 0.00001:
             iy = iy_main + 1
@@ -246,15 +246,15 @@ class SuperLatticePotential:
             iy = iy_main + 3
         else:
             iy = iy_main
-        
+
         ix = int(r[0] / np.sqrt(3) /a)
-        
+
         while iy > self.Ny-1:
             iy = iy - self.Ny
-        
+
         while ix > self.Nx-1:
             ix = ix - self.Nx
-        
+
         index = ix * self.Ny + iy
-        
+
         return self.pot[index]
