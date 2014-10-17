@@ -549,7 +549,17 @@ class GNRSimpleFastFourierTransform:
         wf_arr_fl = numpy.array(wf_arr_split).flatten()
         wf_fl = {i: numpy.array(wf_arr_fl[i::4]).reshape(self.Nx, self.Ny/4+1) for i in xrange(4)}
         wf_four = {i: numpy.fft.fft2(wf_fl[i]) for i in xrange(4)}
-        wf_all = wf_four[0] +  wf_four[1] + wf_four[2] + wf_four[3]
+        
+        a = 1.42
+        kxmax = numpy.sqrt(3.0)*2.0*numpy.pi/3.0/a
+        kymax = 2.0*numpy.pi/3./a
+        k = numpy.array([[kx,ky] for kx in numpy.linspace(0,kxmax,self.Nx) 
+                       for ky in numpy.linspace(0,kymax,self.Ny/4+1)])
+        
+        wf_all = (wf_four[0] +  
+                  wf_four[1]*numpy.exp(-2.j*numpy.pi*(k[:,0]*numpy.sqrt(3.0)*a/2.0 + k[:,1]*a/2.0)).reshape(self.Nx, self.Ny/4+1) + 
+                  wf_four[2]*numpy.exp(-2.j*numpy.pi*(k[:,0]*numpy.sqrt(3.0)*a/2.0 + k[:,1]*3.0*a/2.0)).reshape(self.Nx, self.Ny/4+1) + 
+                  wf_four[3]*numpy.exp(-2.j*numpy.pi*(k[:,0]*0.0 + k[:,1]*a*2.0)).reshape(self.Nx, self.Ny/4+1))
 
         self.wave_function_fourier = wf_all
         self.wave_function_fourier_sublattices = wf_four
@@ -564,7 +574,7 @@ class GNRSimpleFastFourierTransform:
 
         plt.figure(figsize=figuresize)
 
-        plt.imshow(abs(wf_per[:,:,0]).transpose(), interpolation='nearest', aspect=1.0, 
+        plt.imshow(abs(wf_per[:,::-1,0]).T, interpolation='nearest', aspect=1.0, 
                     extent=[0.0, numpy.sqrt(3)*2.*N*numpy.pi/3./a, 0.0, 2.*N*numpy.pi/3./a])
         plot_indexes = [[nx, ny] for nx in xrange(0, 2*(N+1), 2) for ny in xrange(0, 2*(N+1), 2) if (nx-ny)%4 == 0]
         [plt.plot(BZ[0]+numpy.sqrt(3)*nx*numpy.pi/3./a, BZ[1]+ny*numpy.pi/3./a, 'w') for nx,ny in plot_indexes]
