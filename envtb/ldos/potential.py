@@ -1,4 +1,6 @@
 import numpy as np
+import random
+from scipy.ndimage.filters import gaussian_filter
 
 class Potential1D:
 
@@ -95,6 +97,35 @@ class Potential2DFromFunction(Potential2D):
         docstring
         """
         self.potential = f
+
+class RandomSmoothPotential2D(Potential2D):
+    def __init__(self, amp, cor, ham, randseed = 51):
+        """ 
+        cor length is a number of lattice points being correlated 
+        """
+        self.Ly = ham.coords[ham.Ny-1][1]
+        self.Lx = ham.coords[-2][0]
+        self.sx = int(self.Lx)*2.0
+        self.sy = int(self.Ly)*2.0
+        np.random.seed(randseed)
+        self.cor = self.sx*cor/self.Lx
+        print self.cor
+        z = np.random.uniform(low=-amp/2.0, high = amp/2.0, size=self.sx*self.sy)
+        self.rand_pot = (gaussian_filter(z.reshape(self.sx, self.sy), sigma=self.cor/np.sqrt(2))*self.cor)
+                                                                    
+    def __call__(self, r):
+        dx0 = self.Lx/self.sx
+        dy0 = self.Lx/self.sx
+        x0 = np.linspace(0.0, self.Lx, self.sx)
+        y0 = np.linspace(0.0, self.Ly, self.sy)
+        i0 = np.where(x0 >= r[0])[0][0]
+        j0 = np.where(y0 >= r[1])[0][0]
+        deltax = r[0] - x0[i0]
+        deltay = r[1] - y0[j0]
+        if i0 < len(x0)-1 and j0 < len(y0)-1:
+            return self.rand_pot[i0, j0] + deltax * (self.rand_pot[i0+1, j0] - self.rand_pot[i0, j0]) /dx0 + deltay * (self.rand_pot[i0, j0+1] - self.rand_pot[i0, j0]) /dy0
+        else: 
+           return self.rand_pot[i0, j0]
 
 #end class Potential2DFromFunction
 
@@ -220,7 +251,7 @@ class SoftConfinmentPotential:
 
 class SuperLatticePotential:
 
-    def __init__(self, Ny, Nx, pot, coords):
+    def __init__(self, Nx, Ny, pot, coords):
         self.coords = coords
         self.pot = pot # 1d array corresponding to coords
 

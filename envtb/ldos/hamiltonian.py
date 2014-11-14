@@ -95,7 +95,6 @@ class GeneralHamiltonian(object):
             mt = mt + mdia.tocsr()
 
         else:
-
             mdia = np.array([U([self.coords[i][0], self.coords[i][1]])
                                 for i in xrange(self.Ntot)])
 
