@@ -537,7 +537,7 @@ class GNRSimpleFastFourierTransform:
             raise(ValueError, 'Ny should be devidable by 4')
         if wave_function is not None:
             self.wave_function = wave_function
-            self.wave_funcion_fourier, self.wave_function_fourier_sublattices = self.make_fourier()
+            self.wave_function_fourier, self.wave_function_fourier_sublattices = self.make_fourier()
 
     def make_fourier(self, wave_function=None):
            #print wf_arr
@@ -557,28 +557,31 @@ class GNRSimpleFastFourierTransform:
                        for ky in numpy.linspace(0,kymax,self.Ny/4+1)])
         
         wf_all = (wf_four[0] +  
-                  wf_four[1]*numpy.exp(-2.j*numpy.pi*(k[:,0]*numpy.sqrt(3.0)*a/2.0 + k[:,1]*a/2.0)).reshape(self.Nx, self.Ny/4+1) + 
-                  wf_four[2]*numpy.exp(-2.j*numpy.pi*(k[:,0]*numpy.sqrt(3.0)*a/2.0 + k[:,1]*3.0*a/2.0)).reshape(self.Nx, self.Ny/4+1) + 
-                  wf_four[3]*numpy.exp(-2.j*numpy.pi*(k[:,0]*0.0 + k[:,1]*a*2.0)).reshape(self.Nx, self.Ny/4+1))
+                  wf_four[1]*numpy.exp(-1.j*(k[:,0]*numpy.sqrt(3.0)*a/2.0 + k[:,1]*a/2.0)).reshape(self.Nx, self.Ny/4+1) + 
+                  wf_four[2]*numpy.exp(-1.j*(k[:,0]*numpy.sqrt(3.0)*a/2.0 + k[:,1]*3.0*a/2.0)).reshape(self.Nx, self.Ny/4+1) + 
+                  wf_four[3]*numpy.exp(-1.j*(k[:,0]*0.0 + k[:,1]*a*2.0)).reshape(self.Nx, self.Ny/4+1))
+        
 
         self.wave_function_fourier = wf_all
         self.wave_function_fourier_sublattices = wf_four
         return wf_all, wf_four
 
     @staticmethod
-    def plot_fourier_transform(wave_function_fourier, N=5, figuresize = (14,14)):
+    def plot_fourier_transform(wave_function_fourier, N=5, figuresize=None):
         a = 1.42
-        wf_per = numpy.dstack((numpy.vstack((numpy.hstack((wave_function_fourier,) * N),) * N),) * 1)
+        wf_per = numpy.vstack((numpy.hstack((wave_function_fourier,) * N),) * N)
+        #wf_per = numpy.vstack((numpy.hstack((wave_function_fourier,) * N),) * N)
 
         BZ = GNRSimpleFourierTransform.get_brillouin_zone()
-
-        plt.figure(figsize=figuresize)
-
-        plt.imshow(abs(wf_per[:,::-1,0]).T, interpolation='nearest', aspect=1.0, 
+        if figuresize:
+            plt.figure(figsize=figuresize)
+        
+        plt.imshow(abs(wf_per[:,::-1]).T, interpolation='nearest', aspect='auto', 
                     extent=[0.0, numpy.sqrt(3)*2.*N*numpy.pi/3./a, 0.0, 2.*N*numpy.pi/3./a])
+        #plt.colorbar()
         plot_indexes = [[nx, ny] for nx in xrange(0, 2*(N+1), 2) for ny in xrange(0, 2*(N+1), 2) if (nx-ny)%4 == 0]
         [plt.plot(BZ[0]+numpy.sqrt(3)*nx*numpy.pi/3./a, BZ[1]+ny*numpy.pi/3./a, 'w') for nx,ny in plot_indexes]
-
+        
         plt.plot([0.0, numpy.sqrt(3)*2.*numpy.pi/3./a, numpy.sqrt(3)*2.*numpy.pi/3./a], 
             [2.*numpy.pi/3./a, 2.*numpy.pi/3./a, 0.0], 'w', ls='--')
 

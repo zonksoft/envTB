@@ -70,13 +70,13 @@ class WaveFunction(object):
         wf_prime_x.append(0)
         wf_prime_y.append(0)
 
-        j_x = (np.dot(np.conjugate(np.array(self.wf1d)), np.array(wf_prime_x)) -
-               np.dot(np.array(self.wf1d), np.conjugate(np.array(wf_prime_x)))) * complex(0.0, 1.0)\
-                - A[0] * np.dot(np.array(self.wf1d), np.conjugate(np.array(self.wf1d)))
+        j_x = - (np.dot(np.conjugate(np.array(self.wf1d)), np.array(wf_prime_x)) -
+                np.dot(np.array(self.wf1d), np.conjugate(np.array(wf_prime_x)))) * complex(0.0, 1.0)\
+                + A[0] * np.dot(np.array(self.wf1d), np.conjugate(np.array(self.wf1d)))
 
-        j_y = (np.dot(np.conjugate(np.array(self.wf1d)), np.array(wf_prime_y)) -
+        j_y = - (np.dot(np.conjugate(np.array(self.wf1d)), np.array(wf_prime_y)) -
                np.dot(np.array(self.wf1d), np.conjugate(np.array(wf_prime_y)))) * complex(0.0, 1.0)\
-                - A[1] * np.dot(np.array(self.wf1d), np.conjugate(np.array(self.wf1d)))
+                + A[1] * np.dot(np.array(self.wf1d), np.conjugate(np.array(self.wf1d)))
 
         return j_x, j_y
 

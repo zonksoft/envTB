@@ -89,9 +89,16 @@ class GeneralHamiltonian(object):
 
         if isinstance(U, potential.Potential1D):
 
-            mdia = scipy.sparse.dia_matrix((np.array([U(self.coords[i][1])
-                                for i in xrange(self.Ntot)]), np.array([0])),
-                                           shape=(self.Ntot,self.Ntot))
+            #mdia = scipy.sparse.dia_matrix((np.array([U(self.coords[i][1])
+            #                    for i in xrange(self.Ntot)]), np.array([0])),
+            #                               shape=(self.Ntot,self.Ntot))
+            mdia = np.array([U(self.coords[i][1])
+                                for i in xrange(self.Ntot)])
+
+            if sign_variation:
+                mdia[::2] = -1.0 * mdia[::2]
+
+            mdia = scipy.sparse.dia_matrix((mdia, np.array([0])), shape=(self.Ntot,self.Ntot))
             mt = mt + mdia.tocsr()
 
         else:
@@ -106,6 +113,22 @@ class GeneralHamiltonian(object):
             mt = mt + mdia.tocsr()
 
         return self.copy_ins_with_new_matrix(mt)
+
+    def apply_stretch(self, U):
+
+        if self.mtot is None:
+            self.build_hamiltonian()
+
+        mt = self.mtot.copy()
+
+        if isinstance(U, potential.Potential1D):
+            mdia = np.array([U(self.coords[i][1])
+                                for i in xrange(self.Ntot-1)])
+
+            mdia = scipy.sparse.diags(np.array([mdia,mdia]), np.array([-1, 1]), shape=(self.Ntot,self.Ntot))
+            mt = mt + mdia.tocsr()
+        return self.copy_ins_with_new_matrix(mt)
+
 
     def apply_simple_vector_potential(self, A):
         """
@@ -392,7 +415,7 @@ class HamiltonianTB(GeneralHamiltonian):
         return self.copy_ins(m0=m0, mI=mI)
 
     @staticmethod
-    def get_position(Nx, Ny, s=1, dx=0.01, dy=0.01):
+    def get_position(Nx, Ny, s=1, dx=1.0, dy=1.0):
         return [[i*dx, j*dx, 0] for i in xrange(Nx) for k in xrange(s)  for j in xrange(Ny)]
 
 #end class HamiltonianTB
@@ -589,6 +612,7 @@ class HamiltonianWithSpin(GeneralHamiltonian):
                 ann = np.sqrt(dx0**2 + dy0**2)
                 if ann < 1.01*d:
                     m[i,j] += 1j * tR * (pauli_mat[0][0, 1]*dy0 - pauli_mat[1][0, 1]*dx0)
+
                 dx0 = self.coords[i][0] - self.coords[j][0] + dxl * ham_id
                 #dy0 = -dy0
                 ann = np.sqrt(dx0**2 + dy0**2)
