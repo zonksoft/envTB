@@ -65,7 +65,7 @@ class GeneralHamiltonian(object):
 
         return self.copy_ins_with_new_matrix(mtot.tocsr())
 
-    def apply_potential(self, U, sign_variation=False):
+    def apply_potential(self, U, sign_variation=False, in_x = False):
         """
         This function apply potential to the hamiltonian
 
@@ -92,7 +92,11 @@ class GeneralHamiltonian(object):
             #mdia = scipy.sparse.dia_matrix((np.array([U(self.coords[i][1])
             #                    for i in xrange(self.Ntot)]), np.array([0])),
             #                               shape=(self.Ntot,self.Ntot))
-            mdia = np.array([U(self.coords[i][1])
+            if in_x:
+                mdia = np.array([U(self.coords[i][0])
+                                for i in xrange(self.Ntot)])
+            else:
+                mdia = np.array([U(self.coords[i][1])
                                 for i in xrange(self.Ntot)])
 
             if sign_variation:
@@ -263,7 +267,7 @@ class GeneralHamiltonian(object):
 
         return self.copy_ins_with_new_matrix(m_pot)
 
-    def add_vacancies(self, Nvac=10, vactype='single', sign_variation=True, randseed=1000, E0=10.0):
+    def add_vacancies(self, Nvac=10, vactype='single', sign_variation=True, sublat_sim=True, randseed=1000, E0=10.0):
         Ntotal = self.Nx * self.Ny
         try:
             mt = self.mtot.copy()
@@ -275,11 +279,14 @@ class GeneralHamiltonian(object):
 
         random.seed(randseed)
         vacan_position = [random.randrange(0.0, stop=Ntotal, step=1.0) for i in xrange(Nvac)]
+        print vacan_position
         if sign_variation:
-            signs = [random.randrange(-1, stop=2, step=2.0) for i in xrange(Nvac)]
+            if sublat_sim:
+                signs = -1. + 2.*np.mod(np.array(vacan_position), 2)
+            else: signs = [random.randrange(-1, stop=2, step=2.0) for i in xrange(Nvac)]
         else:
             signs = [1.0 for i in xrange(Nvac)]
-
+        print signs
         if vactype=='single':
             for i in xrange(Nvac):
                 mt[vacan_position[i], vacan_position[i]] += E0 * np.sign(signs[i])
@@ -389,12 +396,14 @@ class GeneralHamiltonian(object):
 
 class HamiltonianTB(GeneralHamiltonian):
 
-    def __init__(self, Ny, Nx=1, dx=1.0, dy=1.0):
-
+    def __init__(self, Ny, Nx=1, dx=1.0, dy=1.0, Ec=0, m=1.0, a=0.05):
+        hbar = 1.0 #1.055*10**(-34)
+        JtoEV = 1.#/1.6 * 10**(19)
+        t = hbar**2 / 2./ m/ a**2 * JtoEV
         GeneralHamiltonian.__init__(self)
-
-        self.m0 = mm.make_H0(Ny)
-        self.mI = mm.make_HI(Ny)
+        self.t = t
+        self.m0 = mm.make_H0(Ny, t, Ec)
+        self.mI = mm.make_HI(Ny, t)
         self.Nx = Nx
         self.Ny = Ny
         self.Ntot = Nx * Ny
@@ -409,8 +418,8 @@ class HamiltonianTB(GeneralHamiltonian):
         #m0 = mlil[:self.Ny, :self.Ny]
         #mI = mlil[:self.Ny, self.Ny:2 * self.Ny]
         m0 = self.m0.copy()
-        m0[0, -1] = -mm.t
-        m0[-1, 0] = -mm.t
+        m0[0, -1] = -self.t
+        m0[-1, 0] = -self.t
 
         return self.copy_ins(m0=m0, mI=mI)
 
@@ -423,11 +432,11 @@ class HamiltonianTB(GeneralHamiltonian):
 
 class HamiltonianGraphene(GeneralHamiltonian):
 
-    def __init__(self, Ny, Nx=1, rescale=1.0):
+    def __init__(self, Ny, Nx=1, rescale=1.0, e0=-0.126, g1=-3.145, g2=-0.042, g3=-0.35):
 
         GeneralHamiltonian.__init__(self)
-        self.m0 = mmg.make_H0(Ny, rescale=rescale)
-        self.mI = mmg.make_HI(Ny, rescale=rescale)
+        self.m0 = mmg.make_H0(Ny, rescale=rescale, e0=e0, g1=g1, g2=g2, g3=g3)
+        self.mI = mmg.make_HI(Ny, rescale=rescale, e0=e0, g1=g1, g2=g2, g3=g3)
         self.Nx = Nx
         self.Ny = Ny
         self.Ntot = Nx * Ny

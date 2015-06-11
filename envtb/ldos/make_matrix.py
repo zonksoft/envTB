@@ -2,14 +2,7 @@ import numpy as np
 import scipy.sparse
 from scipy.sparse import linalg
 
-hbar = 1.0 #1.055*10**(-34)
-m =  1.0 #9.109 * 10**(-31)
-a =  0.05 #10**(-10)
-JtoEV = 1.#/1.6 * 10**(19) 
-t = hbar**2 / 2./ m/ a**2 * JtoEV
-print t
-
-def make_H0(Np, Ec = 0):
+def make_H0(Np, t, Ec = 0):
     a0 = (4. * t + Ec) * np.ones(Np, dtype = complex)
     b0 = -t * np.ones(Np, dtype = complex)
     diags = np.array([0,-1,1])
@@ -19,14 +12,7 @@ def make_H0(Np, Ec = 0):
     #       (t * np.diag(np.ones(Np-1, dtype = complex), -1))
 
 
-def make_periodic_H0(n, Ec = 0):
-    m = make_H0(n, Ec).tolil()
-    m[0,-1] = -t
-    m[-1,0] = -t
-
-    return  m.tocsr()
-
-def make_HI(n):
+def make_HI(n, t):
 
     return -t * scipy.sparse.eye(n, n, dtype = complex, format="lil")
 

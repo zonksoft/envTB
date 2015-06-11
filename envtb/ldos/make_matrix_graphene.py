@@ -1,15 +1,10 @@
 import numpy as np
 import scipy.sparse
 
-e0 = -0.126
-g1 = -3.145
-g2 = -0.042
-g3 = -0.35
-
 a = 1.42
 dx = np.sqrt(3) * a
 
-def make_H0(n, rescale=1.):
+def make_H0(n, rescale=1., e0=-0.126, g1=-3.145, g2=-0.042, g3=-0.35):
 
     a11 = rescale * e0 * np.ones(n, dtype = complex)
     a12 = rescale * g1 * np.ones(n, dtype = complex)
@@ -23,7 +18,7 @@ def make_H0(n, rescale=1.):
         m[i+3, i] = rescale * g3
     return m.tocsr()
 
-def make_HI(n, rescale=1.):
+def make_HI(n, rescale=1., e0=-0.126, g1=-3.145, g2=-0.042, g3=-0.35):
 
     #m = g2 * np.diag(np.ones(n, dtype = complex))
     m = scipy.sparse.dia_matrix((rescale*g2 * np.ones(n, dtype=complex), np.array([0])), shape=(n,n))
