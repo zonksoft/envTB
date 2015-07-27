@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pylab as plt
 import math
 try:
     import matplotlib.pylab as plt
@@ -299,9 +298,9 @@ class GaussianEnvelopePulse(VectorPotential):
     def __call__(self, t):
         env = self.envelope(t)
         VecPot_x = -self.amplitude / self.frequency / np.sqrt(2) *\
-                 math.sin(self.frequency * t + self.CEP) * env
+                 math.sin(self.frequency * (t-self.tc) + self.CEP) * env
         VecPot_y = -self.amplitude / self.frequency / np.sqrt(2) *\
-                 math.sin(self.frequency * t + self.CEP + self.polarization) * env
+                 math.sin(self.frequency * (t-self.tc) + self.CEP + self.polarization) * env
         VecPot_x1 = np.sqrt(2.)/2.*(VecPot_x+VecPot_y)
         VecPot_y1 = np.sqrt(2.)/2.*(VecPot_x-VecPot_y)
         return [self.direction[0] * VecPot_x1 - self.direction[1] * VecPot_y1,  self.direction[1] * VecPot_x1 + self.direction[0] * VecPot_y1]

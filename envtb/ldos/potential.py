@@ -38,6 +38,30 @@ class Potential1DFromFunction(Potential1D):
         """
         self.potential = f
 
+class Potential1DOnGrid(Potential1D):
+    def range(self,  xmin = None, xmax = None):
+        """
+        Gives the range [xmin,xmax] of the potential.
+        """
+
+        return [xmin, xmax], [ymin, ymax]
+
+    def __call__(self,r):
+        """
+        Returns the value of the potential at r.
+        r is a list of [x,y]
+        """
+        ix = int(r/self.dx)
+        return self.potential[ix]
+
+    def __init__(self, array, dx=1.0, dy=1.0):
+        """
+        docstring
+        """
+        self.potential = array
+        self.dx=dx
+        self.dy=dy
+
 
 class Potential2D:
     def range(self):
@@ -78,6 +102,7 @@ class Potential2DOnGrid(Potential2D):
         self.dx=dx
         self.dy=dy
 
+
 class Potential2DFromFunction(Potential2D):
     def range(self, xmin = None, xmax = None, ymin = None, ymax = None):
         """
@@ -112,7 +137,7 @@ class RandomSmoothPotential2D(Potential2D):
         print self.cor
         z = np.random.uniform(low=-amp/2.0, high = amp/2.0, size=self.sx*self.sy)
         self.rand_pot = (gaussian_filter(z.reshape(self.sx, self.sy), sigma=self.cor/np.sqrt(2))*self.cor)
-                                                                    
+
     def __call__(self, r):
         dx0 = self.Lx/self.sx
         dy0 = self.Lx/self.sx
